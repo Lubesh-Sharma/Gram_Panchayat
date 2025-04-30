@@ -1,0 +1,1379 @@
+:root {
+  --primary: #1a2a70;
+  --secondary: #4867b4;
+  --accent: #FFA500;
+  --light: #F0F8FF;
+  --dark: #324a8d;
+  --success: #4aa74a;
+  --warning: #FF8C00;
+  --danger: #871010;
+  --gray: #452121;
+
+}
+
+/* Global Styles */
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+
+body {
+  font-family: 'Poppins', sans-serif;
+  background: linear-gradient(135deg, #87CEFA, #D3D3D3);
+  color: var(--dark);
+  line-height: 1.6;
+}
+
+.container {
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 0 20px;
+}
+
+/* Header */
+header {
+  background-color: var(--primary);
+  color: white;
+  padding: 10px 0;
+  position: sticky;
+  top: 0;
+  z-index: 100;
+  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+}
+
+.header-container {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.logo {
+  display: flex;
+  align-items: center;
+}
+
+.logo img {
+  height: 50px;
+  width: 50px;
+  border-radius: 50%;
+  margin-right: 10px;
+  margin-bottom: 5px;
+}
+
+.logo-text h1 {
+  font-size: 1.2rem;
+  font-weight: 700;
+}
+
+.logo-text p {
+  font-size: 0.8rem;
+  opacity: 0.9;
+}
+
+nav ul {
+  display: flex;
+  list-style: none;
+}
+
+nav ul li {
+  margin-left: 20px;
+}
+
+nav ul li a {
+  color: white;
+  text-decoration: none;
+  font-size: 0.9rem;
+  padding: 5px 10px;
+  border-radius: 4px;
+  transition: background-color 0.3s;
+}
+
+nav ul li a:hover {
+  background-color: rgba(255, 255, 255, 0.1);
+}
+
+.user-panel {
+  display: flex;
+  align-items: center;
+}
+
+.user-info {
+  margin-right: 15px;
+  text-align: right;
+}
+
+.user-name {
+  font-weight: 600;
+  font-size: 0.9rem;
+}
+
+.user-role {
+  font-size: 0.8rem;
+  opacity: 0.9;
+}
+
+.logout-btn {
+  background-color: rgba(255, 255, 255, 0.2);
+  border: none;
+  color: white;
+  padding: 5px 12px;
+  border-radius: 4px;
+  cursor: pointer;
+  font-size: 0.9rem;
+  transition: background-color 0.3s;
+}
+
+.logout-btn:hover {
+  background-color: rgba(255, 255, 255, 0.3);
+}
+
+.menu-toggle {
+  display: none;
+  font-size: 1.5rem;
+  cursor: pointer;
+  color: white;
+}
+
+/* Hero Section */
+.hero {
+  background: linear-gradient(rgb(63 126 147 / 80%), #1a2a70), url(https://via.placeholder.com/1200x400) no-repeat center center;
+  background-size: cover;
+  color: white;
+  padding: 60px 0;
+  text-align: center;
+}
+
+.hero h2 {
+  font-size: 2.5rem;
+  margin-bottom: 15px;
+}
+
+.hero p {
+  font-size: 1.1rem;
+  max-width: 700px;
+  margin: 0 auto 30px;
+}
+
+.search-bar {
+  max-width: 600px;
+  margin: 0 auto;
+  display: flex;
+}
+
+.search-bar input {
+  flex: 1;
+  padding: 12px 20px;
+  border: none;
+  border-radius: 4px 0 0 4px;
+  font-size: 1rem;
+}
+
+.search-bar button {
+  background-color: var(--accent);
+  color: var(--dark);
+  border: none;
+  padding: 0 25px;
+  border-radius: 0 4px 4px 0;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background-color 0.3s;
+}
+
+.search-bar button:hover {
+  background-color: var(--warning);
+}
+
+/* Tab Navigation */
+.tab-nav {
+  background-color: #fff;
+  box-shadow: 0 2px 5px rgba(0, 0, 0, 0.05);
+}
+
+.tab-nav .tab-list {
+  display: flex;
+  list-style: none;
+  padding: 0.5rem 1rem;
+  overflow-x: auto;
+}
+
+.tab-nav .tab-list li {
+  margin-right: 20px;
+  cursor: pointer;
+  padding-bottom: 5px;
+  border-bottom: 3px solid transparent;
+  transition: all 0.3s ease;
+  font-weight: 500;
+  color: var(--dark);
+}
+
+.tab-nav .tab-list li:hover {
+  color: var(--primary);
+  border-bottom: 3px solid var(--primary);
+}
+
+.tab-nav .tab-list li.active {
+  color: var(--primary);
+  border-bottom: 3px solid var(--primary);
+}
+
+/* Main Content */
+.main-content {
+  padding: 2rem 0;
+}
+
+.tab-content {
+  display: none;
+}
+
+.tab-content.active {
+  display: block;
+}
+
+/* Dashboard, Services & Quick Access Styles */
+.dashboard-stats,
+.services-grid {
+  display: grid;
+  gap: 1.5rem;
+  margin-bottom: 2rem;
+}
+
+.dashboard-stats {
+  grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+}
+
+/* Quick Access grid: reduce min width for a single row */
+.tab-content#dashboard .quick-access {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+  gap: 1.5rem;
+  margin-bottom: 2rem;
+}
+
+/* Card Colors */
+.stat-card {
+  background-color: #F0F8FF;
+  /* AliceBlue */
+}
+
+.service-card {
+  background-color: #E6E6FA;
+  /* Lavender */
+}
+
+.dashboard-card {
+  background-color: #F5F5F5;
+  /* Light Gray */
+}
+
+.stat-card,
+.service-card,
+.dashboard-card {
+  border-radius: 8px;
+  padding: 1.5rem;
+  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.05);
+  transition: transform 0.3s ease;
+}
+
+.stat-card:hover,
+.service-card:hover,
+.dashboard-card:hover {
+  transform: translateY(-5px);
+}
+
+.stat-card .stat-title {
+  color: var(--gray);
+  font-size: 0.9rem;
+  margin-bottom: 0.5rem;
+}
+
+.stat-card .stat-value {
+  font-size: 1.8rem;
+  font-weight: 600;
+  color: var(--dark);
+  margin-bottom: 0.5rem;
+}
+
+.stat-card .stat-description {
+  font-size: 0.85rem;
+  color: var(--gray);
+}
+
+.service-card {
+  overflow: hidden;
+}
+
+.service-icon {
+  height: 150px;
+  background-color: var(--light);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 3rem;
+  color: var(--primary);
+}
+
+.service-content {
+  padding: 1.5rem;
+}
+
+.service-content h4 {
+  margin-bottom: 10px;
+  color: var(--dark);
+}
+
+.service-content p {
+  color: var(--gray);
+  font-size: 0.9rem;
+  margin-bottom: 15px;
+  min-height: 60px;
+}
+
+.service-btn {
+  display: inline-block;
+  background-color: var(--primary);
+  color: white;
+  padding: 8px 15px;
+  border-radius: 4px;
+  text-decoration: none;
+  font-size: 0.9rem;
+  transition: background-color 0.3s;
+}
+
+.service-btn:hover {
+  background-color: #1e3a8a;
+}
+
+/* Announcements Slider */
+.announcements-slider {
+  overflow: hidden;
+  position: relative;
+  margin-bottom: 2rem;
+}
+
+.announcements-track {
+  display: flex;
+  width: 200%;
+  /* Two announcements; adjust if more */
+  animation: slide 10s infinite;
+}
+
+.announcement-card {
+  flex: 0 0 50%;
+  box-sizing: border-box;
+  padding: 1rem;
+  background-color: white;
+  border-radius: 8px;
+  box-shadow: 0 2px 5px rgba(0, 0, 0, 0.05);
+}
+
+.announcement-header {
+  display: flex;
+  justify-content: space-between;
+  margin-bottom: 0.5rem;
+}
+
+.announcement-title {
+  font-weight: 600;
+  color: var(--primary);
+}
+
+.announcement-date {
+  font-size: 0.8rem;
+  color: var(--gray);
+}
+
+.announcement-content {
+  font-size: 0.9rem;
+  color: var(--dark);
+}
+
+@keyframes slide {
+
+  0%,
+  40% {
+    transform: translateX(0);
+  }
+
+  50%,
+  90% {
+    transform: translateX(-50%);
+  }
+
+  100% {
+    transform: translateX(0);
+  }
+}
+
+/* Table Styles */
+.table-container {
+  overflow-x: auto;
+}
+
+.table {
+  width: 100%;
+  border-collapse: collapse;
+}
+
+.table th,
+.table td {
+  padding: 0.75rem;
+  text-align: left;
+  border-bottom: 1px solid #eee;
+}
+
+.table thead th {
+  background-color: #F8F8F8;
+  color: var(--dark);
+  font-weight: 600;
+}
+
+.table tbody tr:hover {
+  background-color: #F8F8F8;
+}
+
+/* Footer */
+footer {
+  background-color: var(--dark);
+  color: white;
+  padding: 60px 0 20px;
+}
+
+.footer-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  gap: 40px;
+  margin-bottom: 40px;
+}
+
+.footer-col h4 {
+  font-size: 1.1rem;
+  margin-bottom: 20px;
+  position: relative;
+  padding-bottom: 10px;
+}
+
+.footer-col h4::after {
+  content: '';
+  position: absolute;
+  left: 0;
+  bottom: 0;
+  width: 40px;
+  height: 2px;
+  background-color: var(--accent);
+}
+
+.footer-links {
+  list-style: none;
+}
+
+.footer-links li {
+  margin-bottom: 12px;
+}
+
+.footer-links a {
+  color: #cbd5e1;
+  text-decoration: none;
+  font-size: 0.9rem;
+  transition: color 0.3s;
+}
+
+.footer-links a:hover {
+  color: white;
+}
+
+.footer-contact p {
+  margin-bottom: 12px;
+  display: flex;
+  align-items: flex-start;
+  font-size: 0.9rem;
+  color: #cbd5e1;
+}
+
+.footer-contact i {
+  margin-right: 10px;
+  color: var(--accent);
+}
+
+.footer-bottom {
+  text-align: center;
+  padding-top: 20px;
+  border-top: 1px solid #334155;
+  font-size: 0.9rem;
+  color: #94a3b8;
+}
+
+/* Modal & Notification */
+.modal-overlay {
+  display: none;
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100vw;
+  height: 100vh;
+  background: rgba(0, 0, 0, 0.6);
+  justify-content: center;
+  align-items: center;
+  z-index: 200;
+}
+
+.modal-content {
+  background: white;
+  padding: 20px;
+  border-radius: 8px;
+  width: 90%;
+  max-width: 400px;
+  text-align: center;
+}
+
+.modal-content input {
+  width: 80%;
+  padding: 10px;
+  margin: 15px 0;
+  border: 1px solid #ccc;
+  border-radius: 4px;
+}
+
+.notification {
+  position: fixed;
+  top: 20px;
+  right: 20px;
+  background: var(--secondary);
+  color: white;
+  padding: 10px 20px;
+  border-radius: 4px;
+  opacity: 0;
+  transition: opacity 0.3s ease-in-out;
+  z-index: 300;
+}
+
+.notification.show {
+  opacity: 1;
+}
+
+/* Responsive */
+@media (max-width: 768px) {
+  .header-container {
+    flex-direction: column;
+    padding: 10px 0;
+  }
+
+  .logo {
+    margin-bottom: 15px;
+  }
+
+  nav ul {
+    margin-bottom: 15px;
+    flex-direction: column;
+  }
+
+  nav ul li {
+    margin: 10px 0;
+  }
+
+  .menu-toggle {
+    display: block;
+  }
+
+  nav {
+    display: none;
+  }
+
+  nav.active {
+    display: block;
+    background-color: var(--primary);
+    padding: 10px;
+    border-radius: 4px;
+    margin-top: 10px;
+  }
+
+  .hero h2 {
+    font-size: 1.8rem;
+  }
+}
+
+
+.service-btn,
+.btn-outline {
+  display: inline-block;
+  width: 120px;
+  /* Adjust width as needed */
+  text-align: center;
+}
+
+.header-container {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 10px 0;
+}
+
+
+/* Modal Overlay */
+.modal-overlay {
+  display: none;
+  /* Hidden by default; shown via JS */
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100vw;
+  height: 100vh;
+  background: rgba(0, 0, 0, 0.5);
+  /* Semi-transparent background */
+  justify-content: center;
+  align-items: center;
+  z-index: 9999;
+  /* Make sure it’s above other elements */
+  overflow-y: auto;
+  /* In case the modal content is taller than the screen */
+}
+
+/* Modal Content */
+.modal-content {
+  background-color: #fff;
+  width: 90%;
+  max-width: 600px;
+  margin: 2rem;
+  border-radius: 8px;
+  position: relative;
+  padding: 1.5rem;
+  box-shadow: 0 5px 15px rgba(0, 0, 0, 0.3);
+  animation: modalFadeIn 0.4s;
+}
+
+/* Modal Fade-In Animation */
+@keyframes modalFadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(-30px);
+  }
+
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+/* Modal Close Button (top-right corner) */
+.modal-close {
+  background: transparent;
+  border: none;
+  font-size: 1.5rem;
+  color: #888;
+  position: absolute;
+  top: 1rem;
+  right: 1rem;
+  cursor: pointer;
+  transition: color 0.3s;
+}
+
+.modal-close:hover {
+  color: #444;
+}
+
+/* Form Sections */
+.form-section {
+  margin-bottom: 1.5rem;
+}
+
+.section-title {
+  margin-bottom: 0.5rem;
+  font-weight: 600;
+}
+
+/* Grid layout for form fields */
+.form-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 1rem;
+}
+
+/* Single column for smaller screens */
+@media (max-width: 768px) {
+  .form-grid {
+    grid-template-columns: 1fr;
+  }
+}
+
+.form-group {
+  display: flex;
+  flex-direction: column;
+}
+
+.form-label {
+  margin-bottom: 0.3rem;
+  font-weight: 500;
+}
+
+.required-field::after {
+  content: " *";
+  color: red;
+  margin-left: 2px;
+}
+
+.form-input,
+.form-textarea,
+.form-select {
+  border: 1px solid #ccc;
+  border-radius: 4px;
+  padding: 0.5rem;
+  font-size: 0.95rem;
+  transition: border-color 0.3s;
+}
+
+.form-input:focus,
+.form-textarea:focus,
+.form-select:focus {
+  border-color: #00BFFF;
+  /* Adjust to match your primary color */
+  outline: none;
+}
+
+.form-textarea {
+  resize: vertical;
+  min-height: 80px;
+}
+
+/* Buttons */
+.btn {
+  display: inline-block;
+  padding: 0.5rem 1rem;
+  border-radius: 4px;
+  font-weight: 500;
+  cursor: pointer;
+  text-decoration: none;
+  transition: background-color 0.3s;
+  border: none;
+  font-size: 0.95rem;
+}
+
+.btn-primary {
+  background-color: #00BFFF;
+  color: #fff;
+}
+
+.btn-primary:hover {
+  background-color: #008ECF;
+}
+
+.btn-outline {
+  background-color: transparent;
+  color: #00BFFF;
+  border: 1px solid #00BFFF;
+}
+
+.btn-outline:hover {
+  background-color: #00BFFF;
+  color: #fff;
+}
+
+/* Document Upload Area */
+.doc-upload-area {
+  border: 2px dashed #ccc;
+  border-radius: 4px;
+  padding: 1.5rem;
+  text-align: center;
+  cursor: pointer;
+  margin-bottom: 1rem;
+  transition: border-color 0.3s;
+}
+
+.doc-upload-area:hover {
+  border-color: #00BFFF;
+}
+
+.status-badge {
+  display: inline-block;
+  padding: 0.25rem 0.5rem;
+  border-radius: 3px;
+  font-size: 0.85rem;
+  font-weight: 500;
+}
+
+.status-success {
+  background-color: #d4edda;
+  color: #155724;
+}
+
+.status-pending {
+  background-color: #fff3cd;
+  color: #856404;
+}
+
+.status-progress {
+  background-color: #cce5ff;
+  color: #004085;
+}
+
+.status-other {
+  background-color: #f8f9fa;
+  color: #6c757d;
+}
+
+.doc-upload-icon {
+  font-size: 2rem;
+  margin-bottom: 0.5rem;
+  color: #888;
+}
+
+.doc-upload-text {
+  font-weight: 500;
+  margin-bottom: 0.2rem;
+}
+
+.doc-upload-helper {
+  font-size: 0.85rem;
+  color: #666;
+}
+
+.doc-list {
+  list-style: none;
+  padding-left: 0;
+}
+
+.doc-list li {
+  margin-bottom: 0.5rem;
+  font-size: 0.9rem;
+}
+
+.user-panel {
+  display: flex;
+  flex-direction: row-reverse;
+  /* Reverse the order - buttons will be on the left */
+  align-items: center;
+  justify-content: flex-start;
+  gap: 15px;
+}
+
+.user-info {
+  text-align: right;
+  margin-right: 15px;
+}
+
+.change-password-btn,
+.logout-btn {
+  background-color: #4867b4;
+  color: white;
+  border: none;
+  border-radius: 4px;
+  padding: 8px 12px;
+  cursor: pointer;
+  font-size: 0.9rem;
+  font-weight: 500;
+
+  transition: background-color 0.3s;
+}
+
+.change-password-btn:hover,
+.logout-btn:hover {
+  background-color: #95aab3;
+}
+
+
+/* Alerts */
+.alert {
+  padding: 1rem;
+  border-radius: 4px;
+  margin-bottom: 1rem;
+}
+
+.field-help {
+  font-size: 0.85rem;
+  color: #666;
+  margin-top: 0.3rem;
+}
+
+/* Form Actions */
+.form-actions {
+  text-align: right;
+  margin-top: 1.5rem;
+}
+
+
+/* Notification styling */
+.notification {
+  position: fixed;
+  top: 20px;
+  right: 20px;
+  padding: 1rem;
+  border-radius: 4px;
+  z-index: 10000;
+  box-shadow: 0 3px 6px rgba(0, 0, 0, 0.16);
+  display: none;
+}
+
+.notification.success {
+  background-color: #d4edda;
+  color: #155724;
+  border: 1px solid #c3e6cb;
+}
+
+.notification.danger {
+  background-color: #f8d7da;
+  color: #721c24;
+  border: 1px solid #f5c6cb;
+}
+
+.alert {
+  padding: 1rem;
+  border-radius: 4px;
+  margin: 1rem 0;
+}
+
+.alert-success {
+  background-color: #d4edda;
+  color: #155724;
+  border: 1px solid #c3e6cb;
+}
+
+.alert-danger {
+  background-color: #f8d7da;
+  color: #721c24;
+  border: 1px solid #f5c6cb;
+}
+
+
+/* Style for highlighted search results */
+.search-highlight {
+  background-color: rgba(255, 255, 0, 0.2);
+  animation: highlight-pulse 2s infinite;
+}
+
+@keyframes highlight-pulse {
+  0% {
+    background-color: rgba(255, 255, 0, 0.2);
+  }
+
+  50% {
+    background-color: rgba(255, 255, 0, 0.4);
+  }
+
+  100% {
+    background-color: rgba(255, 255, 0, 0.2);
+  }
+}
+
+/* Improve search input styling */
+.search-bar {
+  display: flex;
+  max-width: 600px;
+  margin: 0 auto;
+}
+
+.search-bar input {
+  flex: 1;
+  padding: 12px;
+  border: 2px solid #ddd;
+  border-radius: 4px 0 0 4px;
+  font-size: 16px;
+  transition: border-color 0.3s;
+}
+
+.search-bar input:focus {
+  border-color: #2196F3;
+  outline: none;
+}
+
+.search-bar button {
+  padding: 12px 24px;
+  background-color: #1adeec;
+  color: rgb(255, 255, 255);
+  border: none;
+  border-radius: 0 4px 4px 0;
+  cursor: pointer;
+  font-size: 16px;
+  transition: background-color 0.3s;
+}
+
+.search-bar button:hover {
+  background-color: #8ad7e3;
+}
+
+.search-highlight {
+  background-color: rgba(255, 255, 0, 0.4) !important;
+  animation: search-pulse 1.5s infinite !important;
+}
+
+@keyframes search-pulse {
+  0% {
+    background-color: rgba(255, 255, 0, 0.3) !important;
+  }
+
+  50% {
+    background-color: rgba(255, 255, 0, 0.5) !important;
+  }
+
+  100% {
+    background-color: rgba(255, 255, 0, 0.3) !important;
+  }
+}
+
+/* Add a transition for smoother highlighting */
+#dashboard .table tr {
+  transition: all 0.3s ease;
+}
+
+
+.member-email a {
+  color: #0066cc;
+  text-decoration: none;
+}
+
+.member-email a:hover {
+  text-decoration: underline;
+}
+
+/* Service details styles */
+.service-details {
+  background-color: #f8f9fa;
+  border-radius: 8px;
+  padding: 20px;
+  margin: 20px 0;
+}
+
+.details-row {
+  display: flex;
+  margin-bottom: 12px;
+  border-bottom: 1px solid #eee;
+  padding-bottom: 12px;
+}
+
+.details-row:last-child {
+  border-bottom: none;
+  padding-bottom: 0;
+}
+
+.detail-label {
+  width: 120px;
+  font-weight: 600;
+  color: #555;
+}
+
+.detail-value {
+  flex: 1;
+}
+
+/* Status badges */
+.status-success {
+  background-color: #d4edda;
+  color: #155724;
+}
+
+.status-pending {
+  background-color: #fff3cd;
+  color: #856404;
+}
+
+.status-progress {
+  background-color: #cce5ff;
+  color: #004085;
+}
+
+.status-danger {
+  background-color: #f8d7da;
+  color: #721c24;
+}
+
+.status-other {
+  background-color: #f8f9fa;
+  color: #6c757d;
+}
+
+/* Improved Modal Styling */
+.modal-overlay {
+  display: none;
+  /* Hidden by default; shown via JS */
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100vw;
+  height: 100vh;
+  background: rgba(0, 0, 0, 0.5);
+  /* Semi-transparent background */
+  justify-content: center;
+  align-items: flex-start;
+  /* Changed from center to flex-start to allow scrolling */
+  z-index: 9999;
+  /* Make sure it's above other elements */
+  overflow-y: auto;
+  /* In case the modal content is taller than the screen */
+  padding: 20px 0;
+  /* Add padding to ensure modal doesn't stick to the top */
+}
+
+/* Modal Content - Improved with scrolling */
+.modal-content {
+  background-color: #fff;
+  width: 90%;
+  max-width: 600px;
+  margin: 2rem auto;
+  border-radius: 8px;
+  position: relative;
+  padding: 2rem;
+  box-shadow: 0 5px 15px rgba(0, 0, 0, 0.3);
+  animation: modalFadeIn 0.4s;
+  text-align: left;
+  /* Ensure text is left-aligned */
+  max-height: 85vh;
+  /* Limit height to 85% of viewport height */
+  overflow-y: auto;
+  /* Enable scrolling inside the modal */
+}
+
+/* Add smooth scrolling behavior for all elements */
+html {
+  scroll-behavior: smooth;
+}
+
+/* Certificate-specific modal adjustments */
+#certificate-modal .modal-content {
+  max-height: 85vh;
+  overflow-y: auto;
+  padding-right: 1.5rem;
+  /* Add right padding to accommodate scrollbar */
+}
+
+/* Style the scrollbar for better visual appearance */
+#certificate-modal .modal-content::-webkit-scrollbar {
+  width: 8px;
+}
+
+#certificate-modal .modal-content::-webkit-scrollbar-track {
+  background: #f1f1f1;
+  border-radius: 4px;
+}
+
+#certificate-modal .modal-content::-webkit-scrollbar-thumb {
+  background: #888;
+  border-radius: 4px;
+}
+
+#certificate-modal .modal-content::-webkit-scrollbar-thumb:hover {
+  background: #555;
+}
+
+/* Add section navigation within certificate form */
+.form-section-nav {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-bottom: 1rem;
+  padding-bottom: 0.5rem;
+  border-bottom: 1px solid #eee;
+}
+
+.section-nav-item {
+  padding: 5px 10px;
+  background-color: #f0f0f0;
+  border-radius: 4px;
+  font-size: 0.85rem;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.section-nav-item:hover,
+.section-nav-item.active {
+  background-color: var(--primary);
+  color: white;
+}
+
+/* Additional fix for when form sections are too long */
+.certificate-specific-section {
+  margin-top: 1.5rem;
+  padding-top: 0.5rem;
+}
+
+/* Ensure buttons remain visible */
+.form-actions {
+  position: sticky;
+  bottom: 0;
+  background: white;
+  padding: 1rem 0;
+  margin-top: 1.5rem;
+  border-top: 1px solid #f0f0f0;
+}
+
+/* Improved Modal Styling */
+.modal-overlay {
+  display: none;
+  /* Hidden by default; shown via JS */
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100vw;
+  height: 100vh;
+  background: rgba(0, 0, 0, 0.5);
+  /* Semi-transparent background */
+  justify-content: center;
+  align-items: center;
+  z-index: 9999;
+  /* Make sure it's above other elements */
+  overflow-y: auto;
+  /* In case the modal content is taller than the screen */
+}
+
+/* Modal Content - Improved */
+.modal-content {
+  background-color: #fff;
+  width: 90%;
+  max-width: 600px;
+  margin: 2rem auto;
+  border-radius: 8px;
+  position: relative;
+  padding: 2rem;
+  box-shadow: 0 5px 15px rgba(0, 0, 0, 0.3);
+  animation: modalFadeIn 0.4s;
+  text-align: left;
+  /* Ensure text is left-aligned */
+}
+
+/* Fix form elements within modal */
+.modal-content .form-group {
+  margin-bottom: 1.2rem;
+  display: flex;
+  flex-direction: column;
+}
+
+.modal-content label {
+  margin-bottom: 0.5rem;
+  font-weight: 500;
+  display: block;
+  /* Ensure label is on its own line */
+}
+
+.modal-content .form-input,
+.modal-content .form-textarea,
+.modal-content .form-select {
+  width: 100%;
+  padding: 0.75rem;
+  border: 1px solid #ddd;
+  border-radius: 4px;
+  font-size: 1rem;
+}
+
+.modal-content .form-textarea {
+  min-height: 120px;
+  resize: vertical;
+}
+
+/* Form action buttons */
+.modal-content .form-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 10px;
+  margin-top: 1.5rem;
+}
+
+.modal-content .btn {
+  padding: 0.75rem 1.5rem;
+  border-radius: 4px;
+  font-weight: 500;
+  cursor: pointer;
+  font-size: 1rem;
+  border: none;
+}
+
+.modal-content .btn-primary {
+  background-color: var(--primary);
+  color: white;
+}
+
+.modal-content .btn-outline {
+  background-color: transparent;
+  border: 1px solid var(--primary);
+  color: var(--primary);
+}
+
+.modal-content .btn-primary:hover {
+  background-color: var(--dark);
+}
+
+.modal-content .btn-outline:hover {
+  background-color: #f0f0f0;
+}
+
+/* Fix modal close button */
+.modal-close {
+  position: absolute;
+  top: 1rem;
+  right: 1rem;
+  background: none;
+  border: none;
+  font-size: 1.5rem;
+  cursor: pointer;
+  color: #777;
+}
+
+.modal-close:hover {
+  color: #333;
+}
+
+.notification {
+  position: fixed;
+  top: 20px;
+  right: 20px;
+  padding: 10px 20px;
+  border-radius: 8px;
+  z-index: 1000;
+  display: none;
+}
+
+.notification.success {
+  background-color: #4CAF50;
+  color: white;
+}
+
+.notification.warning {
+  background-color: #FF5733;
+  color: white;
+}
+
+/* Certificate Details Modal */
+#certificate-details-modal {
+  display: none;
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background-color: rgba(0, 0, 0, 0.5);
+  z-index: 1000;
+  justify-content: center;
+  align-items: center;
+}
+
+.details-row {
+  display: flex;
+  margin-bottom: 12px;
+  border-bottom: 1px solid #eee;
+  padding-bottom: 8px;
+}
+
+.detail-label {
+  flex-basis: 30%;
+  font-weight: bold;
+  color: #555;
+}
+
+.detail-value {
+  flex-basis: 70%;
+}
+
+.service-details {
+  background-color: #f9f9f9;
+  border: 1px solid #ddd;
+  border-radius: 4px;
+  padding: 16px;
+  margin: 10px 0;
+}
+
+/* Make status badges more visible */
+.status-badge {
+  display: inline-block;
+  padding: 3px 8px;
+  border-radius: 4px;
+  font-size: 0.85em;
+  font-weight: bold;
+  text-align: center;
+  min-width: 80px;
+}

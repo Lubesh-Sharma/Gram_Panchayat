@@ -1,0 +1,2844 @@
+<!-- 
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Patwari Department Dashboard</title>
+  <style>
+    :root {
+      --primary-color: #355e3b;
+      --secondary-color: #70a37f;
+      --accent-color: #d4e6d9;
+      --text-color: #333;
+      --light-color: #f8f9fa;
+      --dark-color: #343a40;
+      --danger-color: #dc3545;
+      --warning-color: #ffc107;
+      --success-color: #28a745;
+      --border-radius: 8px;
+      --box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+    }
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+    }
+    body {
+      background-color: #f5f5f5;
+      color: var(--text-color);
+      display: flex;
+      min-height: 100vh;
+    }
+    /* Sidebar Styles */
+    .sidebar {
+      width: 280px;
+      background-color: var(--primary-color);
+      color: white;
+      padding: 20px 0;
+      height: 100vh;
+      position: fixed;
+      transition: all 0.3s;
+      overflow-y: auto;
+    }
+    .sidebar-header {
+      padding: 15px 20px;
+      border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+    }
+    .sidebar-header h3 {
+      font-size: 1.2rem;
+      font-weight: 600;
+    }
+    .sidebar-subheader {
+      color: rgba(255, 255, 255, 0.7);
+      font-size: 0.85rem;
+      text-transform: uppercase;
+      letter-spacing: 1px;
+      font-weight: 600;
+      padding: 20px 20px 10px;
+    }
+    .menu-item {
+      padding: 12px 20px;
+      display: flex;
+      align-items: center;
+      cursor: pointer;
+      transition: all 0.2s;
+      font-weight: 500;
+    }
+    .menu-item:hover {
+      background-color: rgba(255, 255, 255, 0.1);
+    }
+    .menu-item.active {
+      background-color: var(--secondary-color);
+      border-left: 4px solid white;
+    }
+    .menu-item i {
+      margin-right: 10px;
+      font-size: 1.2em;
+    }
+    /* Main Content Styles */
+    .main-content {
+      flex: 1;
+      margin-left: 280px;
+      padding: 20px;
+      transition: all 0.3s;
+    }
+    .page-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 20px;
+      padding-bottom: 15px;
+      border-bottom: 1px solid #ddd;
+    }
+    .user-info {
+      display: flex;
+      align-items: center;
+    }
+    .user-avatar {
+      width: 40px;
+      height: 40px;
+      border-radius: 50%;
+      background-color: var(--primary-color);
+      color: white;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-weight: bold;
+      margin-right: 10px;
+    }
+    .dashboard-stats {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+      gap: 20px;
+      margin-bottom: 30px;
+    }
+    .stat-card {
+      background-color: white;
+      border-radius: var(--border-radius);
+      padding: 20px;
+      box-shadow: var(--box-shadow);
+      text-align: center;
+    }
+    .stat-value {
+      font-size: 2rem;
+      font-weight: bold;
+      color: var(--primary-color);
+      margin: 10px 0;
+    }
+    .stat-label {
+      font-size: 1rem;
+      color: #777;
+    }
+    .card {
+      background-color: white;
+      border-radius: var(--border-radius);
+      box-shadow: var(--box-shadow);
+      margin-bottom: 20px;
+      overflow: hidden;
+    }
+    .card-header {
+      padding: 15px 20px;
+      background-color: var(--light-color);
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      border-bottom: 1px solid #ddd;
+    }
+    .card-title {
+      font-weight: 600;
+      font-size: 1.1rem;
+      margin: 0;
+    }
+    .card-body {
+      padding: 20px;
+    }
+    .btn {
+      padding: 8px 16px;
+      border-radius: 4px;
+      cursor: pointer;
+      font-weight: 500;
+      border: none;
+      transition: all 0.2s;
+    }
+    .btn-primary {
+      background-color: var(--primary-color);
+      color: white;
+    }
+    .btn-primary:hover {
+      background-color: #2a4b30;
+    }
+    .btn-danger {
+      background-color: var(--danger-color);
+      color: white;
+    }
+    .btn-danger:hover {
+      background-color: #bd2130;
+    }
+    .btn-warning {
+      background-color: var(--warning-color);
+      color: var(--dark-color);
+    }
+    .btn-warning:hover {
+      background-color: #e0a800;
+    }
+    .table-responsive {
+      overflow-x: auto;
+    }
+    table {
+      width: 100%;
+      border-collapse: collapse;
+    }
+    th, td {
+      padding: 12px 15px;
+      text-align: left;
+      border-bottom: 1px solid #ddd;
+    }
+    th {
+      background-color: var(--accent-color);
+      font-weight: 600;
+    }
+    tr:hover {
+      background-color: rgba(0, 0, 0, 0.02);
+    }
+    .table-actions {
+      display: flex;
+      gap: 5px;
+    }
+    .action-btn {
+      padding: 5px 10px;
+      border-radius: 4px;
+      cursor: pointer;
+      background-color: transparent;
+      border: 1px solid #ccc;
+      font-size: 0.85rem;
+      transition: all 0.2s;
+    }
+    .edit-btn:hover {
+      background-color: var(--warning-color);
+      border-color: var(--warning-color);
+    }
+    .delete-btn:hover {
+      background-color: var(--danger-color);
+      border-color: var(--danger-color);
+      color: white;
+    }
+    /* Modal Styles */
+    .modal-backdrop {
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      background-color: rgba(0, 0, 0, 0.5);
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      z-index: 1000;
+      display: none;
+    }
+    .modal {
+      background-color: white;
+      border-radius: var(--border-radius);
+      width: 100%;
+      max-width: 600px;
+      box-shadow: 0 5px 15px rgba(0, 0, 0, 0.3);
+    }
+    .modal-header {
+      padding: 15px 20px;
+      border-bottom: 1px solid #ddd;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+    .modal-title {
+      font-weight: 600;
+      margin: 0;
+    }
+    .modal-close {
+      background: none;
+      border: none;
+      font-size: 1.5rem;
+      cursor: pointer;
+    }
+    .modal-body {
+      padding: 20px;
+    }
+    .modal-footer {
+      padding: 15px 20px;
+      border-top: 1px solid #ddd;
+      display: flex;
+      justify-content: flex-end;
+      gap: 10px;
+    }
+    .form-group {
+      margin-bottom: 15px;
+    }
+    .form-label {
+      display: block;
+      margin-bottom: 5px;
+      font-weight: 500;
+    }
+    .form-control {
+      width: 100%;
+      padding: 10px;
+      border: 1px solid #ddd;
+      border-radius: 4px;
+      font-size: 1rem;
+    }
+    .form-control:focus {
+      outline: none;
+      border-color: var(--primary-color);
+    }
+    .section {
+      display: none;
+    }
+    .section.active {
+      display: block;
+    }
+    .tabs {
+      display: flex;
+      border-bottom: 1px solid #ddd;
+      margin-bottom: 20px;
+    }
+    .tab {
+      padding: 10px 15px;
+      cursor: pointer;
+      font-weight: 500;
+      color: #777;
+      border-bottom: 3px solid transparent;
+    }
+    .tab.active {
+      color: var(--primary-color);
+      border-bottom-color: var(--primary-color);
+    }
+    .chart-container {
+      height: 300px;
+      margin-top: 20px;
+    }
+    @media (max-width: 768px) {
+      .sidebar {
+        width: 70px;
+        padding: 15px 0;
+      }
+      .sidebar-header h3, .menu-text, .sidebar-subheader {
+        display: none;
+      }
+      .menu-item {
+        padding: 15px;
+        justify-content: center;
+      }
+      .menu-item i {
+        margin-right: 0;
+      }
+      .main-content {
+        margin-left: 70px;
+      }
+    }
+  </style>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" />
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/3.9.1/chart.min.js"></script>
+</head>
+<body>
+  <aside class="sidebar">
+    <div class="sidebar-header">
+      <h3>Land Management Dashboard</h3>
+    </div>
+    <div class="sidebar-subheader">Land Management</div>
+    <div class="menu-item active" data-section="dashboard">
+      <i class="fas fa-chart-line"></i>
+      <span class="menu-text">Dashboard</span>
+    </div>
+    <div class="menu-item" data-section="land-records">
+      <i class="fas fa-map"></i>
+      <span class="menu-text">Land Records</span>
+    </div>
+    <div class="menu-item" data-section="citizen-lands">
+      <i class="fas fa-users"></i>
+      <span class="menu-text">Citizen Lands</span>
+    </div>
+    <div class="sidebar-subheader">Environmental Management</div>
+    <div class="menu-item" data-section="environmental-initiatives">
+      <i class="fas fa-seedling"></i>
+      <span class="menu-text">Environmental Initiatives</span>
+    </div>
+    <div class="menu-item" data-section="irrigation-systems">
+      <i class="fas fa-water"></i>
+      <span class="menu-text">Irrigation Systems</span>
+    </div>
+    <div class="sidebar-subheader">Administration</div>
+    <div class="menu-item" data-section="reports">
+      <i class="fas fa-file-alt"></i>
+      <span class="menu-text">Reports</span>
+    </div>
+    <div class="menu-item" data-section="settings">
+      <i class="fas fa-cog"></i>
+      <span class="menu-text">Settings</span>
+    </div>
+  </aside>
+
+  <!-- Main Content 
+  <main class="main-content">
+    <div class="page-header">
+      <h1>Patwari Department Dashboard</h1>
+      <div class="user-info">
+        <div class="user-avatar">P</div>
+        <div>
+          <div>Patwari Employee</div>
+          <small>ID: PAT001</small>
+        </div>
+      </div>
+    </div>
+
+    <!-- Dashboard Section 
+    <section id="dashboard" class="section active">
+      <div class="dashboard-stats">
+        <div class="stat-card">
+          <div class="stat-label">Agricultural Land</div>
+          <div class="stat-value" id="agricultural-area">0 acres</div>
+          <div id="agricultural-count">0 land records</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-label">Residential Land</div>
+          <div class="stat-value" id="residential-area">0 acres</div>
+          <div id="residential-count">0 land records</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-label">Commercial Land</div>
+          <div class="stat-value" id="commercial-area">0 acres</div>
+          <div id="commercial-count">0 land records</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-label">Environmental Area</div>
+          <div class="stat-value" id="environmental-area">0 acres</div>
+          <div id="environmental-count">0 initiatives</div>
+        </div>
+      </div>
+
+      <div class="card">
+        <div class="card-header">
+          <h2 class="card-title">Land Distribution</h2>
+        </div>
+        <div class="card-body">
+          <div class="chart-container">
+            <canvas id="landDistributionChart"></canvas>
+          </div>
+        </div>
+      </div>
+
+      <div class="card">
+        <div class="card-header">
+          <h2 class="card-title">Recent Updates</h2>
+        </div>
+        <div class="card-body">
+          <div class="tabs">
+            <div class="tab active" data-tab="recent-lands">Land Records</div>
+            <div class="tab" data-tab="recent-initiatives">Environmental Initiatives</div>
+            <div class="tab" data-tab="recent-irrigation">Irrigation Systems</div>
+          </div>
+
+          <div id="recent-lands" class="tab-content active">
+            <table>
+              <thead>
+                <tr>
+                  <th>Land ID</th>
+                  <th>Citizen</th>
+                  <th>Type</th>
+                  <th>Area</th>
+                  <th>Crop Type</th>
+                </tr>
+              </thead>
+              <tbody id="recent-lands-body">
+                <!-- Dynamically filled 
+              </tbody>
+            </table>
+          </div>
+
+          <div id="recent-initiatives" class="tab-content">
+            <table>
+              <thead>
+                <tr>
+                  <th>Initiative</th>
+                  <th>Type</th>
+                  <th>Start Date</th>
+                  <th>Area</th>
+                  <th>Status</th>
+                </tr>
+              </thead>
+              <tbody id="recent-initiatives-body">
+                <!-- Dynamically filled -->
+              </tbody>
+            </table>
+          </div>
+
+          <div id="recent-irrigation" class="tab-content">
+            <table>
+              <thead>
+                <tr>
+                  <th>Name</th>
+                  <th>Location</th>
+                  <th>Coverage</th>
+                  <th>Water Source</th>
+                  <th>Status</th>
+                </tr>
+              </thead>
+              <tbody id="recent-irrigation-body">
+                <!-- Dynamically filled -->
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- Citizen Lands Section -->
+    <section id="citizen-lands" class="section">
+      <div class="card">
+        <div class="card-header">
+          <h2 class="card-title">Citizen Land Records</h2>
+          <button class="btn btn-primary" id="add-land-btn">
+            <i class="fas fa-plus"></i> Add Land Record
+          </button>
+        </div>
+        <div class="card-body">
+          <div class="table-responsive">
+            <table id="land-records-table">
+              <thead>
+                <tr>
+                  <th>Land ID</th>
+                  <th>Citizen ID</th>
+                  <th>Area (acres)</th>
+                  <th>Type</th>
+                  <th>Crop Type</th>
+                  <th>Actions</th>
+                </tr>
+              </thead>
+              <tbody>
+                <!-- Dynamically filled -->
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- Environmental Initiatives Section -->
+    <section id="environmental-initiatives" class="section">
+      <div class="card">
+        <div class="card-header">
+          <h2 class="card-title">Environmental Initiatives</h2>
+          <button class="btn btn-primary" id="add-initiative-btn">
+            <i class="fas fa-plus"></i> Add Initiative
+          </button>
+        </div>
+        <div class="card-body">
+          <div class="table-responsive">
+            <table id="initiatives-table">
+              <thead>
+                <tr>
+                  <th>ID</th>
+                  <th>Name</th>
+                  <th>Start Date</th>
+                  <th>Area Covered</th>
+                  <th>Type</th>
+                  <th>Status</th>
+                  <th>Actions</th>
+                </tr>
+              </thead>
+              <tbody>
+                <!-- Dynamically filled -->
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- Irrigation Systems Section -->
+    <section id="irrigation-systems" class="section">
+      <div class="card">
+        <div class="card-header">
+          <h2 class="card-title">Irrigation Systems</h2>
+          <button class="btn btn-primary" id="add-irrigation-btn">
+            <i class="fas fa-plus"></i> Add Irrigation System
+          </button>
+        </div>
+        <div class="card-body">
+          <div class="table-responsive">
+            <table id="irrigation-table">
+              <thead>
+                <tr>
+                  <th>ID</th>
+                  <th>Name</th>
+                  <th>Location</th>
+                  <th>Coverage</th>
+                  <th>Water Source</th>
+                  <th>Status</th>
+                  <th>Actions</th>
+                </tr>
+              </thead>
+              <tbody>
+                <!-- Dynamically filled -->
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- Land Records Overview Section -->
+    <section id="land-records" class="section">
+      <div class="card">
+        <div class="card-header">
+          <h2 class="card-title">Land Records Overview</h2>
+        </div>
+        <div class="card-body">
+          <div class="chart-container">
+            <canvas id="landRecordsChart"></canvas>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- Reports Section -->
+    <section id="reports" class="section">
+      <div class="card">
+        <div class="card-header">
+          <h2 class="card-title">Reports</h2>
+        </div>
+        <div class="card-body">
+          <p>Generate and download reports from this section.</p>
+          <div style="margin-top: 20px;">
+            <button class="btn btn-primary">Land Usage Report</button>
+            <button class="btn btn-primary" style="margin-left: 10px;">Environmental Report</button>
+            <button class="btn btn-primary" style="margin-left: 10px;">Irrigation Coverage Report</button>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- Settings Section -->
+    <section id="settings" class="section">
+      <div class="card">
+        <div class="card-header">
+          <h2 class="card-title">System Settings</h2>
+        </div>
+        <div class="card-body">
+          <p>Manage system settings and preferences.</p>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <!-- Modals -->
+  <!-- Add/Edit Land Record Modal 
+  <div class="modal-backdrop" id="land-modal-backdrop">
+    <div class="modal" id="land-modal">
+      <div class="modal-header">
+        <h3 class="modal-title" id="land-modal-title">Add Land Record</h3>
+        <button class="modal-close" id="land-modal-close">&times;</button>
+      </div>
+      <div class="modal-body">
+        <form id="land-form">
+          <input type="hidden" id="land-id">
+          <div class="form-group">
+            <label class="form-label" for="citizen-id">Citizen ID</label>
+            <input type="number" class="form-control" id="citizen-id" required>
+          </div>
+          <div class="form-group">
+            <label class="form-label" for="land-area">Area (acres)</label>
+            <input type="number" step="0.1" class="form-control" id="land-area" required>
+          </div>
+          <div class="form-group">
+            <label class="form-label" for="land-type">Type</label>
+            <select class="form-control" id="land-type" required>
+              <option value="Agricultural">Agricultural</option>
+              <option value="Residential">Residential</option>
+              <option value="Commercial">Commercial</option>
+            </select>
+          </div>
+          <div class="form-group">
+            <label class="form-label" for="crop-type">Crop Type</label>
+            <input type="text" class="form-control" id="crop-type" placeholder="For agricultural land">
+          </div>
+        </form>
+      </div>
+      <div class="modal-footer">
+        <button class="btn btn-primary" id="land-save-btn">Save</button>
+        <button class="btn btn-danger" id="land-cancel-btn">Cancel</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Add/Edit Environmental Initiative Modal 
+  <div class="modal-backdrop" id="initiative-modal-backdrop">
+    <div class="modal" id="initiative-modal">
+      <div class="modal-header">
+        <h3 class="modal-title" id="initiative-modal-title">Add Environmental Initiative</h3>
+        <button class="modal-close" id="initiative-modal-close">&times;</button>
+      </div>
+      <div class="modal-body">
+        <form id="initiative-form">
+          <input type="hidden" id="initiative-id">
+          <div class="form-group">
+            <label class="form-label" for="initiative-name">Name</label>
+            <input type="text" class="form-control" id="initiative-name" required>
+          </div>
+          <div class="form-group">
+            <label class="form-label" for="initiative-date">Start Date</label>
+            <input type="date" class="form-control" id="initiative-date" required>
+          </div>
+          <div class="form-group">
+            <label class="form-label" for="initiative-area">Area Covered (acres)</label>
+            <input type="number" step="0.1" class="form-control" id="initiative-area" required>
+          </div>
+          <div class="form-group">
+            <label class="form-label" for="initiative-type">Type</label>
+            <input type="text" class="form-control" id="initiative-type" placeholder="e.g., Renewable Energy" required>
+          </div>
+          <div class="form-group">
+            <label class="form-label" for="initiative-status">Status</label>
+            <select class="form-control" id="initiative-status" required>
+              <option value="Ongoing">Ongoing</option>
+              <option value="Planning">Planning</option>
+              <option value="Pending">Pending</option>
+            </select>
+          </div>
+          <div class="form-group">
+            <label class="form-label" for="initiative-description">Description</label>
+            <textarea class="form-control" id="initiative-description" rows="3"></textarea>
+          </div>
+        </form>
+      </div>
+      <div class="modal-footer">
+        <button class="btn btn-primary" id="initiative-save-btn">Save</button>
+        <button class="btn btn-danger" id="initiative-cancel-btn">Cancel</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Add/Edit Irrigation System Modal 
+  <div class="modal-backdrop" id="irrigation-modal-backdrop">
+    <div class="modal" id="irrigation-modal">
+      <div class="modal-header">
+        <h3 class="modal-title" id="irrigation-modal-title">Add Irrigation System</h3>
+        <button class="modal-close" id="irrigation-modal-close">&times;</button>
+      </div>
+      <div class="modal-body">
+        <form id="irrigation-form">
+          <input type="hidden" id="irrigation-id">
+          <div class="form-group">
+            <label class="form-label" for="irrigation-name">Name</label>
+            <input type="text" class="form-control" id="irrigation-name" required>
+          </div>
+          <div class="form-group">
+            <label class="form-label" for="irrigation-location">Location</label>
+            <input type="text" class="form-control" id="irrigation-location" required>
+          </div>
+          <div class="form-group">
+            <label class="form-label" for="irrigation-coverage">Coverage (acres)</label>
+            <input type="number" step="0.1" class="form-control" id="irrigation-coverage" required>
+          </div>
+          <div class="form-group">
+            <label class="form-label" for="irrigation-water">Water Source</label>
+            <input type="text" class="form-control" id="irrigation-water" required>
+          </div>
+          <div class="form-group">
+            <label class="form-label" for="irrigation-status">Status</label>
+            <select class="form-control" id="irrigation-status" required>
+              <option value="Operational">Operational</option>
+              <option value="In Progress">In Progress</option>
+              <option value="Planning">Planning</option>
+            </select>
+          </div>
+          <div class="form-group">
+            <label class="form-label" for="irrigation-description">Description</label>
+            <textarea class="form-control" id="irrigation-description" rows="3"></textarea>
+          </div>
+        </form>
+      </div>
+      <div class="modal-footer">
+        <button class="btn btn-primary" id="irrigation-save-btn">Save</button>
+        <button class="btn btn-danger" id="irrigation-cancel-btn">Cancel</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- JavaScript Section 
+  <script>
+    document.addEventListener("DOMContentLoaded", () => {
+      // Simulated database arrays
+      let citizenLands = [
+        { land_id: 101, citizen_id: 1, area: 4.5, type: "Agricultural", crop_type: "Wheat, Rice" },
+        { land_id: 102, citizen_id: 2, area: 2.8, type: "Residential", crop_type: "Not Specified" },
+        { land_id: 103, citizen_id: 3, area: 3.7, type: "Agricultural", crop_type: "Cotton, Maize" },
+      ];
+      let environmentalInitiatives = [
+        { initiative_id: 1, panchayat_id: 1, name: "Solar Panel Installation", start_date: "2025-03-10", area_covered: 0.5, type: "Renewable Energy", status: "Ongoing", description: "Installation of solar panels on the community center roof." },
+        { initiative_id: 2, panchayat_id: 1, name: "Waste Recycling Initiative", start_date: "2025-06-01", area_covered: 0.0, type: "Waste Management", status: "Planning", description: "Setting up recycling units to process municipal waste." },
+      ];
+      let irrigationSystems = [
+        { system_id: 1, panchayat_id: 1, name: "Drip Irrigation System", location: "North Field", coverage: 100.0, water_source: "Borewell", status: "Operational", description: "Efficient drip irrigation system covering major farmland areas.", added_date: "2025-04-01" },
+        { system_id: 2, panchayat_id: 1, name: "Canal Renovation", location: "East Zone", coverage: 250.0, water_source: "River", status: "In Progress", description: "Renovation of the existing canal to improve water distribution.", added_date: "2025-04-05" },
+      ];
+      
+      // Utility functions
+      function updateStats() {
+        const agri = citizenLands.filter(l => l.type === "Agricultural");
+        const res = citizenLands.filter(l => l.type === "Residential");
+        const comm = citizenLands.filter(l => l.type === "Commercial");
+        const totalAgri = agri.reduce((sum, l) => sum + l.area, 0);
+        const totalRes = res.reduce((sum, l) => sum + l.area, 0);
+        const totalComm = comm.reduce((sum, l) => sum + l.area, 0);
+        document.getElementById("agricultural-area").textContent = totalAgri + " acres";
+        document.getElementById("residential-area").textContent = totalRes + " acres";
+        document.getElementById("commercial-area").textContent = totalComm + " acres";
+        document.getElementById("agricultural-count").textContent = agri.length + " land record" + (agri.length !== 1 ? "s" : "");
+        document.getElementById("residential-count").textContent = res.length + " land record" + (res.length !== 1 ? "s" : "");
+        document.getElementById("commercial-count").textContent = comm.length + " land record" + (comm.length !== 1 ? "s" : "");
+        
+        const totalEnvArea = environmentalInitiatives.reduce((sum, init) => sum + init.area_covered, 0);
+        document.getElementById("environmental-area").textContent = totalEnvArea + " acres";
+        document.getElementById("environmental-count").textContent = environmentalInitiatives.length + " initiative" + (environmentalInitiatives.length !== 1 ? "s" : "");
+      }
+      
+      function renderCitizenLands() {
+        const tbody = document.querySelector("#land-records-table tbody");
+        tbody.innerHTML = "";
+        citizenLands.forEach(record => {
+          const tr = document.createElement("tr");
+          tr.innerHTML = `
+            <td>${record.land_id}</td>
+            <td>${record.citizen_id}</td>
+            <td>${record.area}</td>
+            <td>${record.type}</td>
+            <td>${record.crop_type}</td>
+            <td class="table-actions">
+              <button class="action-btn edit-btn" data-id="${record.land_id}">Edit</button>
+              <button class="action-btn delete-btn" data-id="${record.land_id}">Delete</button>
+            </td>
+          `;
+          tbody.appendChild(tr);
+        });
+      }
+      
+      function renderInitiatives() {
+        const tbody = document.querySelector("#initiatives-table tbody");
+        tbody.innerHTML = "";
+        environmentalInitiatives.forEach(init => {
+          const tr = document.createElement("tr");
+          tr.innerHTML = `
+            <td>${init.initiative_id}</td>
+            <td>${init.name}</td>
+            <td>${init.start_date}</td>
+            <td>${init.area_covered}</td>
+            <td>${init.type}</td>
+            <td>${init.status}</td>
+            <td class="table-actions">
+              <button class="action-btn edit-btn" data-id="${init.initiative_id}">Edit</button>
+              <button class="action-btn delete-btn" data-id="${init.initiative_id}">Delete</button>
+            </td>
+          `;
+          tbody.appendChild(tr);
+        });
+      }
+      
+      function renderIrrigation() {
+        const tbody = document.querySelector("#irrigation-table tbody");
+        tbody.innerHTML = "";
+        irrigationSystems.forEach(sys => {
+          const tr = document.createElement("tr");
+          tr.innerHTML = `
+            <td>${sys.system_id}</td>
+            <td>${sys.name}</td>
+            <td>${sys.location}</td>
+            <td>${sys.coverage}</td>
+            <td>${sys.water_source}</td>
+            <td>${sys.status}</td>
+            <td class="table-actions">
+              <button class="action-btn edit-btn" data-id="${sys.system_id}">Edit</button>
+              <button class="action-btn delete-btn" data-id="${sys.system_id}">Delete</button>
+            </td>
+          `;
+          tbody.appendChild(tr);
+        });
+      }
+      
+      function renderRecentUpdates() {
+        // Fill recent lands
+        const landsBody = document.getElementById("recent-lands-body");
+        landsBody.innerHTML = "";
+        citizenLands.forEach(record => {
+          const tr = document.createElement("tr");
+          tr.innerHTML = `
+            <td>${record.land_id}</td>
+            <td>Citizen #${record.citizen_id}</td>
+            <td>${record.type}</td>
+            <td>${record.area} acres</td>
+            <td>${record.crop_type}</td>
+          `;
+          landsBody.appendChild(tr);
+        });
+        // Fill recent initiatives
+        const initBody = document.getElementById("recent-initiatives-body");
+        initBody.innerHTML = "";
+        environmentalInitiatives.forEach(init => {
+          const tr = document.createElement("tr");
+          tr.innerHTML = `
+            <td>${init.name}</td>
+            <td>${init.type}</td>
+            <td>${init.start_date}</td>
+            <td>${init.area_covered} acres</td>
+            <td>${init.status}</td>
+          `;
+          initBody.appendChild(tr);
+        });
+        // Fill recent irrigation systems
+        const irrBody = document.getElementById("recent-irrigation-body");
+        irrBody.innerHTML = "";
+        irrigationSystems.forEach(sys => {
+          const tr = document.createElement("tr");
+          tr.innerHTML = `
+            <td>${sys.name}</td>
+            <td>${sys.location}</td>
+            <td>${sys.coverage} acres</td>
+            <td>${sys.water_source}</td>
+            <td>${sys.status}</td>
+          `;
+          irrBody.appendChild(tr);
+        });
+      }
+      
+      function updateCharts() {
+        // Land Distribution Chart: using the totals from citizenLands
+        const ctx = document.getElementById("landDistributionChart").getContext("2d");
+        const data = {
+          labels: ["Agricultural", "Residential", "Commercial"],
+          datasets: [{
+            label: "Area (acres)",
+            data: [
+              citizenLands.filter(l => l.type === "Agricultural").reduce((sum, l) => sum + l.area, 0),
+              citizenLands.filter(l => l.type === "Residential").reduce((sum, l) => sum + l.area, 0),
+              citizenLands.filter(l => l.type === "Commercial").reduce((sum, l) => sum + l.area, 0)
+            ],
+            backgroundColor: ["#70a37f", "#ffc107", "#dc3545"]
+          }]
+        };
+        new Chart(ctx, { type: "bar", data });
+      }
+      
+      function refreshAll() {
+        updateStats();
+        renderCitizenLands();
+        renderInitiatives();
+        renderIrrigation();
+        renderRecentUpdates();
+        updateCharts();
+      }
+      
+      refreshAll();
+      
+      // Sidebar navigation
+      document.querySelectorAll(".menu-item").forEach(item => {
+        item.addEventListener("click", () => {
+          document.querySelectorAll(".menu-item").forEach(i => i.classList.remove("active"));
+          item.classList.add("active");
+          const section = item.getAttribute("data-section");
+          document.querySelectorAll("main .section").forEach(sec => {
+            sec.classList.remove("active");
+          });
+          document.getElementById(section).classList.add("active");
+        });
+      });
+      
+      // Tabs switching
+      document.querySelectorAll(".tab").forEach(tab => {
+        tab.addEventListener("click", () => {
+          document.querySelectorAll(".tab").forEach(t => t.classList.remove("active"));
+          tab.classList.add("active");
+          const tabId = tab.getAttribute("data-tab");
+          document.querySelectorAll(".tab-content").forEach(tc => {
+            tc.classList.remove("active");
+          });
+          document.getElementById(tabId).classList.add("active");
+        });
+      });
+      
+      // Modal functions for Land Records
+      const landModalBackdrop = document.getElementById("land-modal-backdrop");
+      function openLandModal(editData = null) {
+        if (editData) {
+          document.getElementById("land-modal-title").textContent = "Edit Land Record";
+          document.getElementById("land-id").value = editData.land_id;
+          document.getElementById("citizen-id").value = editData.citizen_id;
+          document.getElementById("land-area").value = editData.area;
+          document.getElementById("land-type").value = editData.type;
+          document.getElementById("crop-type").value = editData.crop_type;
+        } else {
+          document.getElementById("land-modal-title").textContent = "Add Land Record";
+          document.getElementById("land-form").reset();
+          document.getElementById("land-id").value = "";
+        }
+        landModalBackdrop.style.display = "flex";
+      }
+      document.getElementById("add-land-btn").addEventListener("click", () => openLandModal());
+      document.getElementById("land-modal-close").addEventListener("click", () => landModalBackdrop.style.display = "none");
+      document.getElementById("land-cancel-btn").addEventListener("click", () => landModalBackdrop.style.display = "none");
+      document.getElementById("land-save-btn").addEventListener("click", () => {
+        const id = document.getElementById("land-id").value;
+        const citizenId = parseInt(document.getElementById("citizen-id").value);
+        const area = parseFloat(document.getElementById("land-area").value);
+        const type = document.getElementById("land-type").value;
+        const crop = document.getElementById("crop-type").value || "Not Specified";
+        if (id) {
+          // edit
+          const index = citizenLands.findIndex(l => l.land_id == id);
+          citizenLands[index] = { land_id: parseInt(id), citizen_id: citizenId, area, type, crop_type: crop };
+        } else {
+          // add new (simulate auto-increment for land_id)
+          const newId = citizenLands.length ? Math.max(...citizenLands.map(l => l.land_id)) + 1 : 101;
+          citizenLands.push({ land_id: newId, citizen_id: citizenId, area, type, crop_type: crop });
+        }
+        landModalBackdrop.style.display = "none";
+        refreshAll();
+      });
+      // Edit and Delete for land records
+      document.querySelector("#land-records-table").addEventListener("click", e => {
+        if (e.target.classList.contains("edit-btn")) {
+          const id = e.target.getAttribute("data-id");
+          const record = citizenLands.find(l => l.land_id == id);
+          openLandModal(record);
+        }
+        if (e.target.classList.contains("delete-btn")) {
+          const id = e.target.getAttribute("data-id");
+          citizenLands = citizenLands.filter(l => l.land_id != id);
+          refreshAll();
+        }
+      });
+      
+      // Modal functions for Environmental Initiatives
+      const initiativeModalBackdrop = document.getElementById("initiative-modal-backdrop");
+      function openInitiativeModal(editData = null) {
+        if (editData) {
+          document.getElementById("initiative-modal-title").textContent = "Edit Initiative";
+          document.getElementById("initiative-id").value = editData.initiative_id;
+          document.getElementById("initiative-name").value = editData.name;
+          document.getElementById("initiative-date").value = editData.start_date;
+          document.getElementById("initiative-area").value = editData.area_covered;
+          document.getElementById("initiative-type").value = editData.type;
+          document.getElementById("initiative-status").value = editData.status;
+          document.getElementById("initiative-description").value = editData.description;
+        } else {
+          document.getElementById("initiative-modal-title").textContent = "Add Initiative";
+          document.getElementById("initiative-form").reset();
+          document.getElementById("initiative-id").value = "";
+        }
+        initiativeModalBackdrop.style.display = "flex";
+      }
+      document.getElementById("add-initiative-btn").addEventListener("click", () => openInitiativeModal());
+      document.getElementById("initiative-modal-close").addEventListener("click", () => initiativeModalBackdrop.style.display = "none");
+      document.getElementById("initiative-cancel-btn").addEventListener("click", () => initiativeModalBackdrop.style.display = "none");
+      document.getElementById("initiative-save-btn").addEventListener("click", () => {
+        const id = document.getElementById("initiative-id").value;
+        const name = document.getElementById("initiative-name").value;
+        const startDate = document.getElementById("initiative-date").value;
+        const area = parseFloat(document.getElementById("initiative-area").value);
+        const type = document.getElementById("initiative-type").value;
+        const status = document.getElementById("initiative-status").value;
+        const description = document.getElementById("initiative-description").value;
+        if (id) {
+          const index = environmentalInitiatives.findIndex(i => i.initiative_id == id);
+          environmentalInitiatives[index] = { initiative_id: parseInt(id), panchayat_id: 1, name, start_date: startDate, area_covered: area, type, status, description };
+        } else {
+          const newId = environmentalInitiatives.length ? Math.max(...environmentalInitiatives.map(i => i.initiative_id)) + 1 : 1;
+          environmentalInitiatives.push({ initiative_id: newId, panchayat_id: 1, name, start_date: startDate, area_covered: area, type, status, description });
+        }
+        initiativeModalBackdrop.style.display = "none";
+        refreshAll();
+      });
+      document.querySelector("#initiatives-table").addEventListener("click", e => {
+        if (e.target.classList.contains("edit-btn")) {
+          const id = e.target.getAttribute("data-id");
+          const record = environmentalInitiatives.find(i => i.initiative_id == id);
+          openInitiativeModal(record);
+        }
+        if (e.target.classList.contains("delete-btn")) {
+          const id = e.target.getAttribute("data-id");
+          environmentalInitiatives = environmentalInitiatives.filter(i => i.initiative_id != id);
+          refreshAll();
+        }
+      });
+      
+      // Modal functions for Irrigation Systems
+      const irrigationModalBackdrop = document.getElementById("irrigation-modal-backdrop");
+      function openIrrigationModal(editData = null) {
+        if (editData) {
+          document.getElementById("irrigation-modal-title").textContent = "Edit Irrigation System";
+          document.getElementById("irrigation-id").value = editData.system_id;
+          document.getElementById("irrigation-name").value = editData.name;
+          document.getElementById("irrigation-location").value = editData.location;
+          document.getElementById("irrigation-coverage").value = editData.coverage;
+          document.getElementById("irrigation-water").value = editData.water_source;
+          document.getElementById("irrigation-status").value = editData.status;
+          document.getElementById("irrigation-description").value = editData.description;
+        } else {
+          document.getElementById("irrigation-modal-title").textContent = "Add Irrigation System";
+          document.getElementById("irrigation-form").reset();
+          document.getElementById("irrigation-id").value = "";
+        }
+        irrigationModalBackdrop.style.display = "flex";
+      }
+      document.getElementById("add-irrigation-btn").addEventListener("click", () => openIrrigationModal());
+      document.getElementById("irrigation-modal-close").addEventListener("click", () => irrigationModalBackdrop.style.display = "none");
+      document.getElementById("irrigation-cancel-btn").addEventListener("click", () => irrigationModalBackdrop.style.display = "none");
+      document.getElementById("irrigation-save-btn").addEventListener("click", () => {
+        const id = document.getElementById("irrigation-id").value;
+        const name = document.getElementById("irrigation-name").value;
+        const location = document.getElementById("irrigation-location").value;
+        const coverage = parseFloat(document.getElementById("irrigation-coverage").value);
+        const water = document.getElementById("irrigation-water").value;
+        const status = document.getElementById("irrigation-status").value;
+        const description = document.getElementById("irrigation-description").value;
+        if (id) {
+          const index = irrigationSystems.findIndex(s => s.system_id == id);
+          irrigationSystems[index] = { system_id: parseInt(id), panchayat_id: 1, name, location, coverage, water_source: water, status, description, added_date: new Date().toISOString().split("T")[0] };
+        } else {
+          const newId = irrigationSystems.length ? Math.max(...irrigationSystems.map(s => s.system_id)) + 1 : 1;
+          irrigationSystems.push({ system_id: newId, panchayat_id: 1, name, location, coverage, water_source: water, status, description, added_date: new Date().toISOString().split("T")[0] });
+        }
+        irrigationModalBackdrop.style.display = "none";
+        refreshAll();
+      });
+      document.querySelector("#irrigation-table").addEventListener("click", e => {
+        if (e.target.classList.contains("edit-btn")) {
+          const id = e.target.getAttribute("data-id");
+          const record = irrigationSystems.find(s => s.system_id == id);
+          openIrrigationModal(record);
+        }
+        if (e.target.classList.contains("delete-btn")) {
+          const id = e.target.getAttribute("data-id");
+          irrigationSystems = irrigationSystems.filter(s => s.system_id != id);
+          refreshAll();
+        }
+      });
+    });
+  </script>
+</body>
+</html>
+-->
+
+
+
+
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Patwari Land Management Dashboard - GPMS</title>
+  <!-- Add Chart.js library -->
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <style>
+    /* Base Styles */
+    :root {
+      --primary-color: #004d40;
+      --primary-light: #e8f5e9;
+      --secondary-color: #e0e0e0;
+      --text-primary: #333;
+      --text-secondary: #666;
+      --danger-color: #d32f2f;
+      --danger-light: #ffebee;
+      --warning-color: #f57f17;
+      --warning-light: #fff8e1;
+      --success-color: #2e7d32;
+      --success-light: #e8f5e9;
+      --background-color: #f5f6fa;
+      --white: #ffffff;
+      --border-color: #eee;
+      --shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
+      --border-radius: 8px;
+      --transition: all 0.3s ease;
+    }
+
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+    }
+
+    body {
+      background-color: var(--background-color);
+      color: var(--text-primary);
+      line-height: 1.6;
+    }
+
+    .container {
+      width: 100%;
+      max-width: 1280px;
+      margin: 0 auto;
+      padding: 0 20px;
+    }
+
+    /* Typography */
+    h1,
+    h2,
+    h3,
+    h4,
+    h5,
+    h6 {
+      color: var(--text-primary);
+      margin-bottom: 0.5rem;
+    }
+
+    /* Header */
+    header {
+      background-color: var(--primary-color);
+      color: var(--white);
+      padding: 15px 0;
+      box-shadow: var(--shadow);
+    }
+
+    .header-container {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+
+    .logo {
+      display: flex;
+      align-items: center;
+      gap: 15px;
+    }
+
+    .logo img {
+      height: 60px;
+      width: 60px;
+      border-radius: 50%;
+      object-fit: cover;
+    }
+
+    .logo-text h1 {
+      font-size: 1.2rem;
+      margin-bottom: 5px;
+    }
+
+    .logo-text p {
+      font-size: 0.8rem;
+      opacity: 0.8;
+    }
+
+    /* Navigation */
+    nav ul {
+      display: flex;
+      list-style-type: none;
+      gap: 25px;
+    }
+
+    nav a {
+      color: var (--white);
+      text-decoration: none;
+      padding: 5px 10px;
+      border-radius: 4px;
+      transition: var(--transition);
+    }
+
+    nav a:hover {
+      background-color: rgba(255, 255, 255, 0.1);
+    }
+
+    .user-panel {
+      display: flex;
+      align-items: center;
+      gap: 15px;
+    }
+
+    .user-info {
+      text-align: right;
+      line-height: 1.4;
+    }
+
+    .name {
+      font-weight: bold;
+      font-size: 1rem;
+    }
+
+    .role {
+      font-size: 0.8rem;
+      opacity: 0.9;
+    }
+
+    .logout-btn {
+      background-color: rgba(255, 255, 255, 0.2);
+      color: var(--white);
+      border: none;
+      padding: 8px 15px;
+      border-radius: 4px;
+      cursor: pointer;
+      transition: var(--transition);
+    }
+
+    .logout-btn:hover {
+      background-color: rgba(255, 255, 255, 0.3);
+    }
+
+    /* Layout */
+    .main-content {
+      display: flex;
+      gap: 20px;
+      margin-top: 20px;
+      min-height: calc(100vh - 90px);
+    }
+
+    /* Sidebar */
+    .sidebar {
+      width: 250px;
+      background-color: var(--white);
+      border-radius: var(--border-radius);
+      box-shadow: var(--shadow);
+      padding: 20px 0;
+      height: fit-content;
+    }
+
+    .sidebar-title {
+      padding: 0 20px 15px;
+      margin-bottom: 15px;
+      border-bottom: 1px solid var(--border-color);
+      font-size: 1.2rem;
+    }
+
+    .sidebar-menu,
+    .sidebar-menu-title {
+      padding: 0 20px;
+    }
+
+    .sidebar-menu-title {
+      font-weight: bold;
+      margin: 15px 0 10px;
+      font-size: 0.9rem;
+      color: var(--text-secondary);
+    }
+
+    .sidebar-menu li {
+      list-style-type: none;
+      margin-bottom: 8px;
+    }
+
+    .sidebar-menu a {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      text-decoration: none;
+      color: var(--text-secondary);
+      padding: 8px 10px;
+      border-radius: 4px;
+      transition: var(--transition);
+    }
+
+    .sidebar-menu a:hover {
+      background-color: #f5f5f5;
+    }
+
+    .sidebar-menu a.active {
+      background-color: var(--primary-light);
+      color: var(--primary-color);
+      font-weight: bold;
+    }
+
+    /* Content Area */
+    .content {
+      flex: 1;
+    }
+
+    .content-card {
+      background-color: var(--white);
+      border-radius: var(--border-radius);
+      box-shadow: var(--shadow);
+      margin-bottom: 20px;
+      overflow: hidden;
+    }
+
+    .content-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 15px 20px;
+      border-bottom: 1px solid var(--border-color);
+    }
+
+    .content-title {
+      font-size: 1.2rem;
+    }
+
+    .content-actions {
+      display: flex;
+      gap: 10px;
+    }
+
+    /* Dashboard Stats */
+    .stats-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+      gap: 20px;
+      padding: 20px;
+    }
+
+    .stat-card {
+      background-color: #f8f9fa;
+      border-radius: var(--border-radius);
+      padding: 20px;
+      text-align: center;
+      transition: var(--transition);
+      box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
+      border-left: 4px solid var(--primary-color);
+    }
+
+    .stat-card:hover {
+      transform: translateY(-5px);
+      box-shadow: 0 5px 15px rgba(0, 0, 0, 0.1);
+    }
+
+    .stat-icon {
+      font-size: 2rem;
+      margin-bottom: 10px;
+    }
+
+    .stat-value {
+      font-size: 1.8rem;
+      font-weight: bold;
+      margin-bottom: 5px;
+      color: var(--primary-color);
+    }
+
+    .stat-label {
+      color: var(--text-secondary);
+      font-size: 0.9rem;
+    }
+
+    /* Data Tables */
+    .data-table {
+      width: 100%;
+      border-collapse: collapse;
+    }
+
+    .data-table th,
+    .data-table td {
+      padding: 12px 15px;
+      text-align: left;
+      border-bottom: 1px solid var(--border-color);
+    }
+
+    .data-table th {
+      background-color: #f8f9fa;
+      font-weight: 600;
+    }
+
+    .data-table tbody tr:hover {
+      background-color: #f8f9fa;
+    }
+
+    .table-status {
+      display: inline-block;
+      padding: 3px 8px;
+      border-radius: 20px;
+      font-size: 0.8rem;
+      font-weight: 500;
+    }
+
+    .status-approved {
+      background-color: var(--success-light);
+      color: var(--success-color);
+    }
+
+    .status-pending {
+      background-color: var(--warning-light);
+      color: var(--warning-color);
+    }
+
+    .status-rejected {
+      background-color: var(--danger-light);
+      color: var(--danger-color);
+    }
+
+    /* Buttons */
+    .btn {
+      padding: 8px 16px;
+      border: none;
+      border-radius: 4px;
+      cursor: pointer;
+      transition: var(--transition);
+      font-weight: 500;
+      display: inline-block;
+      text-align: center;
+    }
+
+    .btn:hover {
+      transform: translateY(-2px);
+    }
+
+    .btn-primary {
+      background-color: var(--primary-color);
+      color: var(--white);
+    }
+
+    .btn-primary:hover {
+      background-color: #00352c;
+    }
+
+    .btn-secondary {
+      background-color: var(--secondary-color);
+      color: var(--text-primary);
+    }
+
+    .btn-secondary:hover {
+      background-color: #d5d5d5;
+    }
+
+    .btn-danger {
+      background-color: var(--danger-color);
+      color: var(--white);
+    }
+
+    .btn-danger:hover {
+      background-color: #b71c1c;
+    }
+
+    .btn-sm {
+      padding: 5px 10px;
+      font-size: 0.8rem;
+    }
+
+    /* Modal */
+    .modal-overlay {
+      display: none;
+      position: fixed;
+      top: 0;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      background-color: rgba(0, 0, 0, 0.5);
+      z-index: 1000;
+      justify-content: center;
+      align-items: center;
+    }
+
+    .modal {
+      background-color: var(--white);
+      border-radius: var(--border-radius);
+      width: 500px;
+      max-width: 90%;
+      max-height: 90vh;
+      overflow-y: auto;
+      box-shadow: 0 5px 20px rgba(0, 0, 0, 0.2);
+    }
+
+    .modal-header {
+      padding: 15px 20px;
+      border-bottom: 1px solid var(--border-color);
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+
+    .modal-title {
+      font-size: 1.2rem;
+      font-weight: bold;
+    }
+
+    .modal-close {
+      background: none;
+      border: none;
+      font-size: 1.5rem;
+      cursor: pointer;
+      color: var(--text-secondary);
+      transition: var(--transition);
+    }
+
+    .modal-close:hover {
+      color: var(--text-primary);
+    }
+
+    .modal-body {
+      padding: 20px;
+    }
+
+    .modal-footer {
+      padding: 15px 20px;
+      border-top: 1px solid var(--border-color);
+      display: flex;
+      justify-content: flex-end;
+      gap: 10px;
+    }
+
+    /* Forms */
+    .form-group {
+      margin-bottom: 15px;
+    }
+
+    .form-label {
+      display: block;
+      margin-bottom: 5px;
+      font-weight: 500;
+      color: var(--text-primary);
+    }
+
+    .form-input,
+    .form-select {
+      width: 100%;
+      padding: 10px;
+      border: 1px solid #ddd;
+      border-radius: 4px;
+      font-size: 0.9rem;
+      transition: var(--transition);
+    }
+
+    .form-input:focus,
+    .form-select:focus {
+      outline: none;
+      border-color: var(--primary-color);
+      box-shadow: 0 0 0 2px rgba(0, 77, 64, 0.1);
+    }
+
+    /* Section visibility */
+    .data-section {
+      display: none;
+    }
+
+    .data-section.active {
+      display: block;
+    }
+
+    /* Chart containers */
+    .chart-container {
+      height: 300px;
+      margin: 20px 0;
+      position: relative;
+      /* Add this for Chart.js */
+    }
+
+    .dashboard-charts {
+      display: grid;
+      grid-template-columns: repeat(2, 1fr);
+      gap: 20px;
+      padding: 20px;
+    }
+
+    .chart-card {
+      background-color: var(--white);
+      border-radius: var(--border-radius);
+      box-shadow: var(--shadow);
+      padding: 20px;
+    }
+
+    .chart-title {
+      font-size: 1rem;
+      margin-bottom: 15px;
+      text-align: center;
+    }
+
+    /* Employee badge */
+    .employee-badge {
+      background-color: var(--primary-color);
+      color: var(--white);
+      /* Fixed the space between var and parenthesis */
+      padding: 5px 15px;
+      border-radius: 20px;
+      font-size: 0.8rem;
+      font-weight: bold;
+      margin-bottom: 15px;
+      display: inline-block;
+    }
+
+    /* Responsive */
+    @media (max-width: 1992px) {
+      .dashboard-charts {
+        grid-template-columns: 1fr;
+      }
+    }
+
+    @media (max-width: 768px) {
+      .header-container {
+        flex-direction: column;
+        gap: 15px;
+      }
+
+      .main-content {
+        flex-direction: column;
+      }
+
+      .sidebar {
+        width: 100%;
+        margin-bottom: 20px;
+      }
+
+      nav ul {
+        justify-content: center;
+      }
+    }
+
+    @media (max-width: 576px) {
+      .stats-grid {
+        grid-template-columns: 1fr;
+      }
+
+      .user-panel {
+        flex-direction: column;
+        align-items: flex-end;
+      }
+    }
+
+    /* Chart containers */
+    .chart-container {
+      height: 300px;
+      margin: 20px 0;
+      position: relative;
+    }
+
+    .dashboard-charts {
+      display: grid;
+      grid-template-columns: 1fr;
+      /* Changed from repeat(2, 1fr) to 1fr */
+      gap: 20px;
+      padding: 20px;
+    }
+  </style>
+</head>
+
+<body>
+  <!-- Header -->
+  <header>
+    <div class="container header-container">
+      <div class="logo">
+        <img src="/api/placeholder/60/60" alt="GPMS Logo">
+        <div class="logo-text">
+          <h1>Gram Panchayat Management System</h1>
+          <p>Land Records & Environment Management</p>
+        </div>
+      </div>
+
+      <nav>
+        <ul>
+          <li><a href="#">Home</a></li>
+          <li><a href="#">Dashboard</a></li>
+          <li><a href="#">Reports</a></li>
+          <li><a href="#">Help</a></li>
+        </ul>
+      </nav>
+
+      <div class="user-panel">
+        <div class="user-info">
+          <div class="name" id="employeeName">Rajesh Kumar</div>
+          <div class="role" id="employeeRole">Patwari Officer</div>
+        </div>
+        <button class="logout-btn" id="logoutBtn">Logout</button>
+      </div>
+    </div>
+  </header>
+
+  <!-- Main Content -->
+  <div class="container main-content">
+    <!-- Sidebar -->
+    <div class="sidebar">
+      <h3 class="sidebar-title">Land Management Dashboard</h3>
+
+      <ul class="sidebar-menu">
+        <li><a href="#" class="active" data-section="dashboard"><i>📊</i> Dashboard</a></li>
+
+        <div class="sidebar-menu-title">Land Records</div>
+        <li><a href="#" data-section="land-overview"><i>🗺️</i> Land Overview</a></li>
+        <li><a href="#" data-section="citizen-lands"><i>👨‍🌾</i> Citizen Lands</a></li>
+
+        <div class="sidebar-menu-title">Environmental Management</div>
+        <li><a href="#" data-section="env-initiatives"><i>🌳</i> Environment Initiatives</a></li>
+        <li><a href="#" data-section="irrigation-systems"><i>💦</i> Irrigation Systems</a></li>
+
+        <div class="sidebar-menu-title">Administration</div>
+        <li><a href="#" data-section="reports"><i>📝</i> Reports</a></li>
+        <li><a href="#" data-section="settings"><i>⚙️</i> Settings</a></li>
+      </ul>
+    </div>
+
+    <!-- Content Area -->
+    <div class="content">
+      <div class="employee-badge">
+        Employee ID: PTW-2025-042 • Department: Patwari
+      </div>
+
+      <!-- Dashboard Overview -->
+      <div class="data-section active" id="dashboard-section">
+        <div class="content-card">
+          <div class="content-header">
+            <h2 class="content-title">Land Records Dashboard</h2>
+            <div class="content-actions">
+              <button class="btn btn-primary" id="refreshStatsBtn">Refresh Data</button>
+            </div>
+          </div>
+
+          <div class="stats-grid">
+            <div class="stat-card">
+              <div class="stat-icon">🌾</div>
+              <div class="stat-value" id="agricultural-area">8.2</div>
+              <div class="stat-label">Agricultural Area (acres)</div>
+            </div>
+
+            <div class="stat-card">
+              <div class="stat-icon">🏠</div>
+              <div class="stat-value" id="residential-area">2.8</div>
+              <div class="stat-label">Residential Area (acres)</div>
+            </div>
+
+            <div class="stat-card">
+              <div class="stat-icon">🏢</div>
+              <div class="stat-value" id="commercial-area">0.0</div>
+              <div class="stat-label">Commercial Area (acres)</div>
+            </div>
+
+            <div class="stat-card">
+              <div class="stat-icon">👨‍🌾</div>
+              <div class="stat-value" id="total-citizens">3</div>
+              <div class="stat-label">Registered Land Owners</div>
+            </div>
+          </div>
+        </div>
+
+        <div class="dashboard-charts">
+          <div class="chart-card">
+            <h3 class="chart-title">Land Distribution</h3>
+            <div class="chart-container" id="landDistributionChart">
+              <canvas id="landDistributionChart"></canvas>
+            </div>
+          </div>
+
+
+        </div>
+      </div>
+
+      <!-- Land Overview -->
+      <div class="data-section" id="land-overview-section">
+        <div class="content-card">
+          <div class="content-header">
+            <h2 class="content-title">Land Overview</h2>
+            <div class="content-actions">
+              <button class="btn btn-primary" id="generateReportBtn">Generate Report</button>
+            </div>
+          </div>
+
+          <div class="stats-grid">
+            <div class="stat-card">
+              <div class="stat-icon">📏</div>
+              <div class="stat-value" id="total-land-area">11.0</div>
+              <div class="stat-label">Total Land Area (acres)</div>
+            </div>
+
+            <div class="stat-card">
+              <div class="stat-icon">🌱</div>
+              <div class="stat-value" id="cultivation-percent">74.5%</div>
+              <div class="stat-label">Under Cultivation</div>
+            </div>
+
+            <div class="stat-card">
+              <div class="stat-icon">🌳</div>
+              <div class="stat-value" id="env-projects">2</div>
+              <div class="stat-label">Environmental Projects</div>
+            </div>
+
+            <div class="stat-card">
+              <div class="stat-icon">💧</div>
+              <div class="stat-value" id="irrigation-coverage">350</div>
+              <div class="stat-label">Irrigation Coverage (acres)</div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Citizen Lands -->
+      <div class="data-section" id="citizen-lands-section">
+        <div class="content-card">
+          <div class="content-header">
+            <h2 class="content-title">Citizen Land Records</h2>
+            <div class="content-actions">
+              <button class="btn btn-primary" id="addLandBtn">Add New Land</button>
+            </div>
+          </div>
+
+          <table class="data-table" id="citizenLandsTable">
+            <thead>
+              <tr>
+                <th>Land ID</th>
+                <th>Citizen ID</th>
+                <th>Owner Name</th>
+                <th>Area (acres)</th>
+                <th>Type</th>
+                <th>Crop Type</th>
+                <th>Actions</th>
+              </tr>
+            </thead>
+            <tbody>
+              <!-- Table rows will be populated by JavaScript -->
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      <!-- Environmental Initiatives -->
+      <div class="data-section" id="env-initiatives-section">
+        <div class="content-card">
+          <div class="content-header">
+            <h2 class="content-title">Environmental Initiatives</h2>
+            <div class="content-actions">
+              <button class="btn btn-primary" id="addEnvInitiativeBtn">Add Initiative</button>
+            </div>
+          </div>
+
+          <table class="data-table" id="envInitiativesTable">
+            <thead>
+              <tr>
+                <th>Initiative ID</th>
+                <th>Name</th>
+                <th>Start Date</th>
+                <th>Area Covered</th>
+                <th>Type</th>
+                <th>Status</th>
+                <th>Actions</th>
+              </tr>
+            </thead>
+            <tbody>
+              <!-- Table rows will be populated by JavaScript -->
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      <!-- Irrigation Systems -->
+      <div class="data-section" id="irrigation-systems-section">
+        <div class="content-card">
+          <div class="content-header">
+            <h2 class="content-title">Irrigation Systems</h2>
+            <div class="content-actions">
+              <button class="btn btn-primary" id="addIrrigationBtn">Add System</button>
+            </div>
+          </div>
+
+          <table class="data-table" id="irrigationSystemsTable">
+            <thead>
+              <tr>
+                <th>System ID</th>
+                <th>Name</th>
+                <th>Location</th>
+                <th>Coverage</th>
+                <th>Water Source</th>
+                <th>Status</th>
+                <th>Actions</th>
+              </tr>
+            </thead>
+            <tbody>
+              <!-- Table rows will be populated by JavaScript -->
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      <!-- Reports Section -->
+      <div class="data-section" id="reports-section">
+        <div class="content-card">
+          <div class="content-header">
+            <h2 class="content-title">Land Records Reports</h2>
+          </div>
+
+          <div style="padding: 20px;">
+            <div class="form-group">
+              <label class="form-label" for="reportType">Report Type</label>
+              <select class="form-select" id="reportType">
+                <option value="land-distribution">Land Distribution</option>
+                <option value="crop-analysis">Crop Analysis</option>
+                <option value="env-initiatives">Environmental Initiatives</option>
+                <option value="irrigation">Irrigation Coverage</option>
+              </select>
+            </div>
+
+            <div class="form-group">
+              <label class="form-label" for="reportTimePeriod">Time Period</label>
+              <select class="form-select" id="reportTimePeriod">
+                <option value="current">Current Data</option>
+                <option value="last-month">Last Month</option>
+                <option value="last-quarter">Last Quarter</option>
+                <option value="last-year">Last Year</option>
+              </select>
+            </div>
+
+            <div class="form-group">
+              <label class="form-label" for="reportFormat">Format</label>
+              <select class="form-select" id="reportFormat">
+                <option value="pdf">PDF</option>
+                <option value="excel">Excel</option>
+                <option value="csv">CSV</option>
+              </select>
+            </div>
+
+            <button class="btn btn-primary" id="generateReportBtnForm">Generate Report</button>
+          </div>
+        </div>
+      </div>
+
+      <!-- Settings Section -->
+      <div class="data-section" id="settings-section">
+        <div class="content-card">
+          <div class="content-header">
+            <h2 class="content-title">System Settings</h2>
+          </div>
+
+          <div style="padding: 20px;">
+            <h3 style="margin-bottom: 15px;">Display Preferences</h3>
+
+            <div class="form-group">
+              <label class="form-label" for="areaUnit">Default Area Unit</label>
+              <select class="form-select" id="areaUnit">
+                <option value="acres">Acres</option>
+                <option value="hectares">Hectares</option>
+                <option value="sqkm">Square Kilometers</option>
+              </select>
+            </div>
+
+            <div class="form-group">
+              <label class="form-label" for="dateFormat">Date Format</label>
+              <select class="form-select" id="dateFormat">
+                <option value="dd-mm-yyyy">DD-MM-YYYY</option>
+                <option value="mm-dd-yyyy">MM-DD-YYYY</option>
+                <option value="yyyy-mm-dd">YYYY-MM-DD</option>
+              </select>
+            </div>
+
+            <h3 style="margin: 25px 0 15px;">Notification Settings</h3>
+
+            <div class="form-group">
+              <label class="form-checkbox">
+                <input type="checkbox" id="emailNotifications" checked>
+                Receive email notifications
+              </label>
+            </div>
+
+            <div class="form-group">
+              <label class="form-checkbox">
+                <input type="checkbox" id="smsNotifications">
+                Receive SMS notifications
+              </label>
+            </div>
+
+            <button class="btn btn-primary" id="saveSettingsBtn">Save Settings</button>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Modals -->
+  <!-- Add/Edit Citizen Land Modal -->
+  <div class="modal-overlay" id="landModal">
+    <div class="modal">
+      <div class="modal-header">
+        <h3 class="modal-title" id="landModalTitle">Add New Land Record</h3>
+        <button class="modal-close" id="closeLandModal">&times;</button>
+      </div>
+      <div class="modal-body">
+        <form id="landForm">
+          <input type="hidden" id="landId">
+
+          <div class="form-group">
+            <label class="form-label" for="citizenId">Citizen ID</label>
+            <input type="number" class="form-input" id="citizenId" required>
+          </div>
+
+          <div class="form-group">
+            <label class="form-label" for="landArea">Area (acres)</label>
+            <input type="number" step="0.1" class="form-input" id="landArea" required>
+          </div>
+
+          <div class="form-group">
+            <label class="form-label" for="landType">Type</label>
+            <select class="form-select" id="landType" required>
+              <option value="Agricultural">Agricultural</option>
+              <option value="Residential">Residential</option>
+              <option value="Commercial">Commercial</option>
+            </select>
+          </div>
+
+          <div class="form-group">
+            <label class="form-label" for="cropType">Crop Type</label>
+            <input type="text" class="form-input" id="cropType" value="Not Specified">
+          </div>
+        </form>
+      </div>
+      <div class="modal-footer">
+        <button class="btn btn-secondary" id="cancelLandBtn">Cancel</button>
+        <button class="btn btn-primary" id="saveLandBtn">Save</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Add/Edit Environmental Initiative Modal -->
+  <div class="modal-overlay" id="envInitiativeModal">
+    <div class="modal">
+      <div class="modal-header">
+        <h3 class="modal-title" id="envInitiativeModalTitle">Add Environmental Initiative</h3>
+        <button class="modal-close" id="closeEnvInitiativeModal">&times;</button>
+      </div>
+      <div class="modal-body">
+        <form id="envInitiativeForm">
+          <input type="hidden" id="initiativeId">
+
+          <div class="form-group">
+            <label class="form-label" for="panchayatId">Panchayat ID</label>
+            <input type="number" class="form-input" id="panchayatId" value="1" readonly>
+          </div>
+
+          <div class="form-group">
+            <label class="form-label" for="initiativeName">Name</label>
+            <input type="text" class="form-input" id="initiativeName" required>
+          </div>
+
+          <div class="form-group">
+            <label class="form-label" for="startDate">Start Date</label>
+            <input type="date" class="form-input" id="startDate" required>
+          </div>
+
+          <div class="form-group">
+            <label class="form-label" for="areaCovered">Area Covered</label>
+            <input type="number" step="0.1" class="form-input" id="areaCovered" required>
+          </div>
+
+          <div class="form-group">
+            <label class="form-label" for="initiativeType">Type</label>
+            <select class="form-select" id="initiativeType" required>
+              <option value="Afforestation">Afforestation</option>
+              <option value="Waste Management">Waste Management</option>
+              <option value="Renewable Energy">Renewable Energy</option>
+              <option value="Water Conservation">Water Conservation</option>
+              <option value="Biodiversity">Biodiversity</option>
+            </select>
+          </div>
+
+          <div class="form-group">
+            <label class="form-label" for="initiativeStatus">Status</label>
+            <select class="form-select" id="initiativeStatus" required>
+              <option value="Pending">Pending</option>
+              <option value="Planning">Planning</option>
+              <option value="In Progress">In Progress</option>
+              <option value="Ongoing">Ongoing</option>
+              <option value="Completed">Completed</option>
+            </select>
+          </div>
+
+          <div class="form-group">
+            <label class="form-label" for="initiativeDescription">Description</label>
+            <textarea class="form-input" id="initiativeDescription" rows="3"></textarea>
+          </div>
+        </form>
+      </div>
+      <div class="modal-footer">
+        <button class="btn btn-secondary" id="cancelEnvInitiativeBtn">Cancel</button>
+        <button class="btn btn-primary" id="saveEnvInitiativeBtn">Save Initiative</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Add/Edit Irrigation System Modal -->
+  <div class="modal-overlay" id="irrigationModal">
+    <div class="modal">
+      <div class="modal-header">
+        <h3 class="modal-title" id="irrigationModalTitle">Add Irrigation System</h3>
+        <button class="modal-close" id="closeIrrigationModal">&times;</button>
+      </div>
+      <div class="modal-body">
+        <form id="irrigationForm">
+          <input type="hidden" id="systemId">
+
+          <div class="form-group">
+            <label class="form-label" for="systemName">System Name</label>
+            <input type="text" class="form-input" id="systemName" required>
+          </div>
+
+          <div class="form-group">
+            <label class="form-label" for="systemLocation">Location</label>
+            <input type="text" class="form-input" id="systemLocation" required>
+          </div>
+
+          <div class="form-group">
+            <label class="form-label" for="areaCoverage">Coverage Area (acres)</label>
+            <input type="number" step="0.1" class="form-input" id="areaCoverage" required>
+          </div>
+
+          <div class="form-group">
+            <label class="form-label" for="waterSource">Water Source</label>
+            <select class="form-select" id="waterSource" required>
+              <option value="Well">Well</option>
+              <option value="Canal">Canal</option>
+              <option value="Reservoir">Reservoir</option>
+              <option value="River">River</option>
+              <option value="Rainwater">Rainwater Harvesting</option>
+            </select>
+          </div>
+
+          <div class="form-group">
+            <label class="form-label" for="systemStatus">Status</label>
+            <select class="form-select" id="systemStatus" required>
+              <option value="Operational">Operational</option>
+              <option value="Under Maintenance">Under Maintenance</option>
+              <option value="Planned">Planned</option>
+              <option value="Under Construction">Under Construction</option>
+              <option value="Non-operational">Non-operational</option>
+            </select>
+          </div>
+
+          <div class="form-group">
+            <label class="form-label" for="systemNotes">Notes</label>
+            <textarea class="form-input" id="systemNotes" rows="3"></textarea>
+          </div>
+        </form>
+      </div>
+      <div class="modal-footer">
+        <button class="btn btn-secondary" id="cancelIrrigationBtn">Cancel</button>
+        <button class="btn btn-primary" id="saveIrrigationBtn">Save System</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Confirmation Modal -->
+  <div class="modal-overlay" id="confirmationModal">
+    <div class="modal" style="max-width: 400px;">
+      <div class="modal-header">
+        <h3 class="modal-title" id="confirmationTitle">Confirm Action</h3>
+        <button class="modal-close" id="closeConfirmationModal">&times;</button>
+      </div>
+      <div class="modal-body">
+        <p id="confirmationMessage">Are you sure you want to proceed with this action?</p>
+      </div>
+      <div class="modal-footer">
+        <button class="btn btn-secondary" id="cancelConfirmationBtn">Cancel</button>
+        <button class="btn btn-danger" id="confirmActionBtn">Confirm</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Scripts -->
+  <script>
+    // Sample data
+    const citizenLands = [
+      { id: 1, citizenId: 101, ownerName: 'Raj Sharma', area: 2.5, type: 'Agricultural', cropType: 'Rice' },
+      { id: 2, citizenId: 102, ownerName: 'Meena Patel', area: 1.8, type: 'Agricultural', cropType: 'Wheat' },
+      { id: 3, citizenId: 103, ownerName: 'Suresh Kumar', area: 0.5, type: 'Residential', cropType: 'Not Applicable' }
+    ];
+
+    const envInitiatives = [
+      { id: 1, name: 'Village Afforestation', startDate: '2023-06-15', areaCovered: 1.2, type: 'Afforestation', status: 'In Progress' },
+      { id: 2, name: 'Rainwater Harvesting', startDate: '2023-08-10', areaCovered: 0.8, type: 'Water Conservation', status: 'Planning' }
+    ];
+
+    const irrigationSystems = [
+      { id: 1, name: 'East Canal System', location: 'Eastern Fields', coverage: 120, source: 'Canal', status: 'Operational' },
+      { id: 2, name: 'Western Wells', location: 'Western Fields', coverage: 230, source: 'Well', status: 'Operational' }
+    ];
+
+    // Chart instances
+    let landDistributionChart;
+    let environmentalProjectsChart;
+
+    // DOM Elements
+    const dataSections = document.querySelectorAll('.data-section');
+    const menuItems = document.querySelectorAll('.sidebar-menu a');
+
+    // Modals
+    const landModal = document.getElementById('landModal');
+    const envInitiativeModal = document.getElementById('envInitiativeModal');
+    const irrigationModal = document.getElementById('irrigationModal');
+    const confirmationModal = document.getElementById('confirmationModal');
+
+    // Initialize UI
+    document.addEventListener('DOMContentLoaded', function () {
+      // Sidebar Navigation
+      menuItems.forEach(item => {
+        item.addEventListener('click', function (e) {
+          e.preventDefault();
+          const targetSection = this.getAttribute('data-section');
+
+          // Hide all sections and deactivate all menu items
+          dataSections.forEach(section => section.classList.remove('active'));
+          menuItems.forEach(menuItem => menuItem.classList.remove('active'));
+
+          // Show target section and activate menu item
+          document.getElementById(targetSection + '-section').classList.add('active');
+          this.classList.add('active');
+        });
+      });
+
+      // Populate Tables
+      populateCitizenLandsTable();
+      populateEnvInitiativesTable();
+      populateIrrigationSystemsTable();
+
+      // Initialize Charts
+      initializeCharts();
+
+      // Add New Land Record Button
+      document.getElementById('addLandBtn').addEventListener('click', function () {
+        resetLandForm();
+        document.getElementById('landModalTitle').textContent = 'Add New Land Record';
+        landModal.style.display = 'flex';
+      });
+
+      // Add Environmental Initiative Button
+      document.getElementById('addEnvInitiativeBtn').addEventListener('click', function () {
+        resetEnvInitiativeForm();
+        document.getElementById('envInitiativeModalTitle').textContent = 'Add Environmental Initiative';
+        envInitiativeModal.style.display = 'flex';
+      });
+
+      // Add Irrigation System Button
+      document.getElementById('addIrrigationBtn').addEventListener('click', function () {
+        resetIrrigationForm();
+        document.getElementById('irrigationModalTitle').textContent = 'Add Irrigation System';
+        irrigationModal.style.display = 'flex';
+      });
+
+      // Close Modals
+      document.getElementById('closeLandModal').addEventListener('click', () => landModal.style.display = 'none');
+      document.getElementById('cancelLandBtn').addEventListener('click', () => landModal.style.display = 'none');
+
+      document.getElementById('closeEnvInitiativeModal').addEventListener('click', () => envInitiativeModal.style.display = 'none');
+      document.getElementById('cancelEnvInitiativeBtn').addEventListener('click', () => envInitiativeModal.style.display = 'none');
+
+      document.getElementById('closeIrrigationModal').addEventListener('click', () => irrigationModal.style.display = 'none');
+      document.getElementById('cancelIrrigationBtn').addEventListener('click', () => irrigationModal.style.display = 'none');
+
+      document.getElementById('closeConfirmationModal').addEventListener('click', () => confirmationModal.style.display = 'none');
+      document.getElementById('cancelConfirmationBtn').addEventListener('click', () => confirmationModal.style.display = 'none');
+
+      // Save Buttons
+      document.getElementById('saveLandBtn').addEventListener('click', saveLandRecord);
+      document.getElementById('saveEnvInitiativeBtn').addEventListener('click', saveEnvInitiative);
+      document.getElementById('saveIrrigationBtn').addEventListener('click', saveIrrigationSystem);
+
+      // Other buttons
+      document.getElementById('refreshStatsBtn').addEventListener('click', refreshStats);
+      document.getElementById('generateReportBtn').addEventListener('click', generateReport);
+      document.getElementById('saveSettingsBtn').addEventListener('click', saveSettings);
+      document.getElementById('logoutBtn').addEventListener('click', logout);
+
+      // Generate initial stats
+      refreshStats();
+    });
+
+
+    // Initialize Charts
+    // Inside the initializeCharts() function, remove the Environmental Projects chart initialization
+    function initializeCharts() {
+      // Land Distribution Chart
+      const landCtx = document.getElementById('landDistributionChart').getContext('2d');
+      landDistributionChart = new Chart(landCtx, {
+        type: 'pie',
+        data: {
+          labels: ['Agricultural', 'Residential', 'Commercial'],
+          datasets: [{
+            data: [0, 0, 0], // Will be updated by refreshStats
+            backgroundColor: [
+              '#4CAF50', // Green for Agricultural
+              '#2196F3', // Blue for Residential
+              '#FFC107'  // Amber for Commercial
+            ],
+            borderWidth: 1,
+            borderColor: '#fff'
+          }]
+        },
+        options: {
+          responsive: true,
+          maintainAspectRatio: false,
+          plugins: {
+            legend: {
+              position: 'bottom'
+            },
+            tooltip: {
+              callbacks: {
+                label: function (context) {
+                  return context.label + ': ' + context.raw + ' acres';
+                }
+              }
+            }
+          }
+        }
+      });
+    }
+
+
+    function updateCharts(agriculturalArea, residentialArea, commercialArea) {
+      // Update Land Distribution Chart
+      if (landDistributionChart) {
+        landDistributionChart.data.datasets[0].data = [
+          agriculturalArea,
+          residentialArea,
+          commercialArea
+        ];
+        landDistributionChart.update();
+      }
+
+      // Remove this block completely to fix potential errors
+      if (environmentalProjectsChart) {
+        environmentalProjectsChart.data.labels = envInitiatives.map(initiative => initiative.name);
+        environmentalProjectsChart.data.datasets[0].data = envInitiatives.map(initiative => initiative.areaCovered);
+        environmentalProjectsChart.update();
+      }
+    }    // Functions for table population
+
+    function populateCitizenLandsTable() {
+      const tableBody = document.querySelector('#citizenLandsTable tbody');
+      tableBody.innerHTML = '';
+
+      citizenLands.forEach(land => {
+        const row = document.createElement('tr');
+        row.innerHTML = `
+          <td>${land.id}</td>
+          <td>${land.citizenId}</td>
+          <td>${land.ownerName}</td>
+          <td>${land.area}</td>
+          <td>${land.type}</td>
+          <td>${land.cropType}</td>
+          <td>
+            <button class="btn btn-sm btn-primary edit-land" data-id="${land.id}">Edit</button>
+            <button class="btn btn-sm btn-danger delete-land" data-id="${land.id}">Delete</button>
+          </td>
+        `;
+        tableBody.appendChild(row);
+      });
+
+      // Add event listeners to edit and delete buttons
+      document.querySelectorAll('.edit-land').forEach(button => {
+        button.addEventListener('click', function () {
+          editLand(this.getAttribute('data-id'));
+        });
+      });
+
+      document.querySelectorAll('.delete-land').forEach(button => {
+        button.addEventListener('click', function () {
+          deleteLand(this.getAttribute('data-id'));
+        });
+      });
+    }
+
+    function populateEnvInitiativesTable() {
+      const tableBody = document.querySelector('#envInitiativesTable tbody');
+      tableBody.innerHTML = '';
+
+      envInitiatives.forEach(initiative => {
+        const row = document.createElement('tr');
+        row.innerHTML = `
+          <td>${initiative.id}</td>
+          <td>${initiative.name}</td>
+          <td>${initiative.startDate}</td>
+          <td>${initiative.areaCovered}</td>
+          <td>${initiative.type}</td>
+          <td>${initiative.status}</td>
+          <td>
+            <button class="btn btn-sm btn-primary edit-initiative" data-id="${initiative.id}">Edit</button>
+            <button class="btn btn-sm btn-danger delete-initiative" data-id="${initiative.id}">Delete</button>
+          </td>
+        `;
+        tableBody.appendChild(row);
+      });
+
+      // Add event listeners
+      document.querySelectorAll('.edit-initiative').forEach(button => {
+        button.addEventListener('click', function () {
+          editInitiative(this.getAttribute('data-id'));
+        });
+      });
+
+      document.querySelectorAll('.delete-initiative').forEach(button => {
+        button.addEventListener('click', function () {
+          deleteInitiative(this.getAttribute('data-id'));
+        });
+      });
+    }
+
+    function populateIrrigationSystemsTable() {
+      const tableBody = document.querySelector('#irrigationSystemsTable tbody');
+      tableBody.innerHTML = '';
+
+      irrigationSystems.forEach(system => {
+        const row = document.createElement('tr');
+        row.innerHTML = `
+          <td>${system.id}</td>
+          <td>${system.name}</td>
+          <td>${system.location}</td>
+          <td>${system.coverage}</td>
+          <td>${system.source}</td>
+          <td>${system.status}</td>
+          <td>
+            <button class="btn btn-sm btn-primary edit-system" data-id="${system.id}">Edit</button>
+            <button class="btn btn-sm btn-danger delete-system" data-id="${system.id}">Delete</button>
+          </td>
+        `;
+        tableBody.appendChild(row);
+      });
+
+      // Add event listeners
+      document.querySelectorAll('.edit-system').forEach(button => {
+        button.addEventListener('click', function () {
+          editIrrigationSystem(this.getAttribute('data-id'));
+        });
+      });
+
+      document.querySelectorAll('.delete-system').forEach(button => {
+        button.addEventListener('click', function () {
+          deleteIrrigationSystem(this.getAttribute('data-id'));
+        });
+      });
+    }
+
+    // Form Management Functions
+    function resetLandForm() {
+      document.getElementById('landId').value = '';
+      document.getElementById('citizenId').value = '';
+      document.getElementById('landArea').value = '';
+      document.getElementById('landType').value = 'Agricultural';
+      document.getElementById('cropType').value = 'Not Specified';
+    }
+
+    function resetEnvInitiativeForm() {
+      document.getElementById('initiativeId').value = '';
+      document.getElementById('initiativeName').value = '';
+      document.getElementById('startDate').value = new Date().toISOString().substr(0, 10);
+      document.getElementById('areaCovered').value = '';
+      document.getElementById('initiativeType').value = 'Afforestation';
+      document.getElementById('initiativeStatus').value = 'Planning';
+      document.getElementById('initiativeDescription').value = '';
+    }
+
+    function resetIrrigationForm() {
+      document.getElementById('systemId').value = '';
+      document.getElementById('systemName').value = '';
+      document.getElementById('systemLocation').value = '';
+      document.getElementById('areaCoverage').value = '';
+      document.getElementById('waterSource').value = 'Canal';
+      document.getElementById('systemStatus').value = 'Planned';
+      document.getElementById('systemNotes').value = '';
+    }
+
+    // CRUD Operations
+    function saveLandRecord() {
+      // Get form values
+      const formValues = {
+        id: document.getElementById('landId').value,
+        citizenId: document.getElementById('citizenId').value,
+        area: document.getElementById('landArea').value,
+        type: document.getElementById('landType').value,
+        cropType: document.getElementById('cropType').value
+      };
+
+      // Validation
+      if (!formValues.citizenId || !formValues.area) {
+        alert('Please fill all required fields');
+        return;
+      }
+
+      // If editing existing record
+      if (formValues.id) {
+        const index = citizenLands.findIndex(land => land.id == formValues.id);
+        if (index !== -1) {
+          citizenLands[index] = {
+            ...citizenLands[index],
+            citizenId: parseInt(formValues.citizenId),
+            area: parseFloat(formValues.area),
+            type: formValues.type,
+            cropType: formValues.cropType
+          };
+        }
+      } else {
+        // Adding new record
+        const newId = Math.max(...citizenLands.map(land => land.id)) + 1;
+        citizenLands.push({
+          id: newId,
+          citizenId: parseInt(formValues.citizenId),
+          ownerName: 'Citizen ' + formValues.citizenId, // Mock data
+          area: parseFloat(formValues.area),
+          type: formValues.type,
+          cropType: formValues.cropType
+        });
+      }
+
+      // Update UI
+      populateCitizenLandsTable();
+      refreshStats();
+      landModal.style.display = 'none';
+    }
+
+    function saveEnvInitiative() {
+      // Get form values
+      const formValues = {
+        id: document.getElementById('initiativeId').value,
+        name: document.getElementById('initiativeName').value,
+        startDate: document.getElementById('startDate').value,
+        areaCovered: document.getElementById('areaCovered').value,
+        type: document.getElementById('initiativeType').value,
+        status: document.getElementById('initiativeStatus').value
+      };
+
+      // Validation
+      if (!formValues.name || !formValues.startDate || !formValues.areaCovered) {
+        alert('Please fill all required fields');
+        return;
+      }
+
+      // If editing existing record
+      if (formValues.id) {
+        const index = envInitiatives.findIndex(initiative => initiative.id == formValues.id);
+        if (index !== -1) {
+          envInitiatives[index] = {
+            ...envInitiatives[index],
+            name: formValues.name,
+            startDate: formValues.startDate,
+            areaCovered: parseFloat(formValues.areaCovered),
+            type: formValues.type,
+            status: formValues.status
+          };
+        }
+      } else {
+        // Adding new record
+        const newId = Math.max(...envInitiatives.map(initiative => initiative.id)) + 1;
+        envInitiatives.push({
+          id: newId,
+          name: formValues.name,
+          startDate: formValues.startDate,
+          areaCovered: parseFloat(formValues.areaCovered),
+          type: formValues.type,
+          status: formValues.status
+        });
+      }
+
+      // Update UI
+      populateEnvInitiativesTable();
+      refreshStats();
+      envInitiativeModal.style.display = 'none';
+    }
+
+    function saveIrrigationSystem() {
+      // Get form values
+      const formValues = {
+        id: document.getElementById('systemId').value,
+        name: document.getElementById('systemName').value,
+        location: document.getElementById('systemLocation').value,
+        coverage: document.getElementById('areaCoverage').value,
+        source: document.getElementById('waterSource').value,
+        status: document.getElementById('systemStatus').value
+      };
+
+      // Validation
+      if (!formValues.name || !formValues.location || !formValues.coverage) {
+        alert('Please fill all required fields');
+        return;
+      }
+
+      // If editing existing record
+      if (formValues.id) {
+        const index = irrigationSystems.findIndex(system => system.id == formValues.id);
+        if (index !== -1) {
+          irrigationSystems[index] = {
+            ...irrigationSystems[index],
+            name: formValues.name,
+            location: formValues.location,
+            coverage: parseFloat(formValues.coverage),
+            source: formValues.source,
+            status: formValues.status
+          };
+        }
+      } else {
+        // Adding new record
+        const newId = Math.max(...irrigationSystems.map(system => system.id)) + 1;
+        irrigationSystems.push({
+          id: newId,
+          name: formValues.name,
+          location: formValues.location,
+          coverage: parseFloat(formValues.coverage),
+          source: formValues.source,
+          status: formValues.status
+        });
+      }
+
+      // Update UI
+      populateIrrigationSystemsTable();
+      refreshStats();
+      irrigationModal.style.display = 'none';
+    }
+
+    function editLand(id) {
+      const land = citizenLands.find(land => land.id == id);
+      if (land) {
+        document.getElementById('landId').value = land.id;
+        document.getElementById('citizenId').value = land.citizenId;
+        document.getElementById('landArea').value = land.area;
+        document.getElementById('landType').value = land.type;
+        document.getElementById('cropType').value = land.cropType;
+
+        document.getElementById('landModalTitle').textContent = 'Edit Land Record';
+        landModal.style.display = 'flex';
+      }
+    }
+
+    function editInitiative(id) {
+      const initiative = envInitiatives.find(initiative => initiative.id == id);
+      if (initiative) {
+        document.getElementById('initiativeId').value = initiative.id;
+        document.getElementById('initiativeName').value = initiative.name;
+        document.getElementById('startDate').value = initiative.startDate;
+        document.getElementById('areaCovered').value = initiative.areaCovered;
+        document.getElementById('initiativeType').value = initiative.type;
+        document.getElementById('initiativeStatus').value = initiative.status;
+
+        document.getElementById('envInitiativeModalTitle').textContent = 'Edit Environmental Initiative';
+        envInitiativeModal.style.display = 'flex';
+      }
+    }
+
+    function editIrrigationSystem(id) {
+      const system = irrigationSystems.find(system => system.id == id);
+      if (system) {
+        document.getElementById('systemId').value = system.id;
+        document.getElementById('systemName').value = system.name;
+        document.getElementById('systemLocation').value = system.location;
+        document.getElementById('areaCoverage').value = system.coverage;
+        document.getElementById('waterSource').value = system.source;
+        document.getElementById('systemStatus').value = system.status;
+
+        document.getElementById('irrigationModalTitle').textContent = 'Edit Irrigation System';
+        irrigationModal.style.display = 'flex';
+      }
+    }
+
+    function deleteLand(id) {
+      document.getElementById('confirmationTitle').textContent = 'Delete Land Record';
+      document.getElementById('confirmationMessage').textContent = 'Are you sure you want to delete this land record? This action cannot be undone.';
+
+      const confirmBtn = document.getElementById('confirmActionBtn');
+      confirmBtn.onclick = function () {
+        const index = citizenLands.findIndex(land => land.id == id);
+        if (index !== -1) {
+          citizenLands.splice(index, 1);
+          populateCitizenLandsTable();
+          refreshStats();
+        }
+        confirmationModal.style.display = 'none';
+      };
+
+      confirmationModal.style.display = 'flex';
+    }
+
+    function deleteInitiative(id) {
+      document.getElementById('confirmationTitle').textContent = 'Delete Initiative';
+      document.getElementById('confirmationMessage').textContent = 'Are you sure you want to delete this environmental initiative? This action cannot be undone.';
+
+      const confirmBtn = document.getElementById('confirmActionBtn');
+      confirmBtn.onclick = function () {
+        const index = envInitiatives.findIndex(initiative => initiative.id == id);
+        if (index !== -1) {
+          envInitiatives.splice(index, 1);
+          populateEnvInitiativesTable();
+          refreshStats();
+        }
+        confirmationModal.style.display = 'none';
+      };
+
+      confirmationModal.style.display = 'flex';
+    }
+
+    function deleteIrrigationSystem(id) {
+      document.getElementById('confirmationTitle').textContent = 'Delete Irrigation System';
+      document.getElementById('confirmationMessage').textContent = 'Are you sure you want to delete this irrigation system? This action cannot be undone.';
+
+      const confirmBtn = document.getElementById('confirmActionBtn');
+      confirmBtn.onclick = function () {
+        const index = irrigationSystems.findIndex(system => system.id == id);
+        if (index !== -1) {
+          irrigationSystems.splice(index, 1);
+          populateIrrigationSystemsTable();
+          refreshStats();
+        }
+        confirmationModal.style.display = 'none';
+      };
+
+      confirmationModal.style.display = 'flex';
+    }
+
+    function refreshStats() {
+      // Calculate statistics
+      const agriculturalArea = citizenLands
+        .filter(land => land.type === 'Agricultural')
+        .reduce((sum, land) => sum + parseFloat(land.area), 0);
+
+      const residentialArea = citizenLands
+        .filter(land => land.type === 'Residential')
+        .reduce((sum, land) => sum + parseFloat(land.area), 0);
+
+      const commercialArea = citizenLands
+        .filter(land => land.type === 'Commercial')
+        .reduce((sum, land) => sum + parseFloat(land.area), 0);
+
+      const totalCitizens = new Set(citizenLands.map(land => land.citizenId)).size;
+
+      // Update the dashboard
+      document.getElementById('agricultural-area').textContent = agriculturalArea.toFixed(1);
+      document.getElementById('residential-area').textContent = residentialArea.toFixed(1);
+      document.getElementById('commercial-area').textContent = commercialArea.toFixed(1);
+      document.getElementById('total-citizens').textContent = totalCitizens;
+
+      // Update other stats
+      const totalLandArea = agriculturalArea + residentialArea + commercialArea;
+      document.getElementById('total-land-area').textContent = totalLandArea.toFixed(1);
+
+      const cultivationPercent = totalLandArea > 0 ? ((agriculturalArea / totalLandArea) * 100).toFixed(1) + '%' : '0%';
+      document.getElementById('cultivation-percent').textContent = cultivationPercent;
+
+      document.getElementById('env-projects').textContent = envInitiatives.length;
+
+      const irrigationCoverage = irrigationSystems.reduce((sum, system) => sum + parseFloat(system.coverage), 0);
+      document.getElementById('irrigation-coverage').textContent = irrigationCoverage.toFixed(0);
+
+      // Update Charts
+      updateCharts(agriculturalArea, residentialArea, commercialArea);
+    }
+
+    function updateCharts(agriculturalArea, residentialArea, commercialArea) {
+      // Update Land Distribution Chart
+      if (landDistributionChart) {
+        landDistributionChart.data.datasets[0].data = [
+          agriculturalArea,
+          residentialArea,
+          commercialArea
+        ];
+        landDistributionChart.update();
+      }
+
+      // Update Environmental Projects Chart
+      if (environmentalProjectsChart) {
+        environmentalProjectsChart.data.labels = envInitiatives.map(initiative => initiative.name);
+        environmentalProjectsChart.data.datasets[0].data = envInitiatives.map(initiative => initiative.areaCovered);
+        environmentalProjectsChart.update();
+      }
+    }
+
+    function generateReport() {
+      const reportType = document.getElementById('reportType')?.value || 'land-distribution';
+      alert(`Generating ${reportType} report. This feature would generate and download a report in a real application.`);
+    }
+
+    function saveSettings() {
+      alert('Settings saved successfully!');
+    }
+
+    function logout() {
+      if (confirm('Are you sure you want to logout?')) {
+        window.location.href = '/login.html';
+      }
+    }
+  </script>
+</body>
+
+</html>

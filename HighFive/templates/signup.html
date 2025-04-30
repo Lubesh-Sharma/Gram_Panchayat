@@ -1,0 +1,60 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Gram Panchayat Management System - Sign Up</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='styles/signup.css') }}">
+</head>
+
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>Gram Panchayat Management System</h1>
+            <p>Sign up to create an account</p>
+        </div>
+
+        <!-- Flash messages for errors or alerts -->
+        {% with messages = get_flashed_messages(with_categories=true) %}
+        {% if messages %}
+        <ul class="flashes">
+            {% for category, message in messages %}
+            <li class="{{ category }}">{{ message }}</li>
+            {% endfor %}
+        </ul>
+        {% endif %}
+        {% endwith %}
+
+        <form id="signup-form" action="{{ url_for('signup') }}" method="POST">
+            <div class="form-group">
+                <label for="email">Email</label>
+                <input type="email" id="email" name="email" placeholder="example@email.com" required>
+            </div>
+            <div class="form-group">
+                <label for="user-id">User ID</label>
+                <input type="text" id="user-id" name="user_id" placeholder="12345" required>
+            </div>
+            <div class="form-group">
+                <label for="password">Password</label>
+                <input type="password" id="password" name="password" placeholder="Enter your password" required>
+            </div>
+            <button type="submit" class="btn">Sign Up</button>
+        </form>
+
+        <div class="footer">
+            <p>Already have an account? <a href="{{ url_for('login') }}">Login here</a></p>
+        </div>
+    </div>
+
+    {% if show_error_prompt %}
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            alert('An error occurred while signing up. Please try again.');
+            window.location.href = "{{ url_for('signup') }}";
+        });
+    </script>
+    {% endif %}
+</body>
+
+</html>

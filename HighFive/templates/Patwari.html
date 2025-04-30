@@ -1,0 +1,686 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Patwari Land Management Dashboard - GPMS</title>
+  <!-- Add Chart.js library -->
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@3.7.1/dist/chart.min.js"></script>
+  <link rel="stylesheet" href="{{ url_for('static', filename='styles/Patwari.css') }}">
+</head>
+
+<body>
+  <!-- Header -->
+  <header>
+    <div class="container header-container">
+      <div class="logo">
+        
+      <div class="logo">
+        <img src="{{ url_for('static', filename='images/logo.jpeg') }}" alt="GPMS Logo">
+      </div>
+        <div class="logo-text">
+          <h1>Gram Panchayat Management System</h1>
+          <p>Land Records & Environment Management</p>
+        </div>
+      </div>
+
+      <nav>
+        <ul>
+          <li><a href="{{ url_for('landing') }}">Home</a></li>
+          <li><a href="#" class="active">Dashboard</a></li>
+          <li><a href="#" data-section="settings">Settings</a></li>
+        </ul>
+      </nav>
+
+      <div class="user-panel">
+        <div class="user-info">
+          <div class="name" id="employeeName">{{ employee_data.name }}</div>
+          <div class="role" id="employeeRole">{{ employee_data.designation }}</div>
+        </div>
+        <button class="logout-btn" id="logoutBtn">Logout</button>
+      </div>
+    </div>
+  </header>
+
+  <!-- Main Content -->
+  <div class="container main-content">
+    <!-- Sidebar -->
+    <div class="sidebar">
+      <h3 class="sidebar-title">Land Management Dashboard</h3>
+
+      <ul class="sidebar-menu">
+        <li><a href="#" class="active" data-section="dashboard"><i>📊</i> Dashboard</a></li>
+
+        <div class="sidebar-menu-title">Records</div>
+        <li><a href="#" data-section="land-overview"><i>🗺️</i> Land Overview</a></li>
+        <li><a href="#" data-section="citizen-lands"><i>👨‍🌾</i> Citizen Lands</a></li>
+        <li><a href="#" data-section="census"><i>👥</i> Census Data</a></li>
+
+
+        <div class="sidebar-menu-title">Environmental Management</div>
+        <li><a href="#" data-section="env-initiatives"><i>🌳</i> Environment Initiatives</a></li>
+        <li><a href="#" data-section="irrigation-systems"><i>💦</i> Irrigation Systems</a></li>
+
+        <div class="sidebar-menu-title">Administration</div>
+        <li><a href="#" data-section="announcements"><i>📢</i> Announcements</a></li>
+        <li><a href="#" data-section="settings"><i>⚙️</i> Settings</a></li>
+      </ul>
+    </div>
+
+    <!-- Content Area -->
+    <div class="content">
+      <div class="employee-badge">
+        Employee ID: {{ employee_data.id }} • Department: {{ employee_data.department }}
+      </div>
+
+      <!-- Dashboard Overview -->
+      <div class="data-section active" id="dashboard-section">
+        <div class="content-card">
+          <div class="content-header">
+            <h2 class="content-title">Land Records Dashboard</h2>
+            <div class="content-actions">
+              <button class="btn btn-primary" id="refreshStatsBtn">Refresh Data</button>
+            </div>
+          </div>
+
+          <div class="stats-grid">
+            <div class="stat-card">
+              <div class="stat-icon">🌾</div>
+              <div class="stat-value" id="agricultural-area">{{ stats.agricultural_area|round(1) }}</div>
+              <div class="stat-label">Agricultural Area (acres)</div>
+            </div>
+
+            <div class="stat-card">
+              <div class="stat-icon">🏠</div>
+              <div class="stat-value" id="residential-area">{{ stats.residential_area|round(1) }}</div>
+              <div class="stat-label">Residential Area (acres)</div>
+            </div>
+
+            <div class="stat-card">
+              <div class="stat-icon">🏢</div>
+              <div class="stat-value" id="commercial-area">{{ stats.commercial_area|round(1) }}</div>
+              <div class="stat-label">Commercial Area (acres)</div>
+            </div>
+
+            <div class="stat-card">
+              <div class="stat-icon">👨‍🌾</div>
+              <div class="stat-value" id="total-citizens">{{ stats.unique_citizens }}</div>
+              <div class="stat-label">Registered Land Owners</div>
+            </div>
+          </div>
+        </div>
+
+        <div class="dashboard-charts">
+          <div class="chart-card">
+            <h3 class="chart-title">Land Distribution</h3>
+            <div class="chart-container">
+              <canvas id="landDistributionChart" width="400" height="300"></canvas>
+            </div>
+          </div>
+
+          <div class="chart-card">
+            <h3 class="chart-title">Environmental Projects</h3>
+            <div class="chart-container">
+              <canvas id="environmentalProjectsChart" width="400" height="300"></canvas>
+            </div>
+          </div>
+        </div>
+      </div>
+      <!-- Census Data Section -->
+      <div class="data-section" id="census-section">
+        <div class="content-card">
+          <div class="content-header">
+            <h2 class="content-title">Panchayat Census Data</h2>
+            <div class="content-actions">
+              <button class="btn btn-primary" id="refreshCensusBtn">Refresh Census</button>
+            </div>
+          </div>
+
+          <div class="stats-grid">
+            <div class="stat-card">
+              <div class="stat-icon">👥</div>
+              <div class="stat-value" id="total-citizens-count">{{ census.total_citizens|default(0) }}</div>
+              <div class="stat-label">Total Citizens</div>
+            </div>
+
+            <div class="stat-card">
+              <div class="stat-icon">👨</div>
+              <div class="stat-value" id="male-citizens">{{ census.male_citizens|default(0) }}</div>
+              <div class="stat-label">Male Citizens</div>
+            </div>
+
+            <div class="stat-card">
+              <div class="stat-icon">👩</div>
+              <div class="stat-value" id="female-citizens">{{ census.female_citizens|default(0) }}</div>
+              <div class="stat-label">Female Citizens</div>
+            </div>
+
+            <div class="stat-card">
+              <div class="stat-icon">🏡</div>
+              <div class="stat-value" id="households">{{ census.households|default(0) }}</div>
+              <div class="stat-label">Households</div>
+            </div>
+          </div>
+
+          <div class="content-card" style="margin-top: 20px;">
+            <div class="content-header">
+              <h3 class="content-title">Demographics</h3>
+            </div>
+            <div class="chart-container" style="height: 300px; width: 100%;">
+              <canvas id="demographicsChart" width="400" height="200"></canvas>
+            </div>
+          </div>
+        </div>
+      </div>
+      <!-- Land Overview -->
+      <div class="data-section" id="land-overview-section">
+        <div class="content-card">
+          <div class="content-header">
+            <h2 class="content-title">Land Overview</h2>
+            <div class="content-actions">
+              <button class="btn btn-primary" id="generateReportBtn">Generate Report</button>
+            </div>
+          </div>
+
+          <div class="stats-grid">
+            <div class="stat-card">
+              <div class="stat-icon">📏</div>
+              <div class="stat-value" id="total-land-area">{{ stats.total_area|round(1) }}</div>
+              <div class="stat-label">Total Land Area (acres)</div>
+            </div>
+
+            <div class="stat-card">
+              <div class="stat-icon">🌱</div>
+              <div class="stat-value" id="cultivation-percent">{{ stats.cultivation_percent|round(1) }}%</div>
+              <div class="stat-label">Under Cultivation</div>
+            </div>
+
+            <div class="stat-card">
+              <div class="stat-icon">🌳</div>
+              <div class="stat-value" id="env-projects">{{ stats.environmental_projects }}</div>
+              <div class="stat-label">Environmental Projects</div>
+            </div>
+
+            <div class="stat-card">
+              <div class="stat-icon">💧</div>
+              <div class="stat-value" id="irrigation-coverage">{{ stats.irrigation_coverage|round(1) }}</div>
+              <div class="stat-label">Irrigation Coverage (acres)</div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Citizen Lands -->
+      <div class="data-section" id="citizen-lands-section">
+        <div class="content-card">
+          <div class="content-header">
+            <h2 class="content-title">Citizen Land Records</h2>
+            <div class="content-actions">
+              <button class="btn btn-primary" id="addLandBtn">Add New Land</button>
+            </div>
+          </div>
+
+          <table class="data-table" id="citizenLandsTable">
+            <thead>
+              <tr>
+                <th>Land ID</th>
+                <th>Citizen ID</th>
+                <th>Owner Name</th>
+                <th>Area (acres)</th>
+                <th>Type</th>
+                <th>Crop Type</th>
+                <th>Actions</th>
+              </tr>
+            </thead>
+            <tbody>
+              {% for land in citizen_lands %}
+              <tr>
+                <td>{{ land.id }}</td>
+                <td>{{ land.citizenId }}</td>
+                <td>{{ land.ownerName }}</td>
+                <td>{{ land.area }}</td>
+                <td>{{ land.type }}</td>
+                <td>{{ land.cropType }}</td>
+                <td>
+                  <button class="btn btn-sm btn-secondary" onclick="editLand({{ land.id }})">Edit</button>
+                  <button class="btn btn-sm btn-danger" onclick="deleteLand({{ land.id }})">Delete</button>
+                </td>
+              </tr>
+              {% endfor %}
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      <!-- Environmental Initiatives -->
+      <div class="data-section" id="env-initiatives-section">
+        <div class="content-card">
+          <div class="content-header">
+            <h2 class="content-title">Environmental Initiatives</h2>
+            <div class="content-actions">
+              <button class="btn btn-primary" id="addEnvInitiativeBtn">Add Initiative</button>
+            </div>
+          </div>
+
+          <table class="data-table" id="envInitiativesTable">
+            <thead>
+              <tr>
+                <th>Initiative ID</th>
+                <th>Name</th>
+                <th>Start Date</th>
+                <th>Area Covered</th>
+                <th>Type</th>
+                <th>Status</th>
+                <th>Actions</th>
+              </tr>
+            </thead>
+            <tbody>
+              {% for initiative in env_initiatives %}
+              <tr>
+                <td>{{ initiative.id }}</td>
+                <td>{{ initiative.name }}</td>
+                <td>{{ initiative.startDate }}</td>
+                <td>{{ initiative.areaCovered }}</td>
+                <td>{{ initiative.type }}</td>
+                <td>{{ initiative.status }}</td>
+                <td>
+                  <button class="btn btn-sm btn-secondary" onclick="editInitiative({{ initiative.id }})">Edit</button>
+                  <button class="btn btn-sm btn-danger" onclick="deleteInitiative({{ initiative.id }})">Delete</button>
+                </td>
+              </tr>
+              {% endfor %}
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      <!-- Irrigation Systems -->
+      <div class="data-section" id="irrigation-systems-section">
+        <div class="content-card">
+          <div class="content-header">
+            <h2 class="content-title">Irrigation Systems</h2>
+            <div class="content-actions">
+              <button class="btn btn-primary" id="addIrrigationBtn">Add System</button>
+            </div>
+          </div>
+
+          <table class="data-table" id="irrigationSystemsTable">
+            <thead>
+              <tr>
+                <th>System ID</th>
+                <th>Name</th>
+                <th>Location</th>
+                <th>Coverage</th>
+                <th>Water Source</th>
+                <th>Status</th>
+                <th>Actions</th>
+              </tr>
+            </thead>
+            <tbody>
+              {% for system in irrigation_systems %}
+              <tr>
+                <td>{{ system.id }}</td>
+                <td>{{ system.name }}</td>
+                <td>{{ system.location }}</td>
+                <td>{{ system.coverage }}</td>
+                <td>{{ system.source }}</td>
+                <td>{{ system.status }}</td>
+                <td>
+                  <button class="btn btn-sm btn-secondary" onclick="editSystem({{ system.id }})">Edit</button>
+                  <button class="btn btn-sm btn-danger" onclick="deleteSystem({{ system.id }})">Delete</button>
+                </td>
+              </tr>
+              {% endfor %}
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+
+
+      <!-- Settings Section -->
+      <div class="data-section" id="settings-section">
+        <div class="content-card">
+          <div class="content-header">
+            <h2 class="content-title">Account Settings</h2>
+          </div>
+          <div style="padding: 20px; text-align: center;">
+            <button class="btn btn-primary" id="changePasswordBtn">Change Password</button>
+            <button class="btn btn-primary" id="switchToCitizenBtn">Switch to Citizen View</button>
+          </div>
+        </div>
+      </div>
+
+      <!-- Announcements Section -->
+      <div class="data-section" id="announcements-section">
+        <div class="content-card">
+          <div class="content-header">
+            <h2 class="content-title">Announcements</h2>
+            <div class="content-actions">
+              <button class="btn btn-primary" id="addAnnouncementBtn">Add Announcement</button>
+            </div>
+          </div>
+
+          <table class="data-table" id="announcementsTable">
+            <thead>
+              <tr>
+                <th>Announcement ID</th>
+                <th>Heading</th>
+                <th>Detail</th>
+                <th>Date</th>
+                <th>Actions</th>
+              </tr>
+            </thead>
+            <tbody>
+              {% for announcement in announcements %}
+              <tr>
+                <td>{{ announcement.id }}</td>
+                <td>{{ announcement.heading }}</td>
+                <td>{{ announcement.detail }}</td>
+                <td>{{ announcement.date }}</td>
+                <td>
+                  <button class="btn btn-sm btn-secondary"
+                    onclick="editAnnouncement({{ announcement.id }})">Edit</button>
+                  <button class="btn btn-sm btn-danger"
+                    onclick="deleteAnnouncement({{ announcement.id }})">Delete</button>
+                </td>
+              </tr>
+              {% endfor %}
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Modals -->
+  <!-- Add/Edit Citizen Land Modal -->
+  <div class="modal-overlay" id="landModal">
+    <div class="modal">
+      <div class="modal-header">
+        <h3 class="modal-title" id="landModalTitle">Add New Land Record</h3>
+        <button class="modal-close" id="closeLandModal">&times;</button>
+      </div>
+      <div class="modal-body">
+        <form id="landForm">
+          <input type="hidden" id="landId">
+
+          <div class="form-group">
+            <label class="form-label" for="citizenId">Citizen ID</label>
+            <input type="number" class="form-input" id="citizenId" required>
+          </div>
+
+          <div class="form-group">
+            <label class="form-label" for="landArea">Area (acres)</label>
+            <input type="number" step="0.1" class="form-input" id="landArea" required>
+          </div>
+
+          <div class="form-group">
+            <label class="form-label" for="landType">Type</label>
+            <select class="form-select" id="landType" required>
+              <option value="Agricultural">Agricultural</option>
+              <option value="Residential">Residential</option>
+              <option value="Commercial">Commercial</option>
+            </select>
+          </div>
+
+          <div class="form-group">
+            <label class="form-label" for="cropType">Crop Type</label>
+            <input type="text" class="form-input" id="cropType" value="Not Specified">
+          </div>
+        </form>
+      </div>
+      <div class="modal-footer">
+        <button class="btn btn-secondary" id="cancelLandBtn">Cancel</button>
+        <button class="btn btn-primary" id="saveLandBtn">Save</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Add/Edit Environmental Initiative Modal -->
+  <div class="modal-overlay" id="envInitiativeModal">
+    <div class="modal">
+      <div class="modal-header">
+        <h3 class="modal-title" id="envInitiativeModalTitle">Add Environmental Initiative</h3>
+        <button class="modal-close" id="closeEnvInitiativeModal">&times;</button>
+      </div>
+      <div class="modal-body">
+        <form id="envInitiativeForm">
+          <input type="hidden" id="initiativeId">
+
+          <div class="form-group">
+            <label class="form-label" for="panchayatId">Panchayat ID</label>
+            <input type="number" class="form-input" id="panchayatId" value="{{ employee_data.panchayat_id }}" readonly>
+          </div>
+
+          <div class="form-group">
+            <label class="form-label" for="initiativeName">Name</label>
+            <input type="text" class="form-input" id="initiativeName" required>
+          </div>
+
+          <div class="form-group">
+            <label class="form-label" for="startDate">Start Date</label>
+            <input type="date" class="form-input" id="startDate" required>
+          </div>
+
+          <div class="form-group">
+            <label class="form-label" for="areaCovered">Area Covered</label>
+            <input type="number" step="0.1" class="form-input" id="areaCovered" required>
+          </div>
+
+          <div class="form-group">
+            <label class="form-label" for="initiativeType">Type</label>
+            <select class="form-select" id="initiativeType" required>
+              <option value="Afforestation">Afforestation</option>
+              <option value="Waste Management">Waste Management</option>
+              <option value="Renewable Energy">Renewable Energy</option>
+              <option value="Water Conservation">Water Conservation</option>
+              <option value="Biodiversity">Biodiversity</option>
+            </select>
+          </div>
+
+          <div class="form-group">
+            <label class="form-label" for="initiativeStatus">Status</label>
+            <select class="form-select" id="initiativeStatus" required>
+              <option value="Pending">Pending</option>
+              <option value="Planning">Planning</option>
+              <option value="In Progress">In Progress</option>
+              <option value="Ongoing">Ongoing</option>
+              <option value="Completed">Completed</option>
+            </select>
+          </div>
+
+          <div class="form-group">
+            <label class="form-label" for="initiativeDescription">Description</label>
+            <textarea class="form-input" id="initiativeDescription" rows="3"></textarea>
+          </div>
+        </form>
+      </div>
+      <div class="modal-footer">
+        <button class="btn btn-secondary" id="cancelEnvInitiativeBtn">Cancel</button>
+        <button class="btn btn-primary" id="saveEnvInitiativeBtn">Save Initiative</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Add/Edit Irrigation System Modal -->
+  <div class="modal-overlay" id="irrigationModal">
+    <div class="modal">
+      <div class="modal-header">
+        <h3 class="modal-title" id="irrigationModalTitle">Add Irrigation System</h3>
+        <button class="modal-close" id="closeIrrigationModal">&times;</button>
+      </div>
+      <div class="modal-body">
+        <form id="irrigationForm">
+          <input type="hidden" id="systemId">
+
+          <div class="form-group">
+            <label class="form-label" for="systemName">System Name</label>
+            <input type="text" class="form-input" id="systemName" required>
+          </div>
+
+          <div class="form-group">
+            <label class="form-label" for="systemLocation">Location</label>
+            <input type="text" class="form-input" id="systemLocation" required>
+          </div>
+
+          <div class="form-group">
+            <label class="form-label" for="areaCoverage">Coverage Area (acres)</label>
+            <input type="number" step="0.1" class="form-input" id="areaCoverage" required>
+          </div>
+
+          <div class="form-group">
+            <label class="form-label" for="waterSource">Water Source</label>
+            <select class="form-select" id="waterSource" required>
+              <option value="Well">Well</option>
+              <option value="Canal">Canal</option>
+              <option value="Reservoir">Reservoir</option>
+              <option value="River">River</option>
+              <option value="Rainwater">Rainwater Harvesting</option>
+              <option value="Borewell">Borewell</option>
+            </select>
+          </div>
+
+          <div class="form-group">
+            <label class="form-label" for="systemStatus">Status</label>
+            <select class="form-select" id="systemStatus" required>
+              <option value="Operational">Operational</option>
+              <option value="Under Maintenance">Under Maintenance</option>
+              <option value="Planned">Planned</option>
+              <option value="Under Construction">Under Construction</option>
+              <option value="In Progress">In Progress</option>
+              <option value="Non-operational">Non-operational</option>
+            </select>
+          </div>
+
+          <div class="form-group">
+            <label class="form-label" for="systemNotes">Notes</label>
+            <textarea class="form-input" id="systemNotes" rows="3"></textarea>
+          </div>
+        </form>
+      </div>
+      <div class="modal-footer">
+        <button class="btn btn-secondary" id="cancelIrrigationBtn">Cancel</button>
+        <button class="btn btn-primary" id="saveIrrigationBtn">Save System</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Add Announcement Modal -->
+  <div class="modal-overlay" id="announcementModal">
+    <div class="modal">
+      <div class="modal-header">
+        <h3 class="modal-title" id="announcementModalTitle">Add Announcement</h3>
+        <button class="modal-close" id="closeAnnouncementModal">&times;</button>
+      </div>
+      <div class="modal-body">
+        <form id="announcementForm">
+          <input type="hidden" id="announcementId">
+
+          <div class="form-group">
+            <label class="form-label" for="announcementHeading">Heading</label>
+            <input type="text" class="form-input" id="announcementHeading" required>
+          </div>
+
+          <div class="form-group">
+            <label class="form-label" for="announcementDetail">Detail</label>
+            <textarea class="form-input" id="announcementDetail" rows="4" required></textarea>
+          </div>
+        </form>
+      </div>
+      <div class="modal-footer">
+        <button class="btn btn-secondary" id="cancelAnnouncementBtn">Cancel</button>
+        <button class="btn btn-primary" id="saveAnnouncementBtn">Save Announcement</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Confirmation Modal -->
+  <div class="modal-overlay" id="confirmationModal">
+    <div class="modal" style="max-width: 400px;">
+      <div class="modal-header">
+        <h3 class="modal-title" id="confirmationTitle">Confirm Action</h3>
+        <button class="modal-close" id="closeConfirmationModal">&times;</button>
+      </div>
+      <div class="modal-body">
+        <p id="confirmationMessage">Are you sure you want to proceed with this action?</p>
+        <input type="hidden" id="confirmationActionType">
+        <input type="hidden" id="confirmationItemId">
+      </div>
+      <div class="modal-footer">
+        <button class="btn btn-secondary" id="cancelConfirmationBtn">Cancel</button>
+        <button class="btn btn-danger" id="confirmActionBtn">Confirm</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Change Password Modal -->
+  <div class="modal-overlay" id="changePasswordModal">
+    <div class="modal" style="max-width: 400px;">
+      <div class="modal-header">
+        <h3 class="modal-title">Change Password</h3>
+        <button class="modal-close" id="closePasswordModal">&times;</button>
+      </div>
+      <div class="modal-body">
+        <form id="passwordForm">
+          <div class="form-group">
+            <label class="form-label" for="currentPassword">Current Password</label>
+            <input type="password" class="form-input" id="currentPassword" required>
+          </div>
+          <div class="form-group">
+            <label class="form-label" for="newPassword">New Password</label>
+            <input type="password" class="form-input" id="newPassword" required>
+          </div>
+          <div class="form-group">
+            <label class="form-label" for="confirmPassword">Confirm New Password</label>
+            <input type="password" class="form-input" id="confirmPassword" required>
+          </div>
+        </form>
+      </div>
+      <div class="modal-footer">
+        <button class="btn btn-secondary" id="cancelPasswordBtn">Cancel</button>
+        <button class="btn btn-primary" id="savePasswordBtn">Change Password</button>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    // Store data from the backend for use in charts and JavaScript
+    const statsData = {
+      agriculturalArea: {{ stats.agricultural_area|round(1) }},
+      residentialArea: {{ stats.residential_area|round(1) }},
+      commercialArea: {{ stats.commercial_area|round(1) }},
+      totalArea: {{ stats.total_area|round(1) }},
+      uniqueCitizens: {{ stats.unique_citizens }},
+      environmentalProjects: {{ stats.environmental_projects }},
+      irrigationCoverage: {{ stats.irrigation_coverage|round(1) }},
+      cultivationPercent: {{ stats.cultivation_percent|round(1) }}
+    };
+
+    const employeeData = {
+      id: "{{ employee_data.id }}",
+      name: "{{ employee_data.name }}",
+      designation: "{{ employee_data.designation }}",
+      department: "{{ employee_data.department }}",
+      panchayat_id: "{{ employee_data.panchayat_id }}",
+      citizen_id: "{{ employee_data.citizen_id }}"
+    };
+
+    // Census data for charts
+    const censusData = {
+      total_citizens: {{ census.total_citizens|default(0) }},
+      male_citizens: {{ census.male_citizens|default(0) }},
+      female_citizens: {{ census.female_citizens|default(0) }},
+      households: {{ census.households|default(0) }}
+    };
+
+    // User and employee IDs for API calls
+    const userId = {{ user_id }};
+    const employeeId = {{ employee_id }};
+  </script>
+
+  <script src="{{ url_for('static', filename='scripts/Patwari.js') }}"></script>
+</body>
+
+</html>

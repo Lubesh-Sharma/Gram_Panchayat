@@ -1,0 +1,835 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Panchayat Admin Dashboard</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='styles/admin.css') }}">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+</head>
+
+<body>
+    <div class="container">
+        <!-- Sidebar -->
+        <aside class="sidebar">
+            <div class="sidebar-header">
+                <h2>Panchayat Admin</h2>
+                <p>Management System</p>
+            </div>
+            <div class="sidebar-menu">
+                <div class="menu-item active" data-section="dashboard">
+                    <i class="fas fa-home"></i>
+                    <span>Dashboard</span>
+                </div>
+                <div class="menu-item" data-section="employees">
+                    <i class="fas fa-users"></i>
+                    <span>Panchayat Employees</span>
+                </div>
+                <div class="menu-item" data-section="citizens">
+                    <i class="fas fa-user-friends"></i>
+                    <span>Citizens</span>
+                </div>
+                <div class="menu-item" data-section="offices">
+                    <i class="fas fa-building"></i>
+                    <span>Panchayat Offices</span>
+                </div>
+                <div class="menu-item" onclick="confirmLogout()">
+                    <i class="fas fa-sign-out-alt"></i>
+                    <span>Logout</span>
+                </div>
+            </div>
+        </aside>
+
+        <!-- Main Content -->
+        <div class="main-content">
+            <!-- Dashboard Section -->
+            <div class="content-section active" id="dashboard">
+                <div class="dashboard-cards">
+                    <div class="card">
+                        <div class="card-icon employees-icon">
+                            <i class="fas fa-users"></i>
+                        </div>
+                        <div class="card-title">Total Employees</div>
+                        <div class="card-value">{{ total_employees }}</div>
+                        <div class="card-info up">
+                        </div>
+                    </div>
+                    <div class="card">
+                        <div class="card-icon citizens-icon">
+                            <i class="fas fa-user-friends"></i>
+                        </div>
+                        <div class="card-title">Total Citizens</div>
+                        <div class="card-value">{{ total_citizens }}</div>
+                        <div class="card-info up">
+                        </div>
+                    </div>
+                    <div class="card">
+                        <div class="card-icon offices-icon">
+                            <i class="fas fa-building"></i>
+                        </div>
+                        <div class="card-title">Panchayat Offices</div>
+                        <div class="card-value">{{ total_panchayats }}</div>
+                        <div class="card-info up">
+                        </div>
+                    </div>
+                </div>
+
+                <div class="table-container">
+                    <div class="table-header">
+                        <div class="toggle-sidebar">
+                            <i class="fas fa-bars"></i>
+                        </div>
+                        <div class="table-title">Recent Announcements</div>
+                        <div class="table-actions">
+                            <button class="btn btn-primary action-button" id="addAnnouncementBtn"><i class="fas fa-plus"></i> Add Announcement</button>
+                        </div>
+                    </div>
+                    <table>
+                        <thead>
+                            <tr>
+                                <th>Heading</th>
+                                <th>Detail</th>
+                                <th>Date</th>
+                                <th>Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% if announcements %}
+                            {% for announcement in announcements %}
+                            <tr>
+                                <td>{{ announcement[1] }}</td>
+                                <td>{{ announcement[2] }}</td>
+                                <td>{{ announcement[3] }}</td>
+                                <td>
+                                    <div class="action-btns">
+                                        <button class="btn btn-primary edit-announcement"
+                                            data-id="{{ announcement[0] }}" title="Edit"><i
+                                                class="fas fa-edit"></i></button>
+                                        <button class="btn btn-danger delete-announcement"
+                                            data-id="{{ announcement[0] }}" title="Delete"><i
+                                                class="fas fa-trash"></i></button>
+                                    </div>
+                                </td>
+                            </tr>
+                            {% endfor %}
+                            {% else %}
+                            <tr>
+                                <td colspan="4" style="text-align: center;">No announcements till now</td>
+                            </tr>
+                            {% endif %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+
+            <!-- Employees Section -->
+            <div class="content-section" id="employees">
+                <div class="table-container">
+                    <div class="table-header">
+                        <div class="toggle-sidebar">
+                            <i class="fas fa-bars"></i>
+                        </div>
+                        <div class="table-title">Panchayat Employees</div>
+                        <div class="table-actions">
+                            <input type="text" id="employeeSearch" class="form-control search-input" placeholder="Search by name...">
+                            <button class="btn btn-primary action-button" id="addEmployeeBtn"><i class="fas fa-plus"></i> Add Employee</button>
+                        </div>
+                    </div>
+                    <!-- Employee Details table -->
+                    <table>
+                        <thead>
+                            <tr>
+                                <th>Employee ID</th>
+                                <th>Name</th>
+                                <th>Position</th>
+                                <th>Type</th>
+                                <th>Department</th>
+                                <th>Status</th>
+                                <th>Salary</th>
+                                <th>Panchayat</th>
+                                <th>Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody id="employeeTableBody">
+                            {% if employees %}
+                            {% for employee in employees %}
+                            <tr>
+                                <td>{{ employee[0] }}</td>
+                                <td>{{ employee[1] }} {{ employee[2] }}</td>
+                                <td>{{ employee[3] }}</td>
+                                <td>{{ employee[8] }}</td>
+                                <td>{{ employee[4] }}</td>
+                                <td>{{ employee[6] }}</td>
+                                <td>{{ employee[7] }}</td>
+                                <td><span class="status {{ employee[5]|lower }}">{{ employee[5] }}</span></td>
+                                <td>
+                                    <div class="action-btns">
+                                        <button class="btn btn-info view-employee-details" data-id="{{ employee[0] }}" 
+                                            title="View Details"><i class="fas fa-info-circle"></i></button>
+                                        <button class="btn btn-primary edit-employee" data-id="{{ employee[0] }}"
+                                            title="Edit"><i class="fas fa-edit"></i></button>
+                                        <button class="btn btn-danger delete-employee" data-id="{{ employee[0] }}"
+                                            title="Delete"><i class="fas fa-trash-alt"></i></button>
+                                    </div>
+                                </td>
+                            </tr>
+                            {% endfor %}
+                            {% else %}
+                            <tr>
+                                <td colspan="9" style="text-align: center;">No employees till now</td>
+                            </tr>
+                            {% endif %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+
+            <!-- Citizens Section -->
+            <div class="content-section" id="citizens">
+                <div class="table-container">
+                    <div class="table-header">
+                        <div class="toggle-sidebar">
+                            <i class="fas fa-bars"></i>
+                        </div>
+                        <div class="table-title">Registered Citizens</div>
+                        <div class="table-actions">
+                            <input type="text" id="citizenSearch" class="form-control search-input" placeholder="Search by name...">
+                            <button class="btn btn-primary action-button" id="addCitizenBtn"><i class="fas fa-plus"></i> Add Citizen</button>
+                        </div>
+                    </div>
+                    <!-- Citizen Details table -->
+                    <table>
+                        <thead>
+                            <tr>
+                                <th>Citizen ID</th>
+                                <th>Name</th>
+                                <th>Age</th>
+                                <th>Email</th>
+                                <th>Status</th>
+                                <th>Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody id="citizenTableBody">
+                            {% if citizens %}
+                            {% for citizen in citizens %}
+                            <tr>
+                                <td>{{ citizen[0] }}</td>
+                                <td>{{ citizen[1] }} {{ citizen[2] }}</td>
+                                <td>{{ citizen[3] }}</td>
+                                <td>{{ citizen[4] }}</td>
+                                <td><span class="status {{ citizen[5]|lower }}">{{ citizen[5] }}</span></td>
+                                <td>
+                                    <div class="action-btns">
+                                        <button class="btn btn-info view-citizen-details" data-id="{{ citizen[0] }}" 
+                                            title="View Details"><i class="fas fa-info-circle"></i></button>
+                                        <button class="btn btn-primary edit-citizen" data-id="{{ citizen[0] }}"
+                                            title="Edit"><i class="fas fa-edit"></i></button>
+                                        <button class="btn btn-danger delete-citizen" data-id="{{ citizen[0] }}"
+                                            title="Delete"><i class="fas fa-trash"></i></button>
+                                    </div>
+                                </td>
+                            </tr>
+                            {% endfor %}
+                            {% else %}
+                            <tr>
+                                <td colspan="6" style="text-align: center;">No citizens till now</td>
+                            </tr>
+                            {% endif %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+
+            <!-- Offices Section -->
+            <div class="content-section" id="offices">
+                <div class="table-container">
+                    <div class="table-header">
+                        <div class="toggle-sidebar">
+                            <i class="fas fa-bars"></i>
+                        </div>
+                        <div class="table-title">Panchayat Offices</div>
+                        <div class="table-actions">
+                            <input type="text" id="officeSearch" class="form-control search-input" placeholder="Search by name...">
+                            <button class="btn btn-primary action-button" id="addOfficeBtn"><i class="fas fa-plus"></i> Add Office</button>
+                        </div>
+                    </div>
+                    <!-- Panchayat Details table -->
+                    <table>
+                        <thead>
+                            <tr>
+                                <th>Office ID</th>
+                                <th>Office Name</th>
+                                <th>Contact Email</th>
+                                <th>Contact Phone</th>
+                                <th>Area (sq km)</th>
+                                <th>Establishment Date</th>
+                                <th>Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody id="officeTableBody">
+                            {% if panchayats %}
+                            {% for panchayat in panchayats %}
+                            <tr>
+                                <td>{{ panchayat[0] }}</td>
+                                <td>{{ panchayat[1] }}</td>
+                                <td>{{ panchayat[2] }}</td>
+                                <td>{{ panchayat[3] }}</td>
+                                <td>{{ panchayat[4] }}</td>
+                                <td>{{ panchayat[5] }}</td>
+                                <td>
+                                    <div class="action-btns">
+                                        <button class="btn btn-info view-panchayat-details" data-id="{{ panchayat[0] }}" 
+                                            title="View Details"><i class="fas fa-info-circle"></i></button>
+                                        <button class="btn btn-primary edit-panchayat" data-id="{{ panchayat[0] }}" title="Edit"><i class="fas fa-edit"></i></button>
+                                        <button class="btn btn-danger delete-panchayat" data-id="{{ panchayat[0] }}" title="Delete"><i class="fas fa-trash"></i></button>
+                                    </div>
+                                </td>
+                            </tr>
+                            {% endfor %}
+                            {% else %}
+                            <tr>
+                                <td colspan="7" style="text-align: center;">No panchayat offices till now</td>
+                            </tr>
+                            {% endif %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+
+            <!-- Add Office Modal -->
+            <div class="modal" id="addOfficeModal">
+                <div class="modal-content" style="max-height: 80vh; overflow-y: auto;">
+                    <div class="modal-header">
+                        <h2 class="modal-title">Add Office</h2>
+                        <button class="close-modal" id="closeOfficeModal">&times;</button>
+                    </div>
+                    <div class="modal-body">
+                        <div class="form-group">
+                            <label for="officeName">Office Name</label>
+                            <input type="text" id="officeName" class="form-control">
+                        </div>
+                        <div class="form-group">
+                            <label for="establishmentDate">Establishment Date</label>
+                            <input type="date" id="establishmentDate" class="form-control">
+                        </div>
+                        <div class="form-group">
+                            <label for="officeArea">Area (sq km)</label>
+                            <input type="number" id="officeArea" class="form-control">
+                        </div>
+                        <div class="form-group">
+                            <label for="officeEmail">Contact Email</label>
+                            <input type="email" id="officeEmail" class="form-control">
+                        </div>
+                        <div class="form-group">
+                            <label for="officePhone">Contact Phone</label>
+                            <input type="text" id="officePhone" class="form-control">
+                        </div>
+                        <div class="form-group">
+                            <label for="blockName">Block Name</label>
+                            <input type="text" id="blockName" class="form-control">
+                        </div>
+                        <div class="form-group">
+                            <label for="districtName">District Name</label>
+                            <input type="text" id="districtName" class="form-control">
+                        </div>
+                        <div class="form-group">
+                            <label for="stateName">State Name</label>
+                            <input type="text" id="stateName" class="form-control">
+                        </div>
+                        <div class="form-group">
+                            <label for="pinCode">Pin Code</label>
+                            <input type="text" id="pinCode" class="form-control">
+                        </div>
+                        <div class="form-group">
+                            <label for="country">Country</label>
+                            <input type="text" id="country" class="form-control">
+                        </div>
+                    </div>
+                    <div class="modal-footer">
+                        <button class="btn btn-primary" id="saveOfficeBtn">Save</button>
+                        <button class="btn btn-danger" id="cancelOfficeModal">Cancel</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Add Employee Modal -->
+    <div class="modal" id="addEmployeeModal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2 class="modal-title">Add Employee</h2>
+                <button class="close-modal" id="closeEmployeeModal">&times;</button>
+            </div>
+            <div class="modal-body" style="max-height: 80vh; overflow-y: auto;">
+                <div class="form-group">
+                    <label for="employeeCitizenId">Citizen ID</label>
+                    <input type="number" id="employeeCitizenId" class="form-control" required>
+                </div>
+                <div class="form-group">
+                    <label for="employeeEmail">Email</label>
+                    <input type="email" id="employeeEmail" class="form-control" required>
+                </div>
+                <div class="form-group">
+                    <label for="employeeDesignation">Designation</label>
+                    <input type="text" id="employeeDesignation" class="form-control" required>
+                </div>
+                <div class="form-group">
+                    <label for="employeeJoinDate">Join Date</label>
+                    <input type="date" id="employeeJoinDate" class="form-control" required>
+                </div>
+                <div class="form-group">
+                    <label for="employeeEndDate">End Date</label>
+                    <input type="date" id="employeeEndDate" class="form-control" required>
+                </div>
+                <div class="form-group">
+                    <label for="employeeDepartment">Department</label>
+                    <select id="employeeDepartment" class="form-control" required>
+                        <option value="Certificate">Certificate</option>
+                        <option value="Patwari">Patwari</option>
+                        <option value="Budget">Budget</option>
+                        <option value="Service">Service</option>
+                        <option value="Tax">Tax</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label for="employeeType">Employment Type</label>
+                    <select id="employeeType" class="form-control" required>
+                        <option value="Permanent">Permanent</option>
+                        <option value="Contract">Contract</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label for="employeeSalary">Salary</label>
+                    <input type="number" id="employeeSalary" class="form-control" required>
+                </div>
+                <!-- Removed the panchayat selection field -->
+            </div>
+            <div class="modal-footer">
+                <button class="btn btn-primary" id="saveEmployeeBtn">Save</button>
+                <button class="btn btn-danger" id="cancelEmployeeModal">Cancel</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Edit Employee Modal -->
+    <div class="modal" id="editEmployeeModal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2 class="modal-title">Edit Employee</h2>
+                <button class="close-modal" id="closeEditEmployeeModal">&times;</button>
+            </div>
+            <div class="modal-body">
+                <div class="form-group">
+                    <label for="editEmployeePanchayat">Panchayat</label>
+                    <select id="editEmployeePanchayat" class="form-control">
+                        {% for panchayat in panchayats %}
+                        <option value="{{ panchayat[1] }}">{{ panchayat[1] }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label for="editEmployeePosition">Position</label>
+                    <input type="text" id="editEmployeePosition" class="form-control">
+                </div>
+                <div class="form-group">
+                    <label for="editEmployeeEndDate">End Date</label>
+                    <input type="date" id="editEmployeeEndDate" class="form-control">
+                </div>
+                <div class="form-group">
+                    <label for="editEmployeeSalary">Salary</label>
+                    <input type="number" id="editEmployeeSalary" class="form-control">
+                </div>
+                <div class="form-group">
+                    <label for="editEmployeeType">Employment Type</label>
+                    <select id="editEmployeeType" class="form-control">
+                        <option value="Permanent">Permanent</option>
+                        <option value="Contract">Contract</option>
+                    </select>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button class="btn btn-primary" id="updateEmployeeBtn">Update</button>
+                <button class="btn btn-danger" id="cancelEditEmployeeModal">Cancel</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Add Citizen Modal -->
+    <div class="modal" id="addCitizenModal">
+        <div class="modal-content large-modal" style="max-width: 80vw; max-height: 80vh; overflow-y: auto;">
+            <div class="modal-header">
+                <h2 class="modal-title">Add Citizen</h2>
+                <button class="close-modal" id="closeAddCitizenModal">&times;</button>
+            </div>
+            <div class="modal-body">
+                <div class="form-group">
+                    <label for="addCitizenFirstName">First Name</label>
+                    <input type="text" id="addCitizenFirstName" class="form-control">
+                </div>
+                <div class="form-group">
+                    <label for="addCitizenLastName">Last Name</label>
+                    <input type="text" id="addCitizenLastName" class="form-control">
+                </div>
+                <div class="form-group">
+                    <label for="addCitizenPanchayat">Panchayat</label>
+                    <select id="addCitizenPanchayat" class="form-control">
+                        {% for panchayat in panchayats %}
+                        <option value="{{ panchayat[0] }}">{{ panchayat[1] }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label for="addCitizenGender">Gender</label>
+                    <select id="addCitizenGender" class="form-control">
+                        <option value="Male">Male</option>
+                        <option value="Female">Female</option>
+                        <option value="Other">Other</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label for="addCitizenDOB">Date of Birth</label>
+                    <input type="date" id="addCitizenDOB" class="form-control">
+                </div>
+                <div class="form-group">
+                    <label for="addCitizenEducation">Educational Qualification</label>
+                    <select id="addCitizenEducation" class="form-control">
+                        <option value="Illiterate">Illiterate</option>
+                        <option value="Primary">Primary</option>
+                        <option value="Secondary">Secondary</option>
+                        <option value="Higher Secondary">Higher Secondary</option>
+                        <option value="Graduate">Graduate</option>
+                        <option value="Post Graduate">Post Graduate</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label for="addCitizenOccupation">Occupation</label>
+                    <select id="addCitizenOccupation" class="form-control">
+                        <option value="Student">Student</option>
+                        <option value="Employed">Employed</option>
+                        <option value="Unemployed">Unemployed</option>
+                        <option value="Retired">Retired</option>
+                        <option value="Farmer">Farmer</option>
+                        <option value="Business">Business</option>
+                        <option value="Other">Other</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label for="addCitizenIncome">Annual Income</label>
+                    <input type="number" id="addCitizenIncome" class="form-control">
+                </div>
+                <div class="form-group">
+                    <label for="addCitizenTaxDue">Tax Due Amount</label>
+                    <input type="number" id="addCitizenTaxDue" class="form-control">
+                </div>
+                <div class="form-group">
+                    <label for="addCitizenMaritalStatus">Marital Status</label>
+                    <select id="addCitizenMaritalStatus" class="form-control">
+                        <option value="Un_married">Un_married</option>
+                        <option value="Married">Married</option>
+                        <option value="Widowed">Widowed</option>
+                        <option value="Divorced">Divorced</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label for="addCitizenPhone">Phone Number</label>
+                    <input type="text" id="addCitizenPhone" class="form-control">
+                </div>
+                <div class="form-group">
+                    <label for="addCitizenEmail">Email</label>
+                    <input type="email" id="addCitizenEmail" class="form-control">
+                </div>
+                <div class="form-group">
+                    <label for="addCitizenHousehold">Household ID</label>
+                    <input type="text" id="addCitizenHousehold" class="form-control">
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button class="btn btn-primary" id="saveAddCitizenBtn">Save</button>
+                <button class="btn btn-danger" id="cancelAddCitizenModal">Cancel</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Edit Citizen Modal -->
+    <div class="modal" id="editCitizenModal">
+        <div class="modal-content large-modal" style="max-width: 80vw; max-height: 80vh; overflow-y: auto;">
+            <div class="modal-header">
+                <h2 class="modal-title">Edit Citizen</h2>
+                <button class="close-modal" id="closeEditCitizenModal">&times;</button>
+            </div>
+            <div class="modal-body">
+                <div class="form-group">
+                    <label for="editCitizenFirstName">First Name</label>
+                    <input type="text" id="editCitizenFirstName" class="form-control">
+                </div>
+                <div class="form-group">
+                    <label for="editCitizenLastName">Last Name</label>
+                    <input type="text" id="editCitizenLastName" class="form-control">
+                </div>
+                <div class="form-group">
+                    <label for="editCitizenPanchayat">Panchayat</label>
+                    <select id="editCitizenPanchayat" class="form-control">
+                        {% for panchayat in panchayats %}
+                        <option value="{{ panchayat[0] }}">{{ panchayat[1] }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label for="editCitizenGender">Gender</label>
+                    <select id="editCitizenGender" class="form-control">
+                        <option value="Male">Male</option>
+                        <option value="Female">Female</option>
+                        <option value="Other">Other</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label for="editCitizenDOB">Date of Birth</label>
+                    <input type="date" id="editCitizenDOB" class="form-control">
+                </div>
+                <div class="form-group">
+                    <label for="editCitizenEducation">Educational Qualification</label>
+                    <select id="editCitizenEducation" class="form-control">
+                        <option value="Illiterate">Illiterate</option>
+                        <option value="Primary">Primary</option>
+                        <option value="Secondary">Secondary</option>
+                        <option value="Higher Secondary">Higher Secondary</option>
+                        <option value="Graduate">Graduate</option>
+                        <option value="Post Graduate">Post Graduate</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label for="editCitizenOccupation">Occupation</label>
+                    <select id="editCitizenOccupation" class="form-control">
+                        <option value="Student">Student</option>
+                        <option value="Employed">Employed</option>
+                        <option value="Unemployed">Unemployed</option>
+                        <option value="Retired">Retired</option>
+                        <option value="Farmer">Farmer</option>
+                        <option value="Business">Business</option>
+                        <option value="Other">Other</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label for="editCitizenIncome">Annual Income</label>
+                    <input type="number" id="editCitizenIncome" class="form-control">
+                </div>
+                <div class="form-group">
+                    <label for="editCitizenTaxDue">Tax Due Amount</label>
+                    <input type="number" id="editCitizenTaxDue" class="form-control">
+                </div>
+                <div class="form-group">
+                    <label for="editCitizenMaritalStatus">Marital Status</label>
+                    <select id="editCitizenMaritalStatus" class="form-control">
+                        <option value="Un_married">Un_married</option>
+                        <option value="Married">Married</option>
+                        <option value="Widowed">Widowed</option>
+                        <option value="Divorced">Divorced</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label for="editCitizenPhone">Phone Number</label>
+                    <input type="text" id="editCitizenPhone" class="form-control">
+                </div>
+                <div class="form-group">
+                    <label for="editCitizenEmail">Email</label>
+                    <input type="email" id="editCitizenEmail" class="form-control">
+                </div>
+                <div class="form-group">
+                    <label for="editCitizenHousehold">Household ID</label>
+                    <input type="text" id="editCitizenHousehold" class="form-control">
+                </div>
+            </div>
+            <div class="modal-footer">
+
+                <button class="btn btn-primary" id="updateCitizenBtn">Update</button>
+                <button class="btn btn-danger" id="cancelEditCitizenModal">Cancel</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Add Office Modal -->
+    <div class="modal" id="addOfficeModal">
+        <div class="modal-content" style="max-height: 80vh; overflow-y: auto;">
+            <div class="modal-header">
+                <h2 class="modal-title">Add Office</h2>
+                <button class="close-modal" id="closeOfficeModal">&times;</button>
+            </div>
+            <div class="modal-body">
+                <div class="form-group">
+                    <label for="officeName">Office Name</label>
+                    <input type="text" id="officeName" class="form-control">
+                </div>
+                <div class="form-group">
+                    <label for="officeLocation">Location</label>
+                    <input type="text" id="officeLocation" class="form-control">
+                </div>
+                <div class="form-group">
+                    <label for="officeStaffCount">Staff Count</label>
+                    <input type="number" id="officeStaffCount" class="form-control">
+                </div>
+                <div class="form-group">
+                    <label for="officeStatus">Status</label>
+                    <select id="officeStatus" class="form-control">
+                        <option value="active">Active</option>
+                        <option value="inactive">Inactive</option>
+                        <option value="pending">Pending</option>
+                    </select>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button class="btn btn-primary">Save</button>
+                <button class="btn btn-danger" id="cancelOfficeModal">Cancel</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Add Announcement Modal -->
+    <div class="modal" id="addAnnouncementModal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2 class="modal-title">Add Announcement</h2>
+                <button class="close-modal" id="closeAnnouncementModal">&times;</button>
+            </div>
+            <div class="modal-body">
+                <div class="form-group">
+                    <label for="announcementHeading">Heading</label>
+                    <input type="text" id="announcementHeading" class="form-control">
+                </div>
+                <div class="form-group">
+                    <label for="announcementDetail">Detail</label>
+                    <textarea id="announcementDetail" class="form-control"></textarea>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button class="btn btn-primary" id="saveAnnouncementBtn">Save</button>
+                <button class="btn btn-danger" id="cancelAnnouncementModal">Cancel</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Edit Announcement Modal -->
+    <div class="modal" id="editAnnouncementModal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2 class="modal-title">Edit Announcement</h2>
+                <button class="close-modal" id="closeEditAnnouncementModal">&times;</button>
+            </div>
+            <div class="modal-body">
+                <div class="form-group">
+                    <label for="editAnnouncementHeading">Heading</label>
+                    <input type="text" id="editAnnouncementHeading" class="form-control">
+                </div>
+                <div class="form-group">
+                    <label for="editAnnouncementDetail">Detail</label>
+                    <textarea id="editAnnouncementDetail" class="form-control"></textarea>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button class="btn btn-primary" id="updateAnnouncementBtn">Update</button>
+                <button class="btn btn-danger" id="cancelEditAnnouncementModal">Cancel</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Edit Panchayat Modal -->
+    <div class="modal" id="editPanchayatModal">
+        <div class="modal-content" style="max-height: 80vh; overflow-y: auto;">
+            <div class="modal-header">
+                <h2 class="modal-title">Edit Panchayat</h2>
+                <button class="close-modal" id="closeEditPanchayatModal">&times;</button>
+            </div>
+            <div class="modal-body">
+                <div class="form-group">
+                    <label for="editPanchayatName">Panchayat Name</label>
+                    <input type="text" id="editPanchayatName" class="form-control">
+                </div>
+                <div class="form-group">
+                    <label for="editEstablishmentDate">Establishment Date</label>
+                    <input type="date" id="editEstablishmentDate" class="form-control">
+                </div>
+                <div class="form-group">
+                    <label for="editPanchayatArea">Area (sq km)</label>
+                    <input type="number" id="editPanchayatArea" class="form-control">
+                </div>
+                <div class="form-group">
+                    <label for="editPanchayatEmail">Contact Email</label>
+                    <input type="email" id="editPanchayatEmail" class="form-control">
+                </div>
+                <div class="form-group">
+                    <label for="editPanchayatPhone">Contact Phone</label>
+                    <input type="text" id="editPanchayatPhone" class="form-control">
+                </div>
+                <div class="form-group">
+                    <label for="editBlockName">Block Name</label>
+                    <input type="text" id="editBlockName" class="form-control">
+                </div>
+                <div class="form-group">
+                    <label for="editDistrictName">District Name</label>
+                    <input type="text" id="editDistrictName" class="form-control">
+                </div>
+                <div class="form-group">
+                    <label for="editStateName">State Name</label>
+                    <input type="text" id="editStateName" class="form-control">
+                </div>
+                <div class="form-group">
+                    <label for="editPinCode">Pin Code</label>
+                    <input type="text" id="editPinCode" class="form-control">
+                </div>
+                <div class="form-group">
+                    <label for="editCountry">Country</label>
+                    <input type="text" id="editCountry" class="form-control">
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button class="btn btn-primary" id="updatePanchayatBtn">Update</button>
+                <button class="btn btn-danger" id="cancelEditPanchayatModal">Cancel</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Add the details modals at the end of the body -->
+    <!-- Panchayat Details Modal -->
+    <div class="modal" id="panchayatDetailsModal">
+        <div class="modal-content details-modal">
+            <div class="modal-header">
+                <h2 class="modal-title">Panchayat Office Details</h2>
+                <button class="close-modal" id="closePanchayatDetailsModal">&times;</button>
+            </div>
+            <div class="modal-body" id="panchayatDetailsContent">
+                <!-- Details will be inserted here by JavaScript -->
+            </div>
+        </div>
+    </div>
+
+    <!-- Citizen Details Modal -->
+    <div class="modal" id="citizenDetailsModal">
+        <div class="modal-content details-modal">
+            <div class="modal-header">
+                <h2 class="modal-title">Citizen Details</h2>
+                <button class="close-modal" id="closeCitizenDetailsModal">&times;</button>
+            </div>
+            <div class="modal-body" id="citizenDetailsContent">
+                <!-- Details will be inserted here by JavaScript -->
+            </div>
+        </div>
+    </div>
+
+    <!-- Employee Details Modal -->
+    <div class="modal" id="employeeDetailsModal">
+        <div class="modal-content details-modal">
+            <div class="modal-header">
+                <h2 class="modal-title">Employee Details</h2>
+                <button class="close-modal" id="closeEmployeeDetailsModal">&times;</button>
+            </div>
+            <div class="modal-body" id="employeeDetailsContent">
+                <!-- Details will be inserted here by JavaScript -->
+            </div>
+        </div>
+    </div>
+
+    <script src="{{ url_for('static', filename='scripts/admin.js') }}"></script>
+</body>
+
+</html>

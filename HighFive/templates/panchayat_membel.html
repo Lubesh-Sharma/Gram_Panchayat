@@ -1,0 +1,924 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Gram Panchayat Management System - Panchayat Member Portal</title>
+  <style>
+    :root {
+      --primary: #1e40af;
+      --secondary: #0ea5e9;
+      --accent: #fbbf24;
+      --light: #f8fafc;
+      --dark: #0f172a;
+      --success: #10b981;
+      --warning: #f59e0b;
+      --danger: #ef4444;
+      --gray: #64748b;
+    }
+    
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+    
+    body {
+      font-family: 'Poppins', sans-serif;
+      background-color: #f1f5f9;
+      color: var(--dark);
+      line-height: 1.6;
+    }
+    
+    .container {
+      max-width: 1200px;
+      margin: 0 auto;
+      padding: 0 20px;
+    }
+    
+    /* Header Styles */
+    header {
+      background-color: var(--primary);
+      color: white;
+      padding: 10px 0;
+      position: sticky;
+      top: 0;
+      z-index: 100;
+      box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+    }
+    
+    .header-container {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+    
+    .logo {
+      display: flex;
+      align-items: center;
+    }
+    
+    .logo img {
+      height: 60px;
+      margin-right: 10px;
+    }
+    
+    .logo-text h1 {
+      font-size: 1.2rem;
+      font-weight: 700;
+    }
+    
+    .logo-text p {
+      font-size: 0.8rem;
+      opacity: 0.9;
+    }
+    
+    nav ul {
+      display: flex;
+      list-style: none;
+    }
+    
+    nav ul li {
+      margin-left: 20px;
+    }
+    
+    nav ul li a {
+      color: white;
+      text-decoration: none;
+      font-size: 0.9rem;
+      padding: 5px 10px;
+      border-radius: 4px;
+      transition: background-color 0.3s;
+    }
+    
+    nav ul li a:hover {
+      background-color: rgba(255, 255, 255, 0.1);
+    }
+    
+    .user-panel {
+      display: flex;
+      align-items: center;
+    }
+    
+    .user-info {
+      margin-right: 15px;
+      text-align: right;
+    }
+    
+    .user-name {
+      font-weight: 600;
+      font-size: 0.9rem;
+    }
+    
+    .user-role {
+      font-size: 0.8rem;
+      opacity: 0.9;
+    }
+    
+    .logout-btn {
+      background-color: rgba(255, 255, 255, 0.2);
+      border: none;
+      color: white;
+      padding: 5px 12px;
+      border-radius: 4px;
+      cursor: pointer;
+      font-size: 0.9rem;
+      transition: background-color 0.3s;
+    }
+    
+    .logout-btn:hover {
+      background-color: rgba(255, 255, 255, 0.3);
+    }
+    
+    /* Main Content Area */
+    .main-content {
+      display: flex;
+      padding: 20px 0;
+    }
+    
+    /* Sidebar */
+    .sidebar {
+      width: 250px;
+      background-color: white;
+      border-radius: 8px;
+      padding: 20px;
+      box-shadow: 0 2px 10px rgba(0, 0, 0, 0.05);
+      margin-right: 20px;
+      height: calc(100vh - 100px);
+      position: sticky;
+      top: 100px;
+    }
+    
+    .sidebar-title {
+      font-size: 1.1rem;
+      color: var(--primary);
+      margin-bottom: 20px;
+      padding-bottom: 10px;
+      border-bottom: 1px solid #e2e8f0;
+    }
+    
+    .sidebar-menu {
+      list-style: none;
+    }
+    
+    .sidebar-menu li {
+      margin-bottom: 5px;
+    }
+    
+    .sidebar-menu li a {
+      display: flex;
+      align-items: center;
+      padding: 10px;
+      color: var(--dark);
+      text-decoration: none;
+      border-radius: 4px;
+      transition: background-color 0.3s;
+    }
+    
+    .sidebar-menu li a:hover, .sidebar-menu li a.active {
+      background-color: var(--light);
+      color: var(--primary);
+    }
+    
+    .sidebar-menu li a i {
+      margin-right: 10px;
+      color: var(--primary);
+    }
+    
+    .sidebar-menu-title {
+      font-size: 0.8rem;
+      text-transform: uppercase;
+      color: var(--gray);
+      margin: 20px 0 10px;
+    }
+    
+    /* Content Area */
+    .content {
+      flex: 1;
+    }
+    
+    .content-card {
+      background-color: white;
+      border-radius: 8px;
+      padding: 20px;
+      box-shadow: 0 2px 10px rgba(0, 0, 0, 0.05);
+      margin-bottom: 20px;
+    }
+    
+    .content-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 20px;
+    }
+    
+    .content-title {
+      font-size: 1.5rem;
+      color: var(--primary);
+    }
+    
+    .content-actions {
+      display: flex;
+      gap: 10px;
+    }
+    
+    .btn {
+      padding: 8px 15px;
+      border-radius: 4px;
+      font-size: 0.9rem;
+      cursor: pointer;
+      transition: background-color 0.3s;
+      border: none;
+    }
+    
+    .btn-primary {
+      background-color: var(--primary);
+      color: white;
+    }
+    
+    .btn-primary:hover {
+      background-color: #1e3a8a;
+    }
+    
+    .btn-secondary {
+      background-color: var(--light);
+      color: var(--dark);
+    }
+    
+    .btn-secondary:hover {
+      background-color: #e2e8f0;
+    }
+    
+    .btn-success {
+      background-color: var(--success);
+      color: white;
+    }
+    
+    .btn-success:hover {
+      background-color: #059669;
+    }
+    
+    .btn-danger {
+      background-color: var(--danger);
+      color: white;
+    }
+    
+    .btn-danger:hover {
+      background-color: #dc2626;
+    }
+    
+    /* Dashboard Cards */
+    .stats-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+      gap: 20px;
+      margin-bottom: 20px;
+    }
+    
+    .stat-card {
+      background-color: white;
+      border-radius: 8px;
+      padding: 20px;
+      box-shadow: 0 2px 10px rgba(0, 0, 0, 0.05);
+      text-align: center;
+    }
+    
+    .stat-icon {
+      font-size: 2rem;
+      margin-bottom: 10px;
+      display: inline-block;
+      color: var(--primary);
+    }
+    
+    .stat-value {
+      font-size: 1.8rem;
+      font-weight: 700;
+      margin-bottom: 5px;
+      color: var(--dark);
+    }
+    
+    .stat-label {
+      font-size: 0.9rem;
+      color: var(--gray);
+    }
+    
+    /* Table Styles */
+    .data-table {
+      width: 100%;
+      border-collapse: collapse;
+    }
+    
+    .data-table th, .data-table td {
+      padding: 12px 15px;
+      text-align: left;
+      border-bottom: 1px solid #e2e8f0;
+    }
+    
+    .data-table th {
+      background-color: var(--light);
+      color: var(--gray);
+      font-weight: 600;
+      font-size: 0.9rem;
+      text-transform: uppercase;
+    }
+    
+    .data-table tbody tr:hover {
+      background-color: #f8fafc;
+    }
+    
+    .table-status {
+      display: inline-block;
+      padding: 3px 10px;
+      border-radius: 20px;
+      font-size: 0.8rem;
+      font-weight: 500;
+    }
+    
+    .status-approved {
+      background-color: #dcfce7;
+      color: var(--success);
+    }
+    
+    .status-pending {
+      background-color: #fef3c7;
+      color: var(--warning);
+    }
+    
+    .status-rejected {
+      background-color: #fee2e2;
+      color: var(--danger);
+    }
+    
+    /* Filters */
+    .filters {
+      display: flex;
+      gap: 15px;
+      margin-bottom: 20px;
+      flex-wrap: wrap;
+    }
+    
+    .filter-item {
+      display: flex;
+      align-items: center;
+    }
+    
+    .filter-label {
+      margin-right: 10px;
+      font-weight: 500;
+      font-size: 0.9rem;
+    }
+    
+    .filter-control {
+      padding: 8px 12px;
+      border: 1px solid #e2e8f0;
+      border-radius: 4px;
+      font-size: 0.9rem;
+    }
+    
+    /* Pagination */
+    .pagination {
+      display: flex;
+      justify-content: center;
+      margin-top: 20px;
+    }
+    
+    .page-item {
+      margin: 0 5px;
+    }
+    
+    .page-link {
+      display: block;
+      padding: 5px 10px;
+      border-radius: 4px;
+      border: 1px solid #e2e8f0;
+      color: var(--dark);
+      text-decoration: none;
+      transition: all 0.3s;
+    }
+    
+    .page-link:hover {
+      background-color: #f1f5f9;
+    }
+    
+    .page-item.active .page-link {
+      background-color: var(--primary);
+      color: white;
+      border-color: var(--primary);
+    }
+    
+    /* Modal Styles */
+    .modal-overlay {
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100vw;
+      height: 100vh;
+      background: rgba(0, 0, 0, 0.5);
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      z-index: 200;
+      opacity: 0;
+      visibility: hidden;
+      transition: all 0.3s;
+    }
+    
+    .modal-overlay.active {
+      opacity: 1;
+      visibility: visible;
+    }
+    
+    .modal-content {
+      background: white;
+      padding: 25px;
+      border-radius: 8px;
+      width: 90%;
+      max-width: 600px;
+      transform: translateY(-50px);
+      transition: transform 0.3s;
+    }
+    
+    .modal-overlay.active .modal-content {
+      transform: translateY(0);
+    }
+    
+    .modal-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 20px;
+    }
+    
+    .modal-title {
+      font-size: 1.2rem;
+      font-weight: 600;
+      color: var(--primary);
+    }
+    
+    .modal-close {
+      cursor: pointer;
+      font-size: 1.2rem;
+      color: var(--gray);
+    }
+    
+    .modal-footer {
+      display: flex;
+      justify-content: flex-end;
+      gap: 10px;
+      margin-top: 20px;
+    }
+    
+    /* Responsive Styles */
+    @media (max-width: 992px) {
+      .main-content {
+        flex-direction: column;
+      }
+      
+      .sidebar {
+        width: 100%;
+        margin-right: 0;
+        margin-bottom: 20px;
+        height: auto;
+        position: static;
+      }
+    }
+    
+    @media (max-width: 768px) {
+      .header-container {
+        flex-direction: column;
+      }
+      
+      .logo {
+        margin-bottom: 15px;
+      }
+      
+      nav ul {
+        flex-wrap: wrap;
+        justify-content: center;
+      }
+      
+      nav ul li {
+        margin: 5px;
+      }
+      
+      .stats-grid {
+        grid-template-columns: 1fr 1fr;
+      }
+      
+      .data-table {
+        display: block;
+        overflow-x: auto;
+      }
+    }
+    
+    @media (max-width: 576px) {
+      .stats-grid {
+        grid-template-columns: 1fr;
+      }
+      
+      .content-header {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 10px;
+      }
+      
+      .filters {
+        flex-direction: column;
+      }
+      
+      .filter-item {
+        width: 100%;
+      }
+    }
+  </style>
+</head>
+<body>
+  <!-- Header -->
+  <header>
+    <div class="container header-container">
+      <div class="logo">
+        <img src="https://via.placeholder.com/60" alt="GPMS Logo">
+        <div class="logo-text">
+          <h1>Gram Panchayat Management System</h1>
+          <p>Empowering Rural Governance</p>
+        </div>
+      </div>
+      
+      <nav>
+        <ul>
+          <li><a href="#" class="active">Dashboard</a></li>
+          <li><a href="#">Services</a></li>
+          <li><a href="#">Reports</a></li>
+          <li><a href="#">Settings</a></li>
+          <li><a href="#">Help</a></li>
+        </ul>
+      </nav>
+      
+      <div class="user-panel">
+        <div class="user-info">
+          <div class="user-name">Sarita Kumari</div>
+          <div class="user-role">Panchayat Member</div>
+        </div>
+        <button class="logout-btn" id="logoutBtn">Logout</button>
+      </div>
+    </div>
+  </header>
+  
+  <!-- Main Content -->
+  <div class="container main-content">
+    <!-- Sidebar -->
+    <div class="sidebar">
+      <h3 class="sidebar-title">Administration Panel</h3>
+      
+      <ul class="sidebar-menu">
+        <li><a href="#" class="active"><i>📊</i> Dashboard</a></li>
+        
+        <div class="sidebar-menu-title">Citizen Management</div>
+        <li><a href="#"><i>👥</i> Citizens</a></li>
+        <li><a href="#"><i>🏠</i> Households</a></li>
+        <li><a href="#"><i>📝</i> Certificate Applications</a></li>
+        <li><a href="#"><i>🔍</i> Service Requests</a></li>
+        
+        <div class="sidebar-menu-title">Development</div>
+        <li><a href="#"><i>🚧</i> Projects</a></li>
+        <li><a href="#"><i>💰</i> Budget Management</a></li>
+        <li><a href="#"><i>📜</i> Assets &amp; Inventory</a></li>
+        
+        <div class="sidebar-menu-title">Land Records</div>
+        <li><a href="#"><i>🗺️</i> Land Registry</a></li>
+        <li><a href="#"><i>💲</i> Property Tax</a></li>
+        <li><a href="#"><i>🌾</i> Agriculture</a></li>
+        
+        <div class="sidebar-menu-title">Welfare</div>
+        <li><a href="#"><i>🤲</i> Scheme Management</a></li>
+        <li><a href="#"><i>👨‍👩‍👧‍👦</i> Beneficiaries</a></li>
+        
+        <div class="sidebar-menu-title">Administration</div>
+        <li><a href="#"><i>📣</i> Announcements</a></li>
+        <li><a href="#"><i>📅</i> Meetings &amp; Events</a></li>
+        <li><a href="#"><i>👨‍💼</i> Employee Management</a></li>
+      </ul>
+    </div>
+    
+    <!-- Content Area -->
+    <div class="content">
+      <!-- Dashboard Overview -->
+      <div class="content-card">
+        <div class="content-header">
+          <h2 class="content-title">Dashboard Overview</h2>
+          <div class="content-actions">
+            <button class="btn btn-secondary">Export</button>
+            <button class="btn btn-primary">Generate Report</button>
+          </div>
+        </div>
+        
+        <div class="stats-grid">
+          <div class="stat-card">
+            <div class="stat-icon">👥</div>
+            <div class="stat-value">4,576</div>
+            <div class="stat-label">Total Population</div>
+          </div>
+          
+          <div class="stat-card">
+            <div class="stat-icon">🏠</div>
+            <div class="stat-value">982</div>
+            <div class="stat-label">Households</div>
+          </div>
+          
+          <div class="stat-card">
+            <div class="stat-icon">📝</div>
+            <div class="stat-value">23</div>
+            <div class="stat-label">Pending Applications</div>
+          </div>
+          
+          <div class="stat-card">
+            <div class="stat-icon">🚧</div>
+            <div class="stat-value">7</div>
+            <div class="stat-label">Active Projects</div>
+          </div>
+        </div>
+      </div>
+      
+      <!-- Pending Certificate Applications -->
+      <div class="content-card">
+        <div class="content-header">
+          <h2 class="content-title">Pending Certificate Applications</h2>
+          <div class="content-actions">
+            <button class="btn btn-primary">Process All</button>
+          </div>
+        </div>
+        
+        <div class="filters">
+          <div class="filter-item">
+            <span class="filter-label">Certificate Type:</span>
+            <select class="filter-control">
+              <option value="">All Types</option>
+              <option value="birth">Birth Certificate</option>
+              <option value="residence">Residence Certificate</option>
+              <option value="income">Income Certificate</option>
+              <option value="caste">Caste Certificate</option>
+              <option value="property">Property Certificate</option>
+            </select>
+          </div>
+          
+          <div class="filter-item">
+            <span class="filter-label">Date Range:</span>
+            <input type="date" class="filter-control">
+            <span style="margin: 0 5px;">to</span>
+            <input type="date" class="filter-control">
+          </div>
+          
+          <div class="filter-item">
+            <button class="btn btn-secondary">Apply Filters</button>
+          </div>
+        </div>
+        
+        <table class="data-table">
+          <thead>
+            <tr>
+              <th>Application ID</th>
+              <th>Applicant Name</th>
+              <th>Certificate Type</th>
+              <th>Application Date</th>
+              <th>Status</th>
+              <th>Actions</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td>APP-2025-0342</td>
+              <td>Ramesh Kumar</td>
+              <td>Birth Certificate</td>
+              <td>25 Feb 2025</td>
+              <td><span class="table-status status-pending">Pending</span></td>
+              <td>
+                <button class="btn btn-success btn-sm">Approve</button>
+                <button class="btn btn-danger btn-sm">Reject</button>
+                <button class="btn btn-secondary btn-sm">View</button>
+              </td>
+            </tr>
+            <tr>
+              <td>APP-2025-0341</td>
+              <td>Anita Devi</td>
+              <td>Income Certificate</td>
+              <td>24 Feb 2025</td>
+              <td><span class="table-status status-pending">Pending</span></td>
+              <td>
+                <button class="btn btn-success btn-sm">Approve</button>
+                <button class="btn btn-danger btn-sm">Reject</button>
+                <button class="btn btn-secondary btn-sm">View</button>
+              </td>
+            </tr>
+            <tr>
+              <td>APP-2025-0339</td>
+              <td>Sunil Patel</td>
+              <td>Residence Certificate</td>
+              <td>23 Feb 2025</td>
+              <td><span class="table-status status-pending">Pending</span></td>
+              <td>
+                <button class="btn btn-success btn-sm">Approve</button>
+                <button class="btn btn-danger btn-sm">Reject</button>
+                <button class="btn btn-secondary btn-sm">View</button>
+              </td>
+            </tr>
+            <tr>
+              <td>APP-2025-0336</td>
+              <td>Lakshmi Singh</td>
+              <td>Property Certificate</td>
+              <td>22 Feb 2025</td>
+              <td><span class="table-status status-pending">Pending</span></td>
+              <td>
+                <button class="btn btn-success btn-sm">Approve</button>
+                <button class="btn btn-danger btn-sm">Reject</button>
+                <button class="btn btn-secondary btn-sm">View</button>
+              </td>
+            </tr>
+            <tr>
+              <td>APP-2025-0334</td>
+              <td>Vishnu Sharma</td>
+              <td>Income Certificate</td>
+              <td>21 Feb 2025</td>
+              <td><span class="table-status status-pending">Pending</span></td>
+              <td>
+                <button class="btn btn-success btn-sm">Approve</button>
+                <button class="btn btn-danger btn-sm">Reject</button>
+                <button class="btn btn-secondary btn-sm">View</button>
+              </td>
+            </tr>
+          </tbody>
+        </table>
+        
+        <div class="pagination">
+          <div class="page-item"><a href="#" class="page-link">Previous</a></div>
+          <div class="page-item active"><a href="#" class="page-link">1</a></div>
+          <div class="page-item"><a href="#" class="page-link">2</a></div>
+          <div class="page-item"><a href="#" class="page-link">3</a></div>
+          <div class="page-item"><a href="#" class="page-link">Next</a></div>
+        </div>
+      </div>
+      
+      <!-- Recent Service Requests -->
+      <div class="content-card">
+        <div class="content-header">
+          <h2 class="content-title">Recent Service Requests</h2>
+          <div class="content-actions">
+            <button class="btn btn-primary">View All</button>
+          </div>
+        </div>
+        
+        <table class="data-table">
+          <thead>
+            <tr>
+              <th>Request ID</th>
+              <th>Citizen Name</th>
+              <th>Request Type</th>
+              <th>Location</th>
+              <th>Priority</th>
+              <th>Status</th>
+              <th>Actions</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td>REQ-2025-0127</td>
+              <td>Dinesh Verma</td>
+              <td>Water Supply Issue</td>
+              <td>Ward 3, North Section</td>
+              <td>High</td>
+              <td><span class="table-status status-pending">Pending</span></td>
+              <td>
+                <button class="btn btn-secondary btn-sm">Assign</button>
+                <button class="btn btn-secondary btn-sm">View</button>
+              </td>
+            </tr>
+            <tr>
+              <td>REQ-2025-0126</td>
+              <td>Meena Gupta</td>
+              <td>Street Light Repair</td>
+              <td>Ward 2, Main Road</td>
+              <td>Medium</td>
+              <td><span class="table-status status-pending">Pending</span></td>
+              <td>
+                <button class="btn btn-secondary btn-sm">Assign</button>
+                <button class="btn btn-secondary btn-sm">View</button>
+              </td>
+            </tr>
+            <tr>
+              <td>REQ-2025-0124</td>
+              <td>Prakash Singh</td>
+              <td>Drainage Cleaning</td>
+              <td>Ward 4, East Block</td>
+              <td>Medium</td>
+              <td><span class="table-status status-approved">In Progress</span></td>
+              <td>
+                <button class="btn btn-success btn-sm">Complete</button>
+                <button class="btn btn-secondary btn-sm">View</button>
+              </td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+      
+      <!-- Ongoing Projects -->
+      <div class="content-card">
+        <div class="content-header">
+          <h2 class="content-title">Ongoing Projects</h2>
+          <div class="content-actions">
+            <button class="btn btn-primary">View All</button>
+          </div>
+        </div>
+        
+        <table class="data-table">
+          <thead>
+            <tr>
+              <th>Project ID</th>
+              <th>Project Name</th>
+              <th>Start Date</th>
+              <th>Estimated Cost</th>
+              <th>Status</th>
+              <th>Actions</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td>PRJ-2025-001</td>
+              <td>Road Renovation</td>
+              <td>15 Jan 2025</td>
+              <td>₹5,00,000</td>
+              <td><span class="table-status status-pending">In Progress</span></td>
+              <td>
+                <button class="btn btn-secondary btn-sm">View</button>
+              </td>
+            </tr>
+            <tr>
+              <td>PRJ-2025-002</td>
+              <td>Community Center</td>
+              <td>01 Feb 2025</td>
+              <td>₹8,00,000</td>
+              <td><span class="table-status status-pending">In Progress</span></td>
+              <td>
+                <button class="btn btn-secondary btn-sm">View</button>
+              </td>
+            </tr>
+            <tr>
+              <td>PRJ-2025-003</td>
+              <td>New Water Supply Line</td>
+              <td>20 Feb 2025</td>
+              <td>₹3,50,000</td>
+              <td><span class="table-status status-pending">In Progress</span></td>
+              <td>
+                <button class="btn btn-secondary btn-sm">View</button>
+              </td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+      
+    </div>
+  </div>
+  
+  <!-- Optional Modal for further interactions -->
+  <div class="modal-overlay" id="modalOverlay">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h3 class="modal-title">Modal Title</h3>
+        <span class="modal-close" id="modalClose">&times;</span>
+      </div>
+      <div class="modal-body">
+        <p>This is a sample modal. Add your content here.</p>
+      </div>
+      <div class="modal-footer">
+        <button class="btn btn-secondary" id="modalCancel">Cancel</button>
+        <button class="btn btn-primary" id="modalConfirm">Confirm</button>
+      </div>
+    </div>
+  </div>
+  
+  <script>
+    // Minimal JavaScript to simulate logout and modal functionality
+
+    // Logout button simulation: redirect to a login page (for demo)
+    document.getElementById('logoutBtn').addEventListener('click', function () {
+      window.location.href = 'login.html';
+    });
+
+    // Modal handling example
+    const modalOverlay = document.getElementById('modalOverlay');
+    const modalClose = document.getElementById('modalClose');
+    const modalCancel = document.getElementById('modalCancel');
+
+    // Function to show modal (can be triggered by other buttons)
+    function showModal() {
+      modalOverlay.classList.add('active');
+    }
+
+    // Function to hide modal
+    function hideModal() {
+      modalOverlay.classList.remove('active');
+    }
+
+    modalClose.addEventListener('click', hideModal);
+    modalCancel.addEventListener('click', hideModal);
+  </script>
+</body>
+</html>

@@ -1,0 +1,515 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Certificate Management - Gram Panchayat Management System</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='styles/certificate.css') }}">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/bootstrap/5.3.0/css/bootstrap.min.css" rel="stylesheet">
+</head>
+
+<body>
+    <!-- Sidebar -->
+    <aside class="sidebar">
+        <div class="sidebar-header">
+            <h2>Gram Panchayat</h2>
+            <p>Management System</p>
+        </div>
+        <div class="sidebar-menu">
+            <div class="menu-item" data-section="dashboard" onclick="activateSection('dashboard')">
+                <i class="fas fa-home"></i>
+                <span>Dashboard</span>
+            </div>
+            <div class="menu-item active" data-section="certificate-management" onclick="activateSection('certificate-management')">
+                <i class="fas fa-tasks"></i>
+                <span>Pending Certificate Request</span>
+            </div>
+            <div class="menu-item" data-section="certificates" onclick="activateSection('certificates')">
+                <i class="fas fa-certificate"></i>
+                <span>Certificates</span>
+            </div>
+            <div class="menu-item" data-section="change-password" data-bs-toggle="modal"
+                data-bs-target="#changePasswordModal">
+                <i class="fas fa-key"></i>
+                <span>Change Password</span>
+            </div>
+            <div class="menu-item" data-section="citizen-portal"
+                onclick="window.location.href=&apos;{{ url_for('citizen_dashboard', user_id=user_id, citizen_id=employee.citizen_id) }}&apos;">
+                <i class="fas fa-user"></i>
+                <span>Your Citizen Portal</span>
+            </div>
+            <div class="menu-item" onclick="window.location.href='{{ url_for('landing') }}'">
+                <i class="fas fa-sign-out-alt"></i>
+                <span>Logout</span>
+            </div>
+        </div>
+    </aside>
+
+    <!-- Navigation Bar -->
+    <nav class="navbar navbar-expand-lg navbar-dark bg-dark">
+        <div class="container">
+            <a class="navbar-brand" href="#">Gram Panchayat Management System</a>
+            <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav">
+                <span class="navbar-toggler-icon"></span>
+            </button>
+            <div class="collapse navbar-collapse" id="navbarNav">
+                <ul class="navbar-nav ms-auto">
+                    <li class="nav-item dropdown">
+                        <a class="nav-link dropdown-toggle" href="#" id="navbarDropdown" role="button"
+                            data-bs-toggle="dropdown">
+                            {{ employee_name }}
+                        </a>
+                        <ul class="dropdown-menu dropdown-menu-end">
+                            <li><a class="dropdown-item" href="#" data-bs-toggle="modal"
+                                    data-bs-target="#changePasswordModal">Change password</a></li>
+                            <li><a class="dropdown-item"
+                                    href="{{ url_for('citizen_dashboard', user_id=user_id, citizen_id=employee.citizen_id) }}">Access
+                                    Citizen Portal</a></li>
+                            <li><a class="dropdown-item" href="{{ url_for('landing') }}">Logout</a></li>
+                        </ul>
+                    </li>
+                </ul>
+            </div>
+        </div>
+    </nav>
+
+    <!-- Change Password Modal -->
+    <div class="modal fade" id="changePasswordModal" tabindex="-1" aria-labelledby="changePasswordModalLabel"
+        aria-hidden="true">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header bg-primary text-white">
+                    <h5 class="modal-title" id="changePasswordModalLabel">Change Password</h5>
+                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"
+                        aria-label="Close"></button>
+                </div>
+                <div class="modal-body">
+                    <form id="changePasswordForm">
+                        <!-- Add hidden input for user_id -->
+                        <input type="hidden" id="user_id" value="{{ user_id }}">
+                        <div class="mb-3">
+                            <label for="currentPassword" class="form-label">Current Password</label>
+                            <input type="password" class="form-control" id="currentPassword" name="currentPassword"
+                                required>
+                        </div>
+                        <div class="mb-3">
+                            <label for="newPassword" class="form-label">New Password</label>
+                            <input type="password" class="form-control" id="newPassword" name="newPassword" required>
+                        </div>
+                        <div class="mb-3">
+                            <label for="confirmPassword" class="form-label">Confirm New Password</label>
+                            <input type="password" class="form-control" id="confirmPassword" name="confirmPassword"
+                                required>
+                        </div>
+                        <div id="passwordMessage" class="alert d-none"></div>
+                    </form>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                    <button type="button" class="btn btn-success" id="savePasswordBtn">Save Changes</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Flash Message Container -->
+    <div class="alert-container">
+        {% with messages = get_flashed_messages(with_categories=true) %}
+        {% if messages %}
+        {% for category, message in messages %}
+        <div class="alert alert-{{ category }} alert-dismissible fade show" role="alert">
+            {{ message }}
+            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+        </div>
+        {% endfor %}
+        {% endif %}
+        {% endwith %}
+    </div>
+
+    <header class="header text-center">
+        <div class="container">
+            <h1>Certificate Management</h1>
+            <p class="lead">Review and process certificate applications</p>
+        </div>
+    </header>
+
+    <!-- Main Content -->
+    <div class="main-content">
+        <div class="container mt-4">
+            <!-- Dashboard Section -->
+            <div class="content-section" id="dashboard">
+                <div class="card mb-4">
+                    <div class="card-header bg-primary text-white">
+                        <h4>Panchayat Details</h4>
+                    </div>
+                    <div class="card-body">
+                        <div class="row">
+                            <div class="col-md-6">
+                                <div class="detail-item">
+                                    <span class="detail-label"><i class="fas fa-building me-2"></i>Panchayat Name:</span>
+                                    <span class="detail-value">{{ panchayat.panchayat_name }}</span>
+                                </div>
+                                <div class="detail-item">
+                                    <span class="detail-label"><i class="fas fa-calendar-alt me-2"></i>Establishment Date:</span>
+                                    <span class="detail-value">{{ panchayat.establishment_date }}</span>
+                                </div>
+                                <div class="detail-item">
+                                    <span class="detail-label"><i class="fas fa-chart-area me-2"></i>Area (sq km):</span>
+                                    <span class="detail-value">{{ panchayat.area_sq_km }}</span>
+                                </div>
+                            </div>
+                            <div class="col-md-6">
+                                <div class="detail-item">
+                                    <span class="detail-label"><i class="fas fa-envelope me-2"></i>Contact Email:</span>
+                                    <span class="detail-value"><a href="mailto:{{ panchayat.contact_email }}">{{ panchayat.contact_email }}</a></span>
+                                </div>
+                                <div class="detail-item">
+                                    <span class="detail-label"><i class="fas fa-phone me-2"></i>Contact Phone:</span>
+                                    <span class="detail-value"><a href="tel:{{ panchayat.contact_phone }}">{{ panchayat.contact_phone }}</a></span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Certificate Management Section -->
+            <div class="content-section active" id="certificate-management">
+                <div class="card mb-4">
+                    <div class="card-header bg-warning text-dark">
+                        <h4>Pending Certificate Applications</h4>
+                    </div>
+                    <div class="card-body">
+                        {% if certificates %}
+                        <div class="table-responsive">
+                            <table class="table table-striped">
+                                <thead>
+                                    <tr>
+                                        <th>Certificate ID</th>
+                                        <th>Citizen ID</th>
+                                        <th>Citizen Name</th>
+                                        <th>Type</th>
+                                        <th>Application Date</th>
+                                        <th>Details</th>
+                                        <th>Actions</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    {% for cert in certificates %}
+                                    <tr>
+                                        <td>{{ cert.certificate_id }}</td>
+                                        <td>{{ cert.citizen_id }}</td>
+                                        <td>{{ cert.first_name }}</td>
+                                        <td>{{ cert.type }}</td>
+                                        <td>{{ cert.application_date }}</td>
+                                        <td>{{ cert.description }}</td>
+                                        <td>
+                                            <div class="action-btns">
+                                                <button class="btn btn-success btn-sm" 
+                                                        onclick="showActionModal('{{ cert.certificate_id }}', 'Approved')">
+                                                    <i class="fas fa-check-circle"></i> Approve
+                                                </button>
+                                                <button class="btn btn-danger btn-sm" 
+                                                        onclick="showActionModal('{{ cert.certificate_id }}', 'Rejected')">
+                                                    <i class="fas fa-times-circle"></i> Reject
+                                                </button>
+                                            </div>
+                                        </td>
+                                    </tr>
+                                    {% endfor %}
+                                </tbody>
+                            </table>
+                        </div>
+                        {% else %}
+                        <div class="alert alert-info">No pending certificate applications found.</div>
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+
+            <!-- Certificates Types Management Section -->
+            <div class="content-section" id="certificates">
+                <div class="card mb-4">
+                    <div class="card-header bg-primary text-white d-flex justify-content-between align-items-center">
+                        <h4>Available Certificate Types</h4>
+                        <button class="btn btn-light" id="addNewCertificateBtn">
+                            <i class="fas fa-plus-circle"></i> Add New Certificate Type
+                        </button>
+                    </div>
+                    <div class="card-body">
+                        {% if certificate_types %}
+                        <div class="table-responsive">
+                            <table class="table table-striped">
+                                <thead>
+                                    <tr>
+                                        <th>Type ID</th>
+                                        <th>Certificate Type</th>
+                                        <th>Description</th>
+                                        <th>Actions</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="certificateTypesTableBody">
+                                    {% for cert_type in certificate_types %}
+                                    <tr>
+                                        <td>{{ cert_type.type_id }}</td>
+                                        <td>{{ cert_type.type }}</td>
+                                        <td>{{ cert_type.description }}</td>
+                                        <td>
+                                            <button class="btn btn-primary btn-sm"
+                                                onclick="showEditCertificateModal('{{ cert_type.type_id }}', '{{ cert_type.type }}', '{{ cert_type.description }}')">
+                                                Edit
+                                            </button>
+                                            <button class="btn btn-danger btn-sm"
+                                                onclick="confirmDeleteCertificate('{{ cert_type.type_id }}', '{{ cert_type.type }}')">
+                                                Delete
+                                            </button>
+                                        </td>
+                                    </tr>
+                                    {% endfor %}
+                                </tbody>
+                            </table>
+                        </div>
+                        {% else %}
+                        <div class="alert alert-info">No certificate types available.</div>
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal for approval/rejection -->
+    <div class="modal fade" id="actionModal" tabindex="-1" aria-labelledby="actionModalLabel" aria-hidden="true">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header bg-primary text-white">
+                    <h5 class="modal-title" id="actionModalLabel">Certificate Action</h5>
+                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <form id="actionForm" method="POST" action="{{ url_for('update_certificate_status') }}">
+                    <div class="modal-body">
+                        <input type="hidden" id="certificate_id" name="certificate_id">
+                        <input type="hidden" id="status" name="status">
+                        <input type="hidden" name="employee_id" value="{{ employee_id }}">
+                        <input type="hidden" name="user_id" value="{{ user_id }}">
+                        
+                        <div class="mb-3">
+                            <label for="description" class="form-label">Comments/Description:</label>
+                            <textarea class="form-control" id="description" name="description" rows="3" required></textarea>
+                        </div>
+                    </div>
+                    <div class="modal-footer">
+                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                        <button type="submit" class="btn btn-primary">Submit</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal for Adding New Certificate Type -->
+    <div class="modal fade" id="addCertificateModal" tabindex="-1" aria-labelledby="addCertificateModalLabel"
+        aria-hidden="true">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header bg-primary text-white">
+                    <h5 class="modal-title" id="addCertificateModalLabel">Add New Certificate Type</h5>
+                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"
+                        aria-label="Close"></button>
+                </div>
+                <form method="POST" action="{{ url_for('add_certificate_type') }}" id="addCertificateForm">
+                    <div class="modal-body">
+                        <input type="hidden" name="user_id" value="{{ user_id }}">
+                        <input type="hidden" name="employee_id" value="{{ employee_id }}">
+
+                        <div class="mb-3">
+                            <label for="certificate_type" class="form-label">Certificate Type:</label>
+                            <input type="text" class="form-control" id="certificate_type" name="certificate_type" required>
+                        </div>
+                        <div class="mb-3">
+                            <label for="certificate_description" class="form-label">Description:</label>
+                            <textarea class="form-control" id="certificate_description" name="certificate_description" rows="3"
+                                required></textarea>
+                        </div>
+                    </div>
+                    <div class="modal-footer">
+                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                        <button type="submit" class="btn btn-success" id="addCertificateBtn">Add Certificate Type</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal for Editing Certificate Type -->
+    <div class="modal fade" id="editCertificateModal" tabindex="-1" aria-labelledby="editCertificateModalLabel"
+        aria-hidden="true">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header bg-primary text-white">
+                    <h5 class="modal-title" id="editCertificateModalLabel">Edit Certificate Type</h5>
+                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"
+                        aria-label="Close"></button>
+                </div>
+                <form method="POST" action="{{ url_for('update_certificate_type') }}">
+                    <div class="modal-body">
+                        <input type="hidden" id="edit_type_id" name="type_id">
+                        <input type="hidden" name="user_id" value="{{ user_id }}">
+                        <input type="hidden" name="employee_id" value="{{ employee_id }}">
+
+                        <div class="mb-3">
+                            <label for="edit_certificate_type" class="form-label">Certificate Type:</label>
+                            <input type="text" class="form-control" id="edit_certificate_type" name="certificate_type" required>
+                        </div>
+                        <div class="mb-3">
+                            <label for="edit_certificate_description" class="form-label">Description:</label>
+                            <textarea class="form-control" id="edit_certificate_description" name="certificate_description"
+                                rows="3" required></textarea>
+                        </div>
+                    </div>
+                    <div class="modal-footer">
+                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                        <button type="submit" class="btn btn-primary">Update Certificate Type</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <!-- Footer -->
+    <footer class="footer text-center">
+        <div class="container">
+            <p>© 2025 Gram Panchayat Management System | Government of India</p>
+        </div>
+    </footer>
+
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/bootstrap/5.3.0/js/bootstrap.bundle.min.js"></script>
+    <script src="{{ url_for('static', filename='scripts/certificate.js') }}"></script>
+    <script>
+        function activateSection(section) {
+            document.querySelectorAll('.menu-item').forEach(item => {
+                item.classList.remove('active');
+            });
+            document.querySelector(`.menu-item[data-section="${section}"]`).classList.add('active');
+
+            document.querySelectorAll('.content-section').forEach(content => {
+                content.classList.remove('active');
+            });
+            document.getElementById(section).classList.add('active');
+        }
+        
+        function showActionModal(certificateId, status) {
+            document.getElementById('certificate_id').value = certificateId;
+            document.getElementById('status').value = status;
+            document.getElementById('actionModalLabel').textContent = status === 'Approved' ? 'Approve Certificate' : 'Reject Certificate';
+            let modal = new bootstrap.Modal(document.getElementById('actionModal'));
+            modal.show();
+        }
+
+        function showEditCertificateModal(typeId, type, description) {
+            // Set values in the edit certificate modal
+            document.getElementById('edit_type_id').value = typeId;
+            document.getElementById('edit_certificate_type').value = type;
+            document.getElementById('edit_certificate_description').value = description;
+
+            // Show the modal
+            var editCertificateModal = new bootstrap.Modal(document.getElementById('editCertificateModal'));
+            editCertificateModal.show();
+        }
+
+        function confirmDeleteCertificate(typeId, certificateType) {
+            if (confirm(`Are you sure you want to delete the certificate type "${certificateType}"? This action cannot be undone.`)) {
+                // Create a form to submit the delete request
+                const form = document.createElement('form');
+                form.method = 'POST';
+                form.action = "{{ url_for('delete_certificate_type') }}";
+
+                // Add the necessary fields
+                const typeIdField = document.createElement('input');
+                typeIdField.type = 'hidden';
+                typeIdField.name = 'type_id';
+                typeIdField.value = typeId;
+
+                const userIdField = document.createElement('input');
+                userIdField.type = 'hidden';
+                userIdField.name = 'user_id';
+                userIdField.value = "{{ user_id }}";
+
+                const employeeIdField = document.createElement('input');
+                employeeIdField.type = 'hidden';
+                employeeIdField.name = 'employee_id';
+                employeeIdField.value = "{{ employee_id }}";
+
+                // Append fields to form
+                form.appendChild(typeIdField);
+                form.appendChild(userIdField);
+                form.appendChild(employeeIdField);
+
+                // Append form to body and submit
+                document.body.appendChild(form);
+                form.submit();
+            }
+        }
+        
+        // Add Certificate Type button click handler
+        document.addEventListener('DOMContentLoaded', function () {
+            const addNewCertificateBtn = document.getElementById('addNewCertificateBtn');
+            if (addNewCertificateBtn) {
+                addNewCertificateBtn.addEventListener('click', function () {
+                    const addCertificateModal = new bootstrap.Modal(document.getElementById('addCertificateModal'));
+                    addCertificateModal.show();
+                });
+            }
+
+            // Enhanced form submission for add certificate type with validation
+            document.getElementById('addCertificateForm').addEventListener('submit', function (e) {
+                // Basic validation
+                const certificateType = document.getElementById('certificate_type').value.trim();
+                const certificateDesc = document.getElementById('certificate_description').value.trim();
+
+                if (certificateType === '' || certificateDesc === '') {
+                    e.preventDefault();
+                    alert('Please fill out all fields');
+                    return false;
+                }
+
+                // Disable button to prevent double submission
+                document.getElementById('addCertificateBtn').disabled = true;
+                document.getElementById('addCertificateBtn').textContent = 'Adding...';
+            });
+
+            // Also add validation for the edit form
+            document.querySelector('#editCertificateModal form').addEventListener('submit', function (e) {
+                // Basic validation
+                const certificateType = document.getElementById('edit_certificate_type').value.trim();
+                const certificateDesc = document.getElementById('edit_certificate_description').value.trim();
+
+                if (certificateType === '' || certificateDesc === '') {
+                    e.preventDefault();
+                    alert('Please fill out all fields');
+                    return false;
+                }
+            });
+
+            // Auto dismiss flash messages after 5 seconds
+            setTimeout(function() {
+                const alerts = document.querySelectorAll('.alert-container .alert');
+                alerts.forEach(function(alert) {
+                    const bsAlert = new bootstrap.Alert(alert);
+                    bsAlert.close();
+                });
+            }, 5000);
+        });
+        
+        // Refresh page on cancel button click
+        document.querySelectorAll('.btn-close, .btn-secondary').forEach(button => {
+            button.addEventListener('click', function () {
+                location.reload();
+            });
+        });
+    </script>
+</body>
+
+</html>

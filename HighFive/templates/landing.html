@@ -1,0 +1,161 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Gram Panchayat Management System</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='styles/landing.css') }}">
+</head>
+<body>
+    <!-- Header -->
+    <header>
+        <div class="top-bar">
+            <div class="logo">
+                <img src="{{ url_for('static', filename='images/logo.jpeg') }}" alt="GPMS Logo">
+                <div class="logo-text">
+                    <h1>Gram Panchayat Management System</h1>
+                    <p>Empowering Rural Governance</p>
+                </div>
+            </div>
+            <div class="auth-buttons">
+                <a href="{{ url_for('login') }}">Login/SignUp</a>
+            </div>
+        </div>
+        <nav>
+            <div class="nav-container">
+                <ul>
+                    <li><a href="{{ url_for('landing') }}">Home</a></li>
+                    <li><a href="#about">About</a></li>
+                    <li><a href="#services">Services</a></li>
+                    <li><a href="#contact">Contact</a></li>
+                </ul>
+            </div>
+        </nav>
+    </header>
+
+    <!-- Hero Section -->
+    <section class="hero">
+        <h2>Welcome to Gram Panchayat Management System</h2>
+        <p>A comprehensive platform for efficient rural administration and empowering citizens with information access and transparent governance.</p>
+    </section>
+
+    <!-- Services Section -->
+    <section id="services" class="services">
+        <div class="section-title">
+            <h2>Our Services</h2>
+            <p>Discover the wide range of services provided by the Gram Panchayat to enhance village governance and citizen welfare.</p>
+        </div>
+        <div class="services-grid">
+            <div class="service-card">
+                <div class="service-icon">📋</div>
+                <div class="service-content">
+                    <h3>Certificate Services</h3>
+                    <p>Apply and download various certificates including birth, death, income, and residence certificates.</p>
+                </div>
+            </div>
+            <div class="service-card">
+                <div class="service-icon">💼</div>
+                <div class="service-content">
+                    <h3>Tax Management</h3>
+                    <p>View and pay your property tax, water tax, and other local taxes online with ease.</p>
+                </div>
+            </div>
+            <div class="service-card">
+                <div class="service-icon">🏗️</div>
+                <div class="service-content">
+                    <h3>Development Works</h3>
+                    <p>Stay updated on ongoing and upcoming development projects in your village.</p>
+                </div>
+            </div>
+            <div class="service-card">
+                <div class="service-icon">📢</div>
+                <div class="service-content">
+                    <h3>Grievance System</h3>
+                    <p>Signup your complaints and track their resolution status in real-time.</p>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- User Categories Section -->
+    <section class="user-categories">
+        <div class="categories-container">
+            <div class="section-title">
+                <h2>User Categories</h2>
+                <p>The Gram Panchayat Management System serves different user groups with tailored functionalities.</p>
+            </div>
+            <div class="categories-grid">
+                <div class="category-card">
+                    <h3>Citizens</h3>
+                    <p>Access village information, download certificates, pay taxes, signup complaints, and track application status.</p>
+                    <a href="{{ url_for('login') }}">Access Citizen Portal</a>
+                </div>
+                <div class="category-card">
+                    <h3>Panchayat Employees</h3>
+                    <p>Manage village data, handle citizen requests, update development works, and generate reports.</p>
+                    <a href="{{ url_for('login') }}">Access Employee Portal</a>
+                </div>
+                <div class="category-card">
+                    <h3>Government Monitors</h3>
+                    <p>Access statistical reports, monitor scheme implementation, and evaluate development progress.</p>
+                    <a href="{{ url_for('login') }}">Access Monitor Portal</a>
+                </div>
+                <div class="category-card">
+                    <h3>System Administrator</h3>
+                    <p>Manage user accounts, system configuration, database maintenance, and security controls.</p>
+                    <a href="{{ url_for('login') }}">Access Admin Portal</a>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- About Section -->
+    <section id="about" class="about">
+        <div class="section-title">
+            <h2>About Us</h2>
+            <p>Learn more about the Gram Panchayat Management System and how it aims to empower rural governance and bridge the gap between citizens and administration.</p>
+        </div>
+        <div class="about-content">
+            <p>The Gram Panchayat Management System is a comprehensive platform designed to streamline village administration and provide citizens with easy access to essential services.</p>
+            <p>Our mission is to enhance transparency, efficiency, and accessibility in rural governance by leveraging technology and innovative solutions. We offer a wide range of services, including certificate issuance, tax management, development project tracking, and a robust grievance redressal system.</p>
+            <p>We are committed to creating a more connected and informed community, empowering citizens with the tools they need to actively participate in the governance of their village.</p>
+            <p>Join us in our journey to build a better and more efficient rural administration system.</p>
+        </div>
+    </section>
+
+    <!-- Footer -->
+    <footer>
+        <div class="footer-container">
+            <div class="footer-col">
+                <h3>Quick Links</h3>
+                <ul>
+                    <li><a href="{{ url_for('landing') }}">Home</a></li>
+                    <li><a href="#about">About Us</a></li>
+                    <li><a href="#services">Services</a></li>
+                    <li><a href="#contact">Contact</a></li>
+                </ul>
+            </div>
+            <div class="footer-col">
+                <h3>Services</h3>
+                <ul>
+                    <li><a href="{{ url_for('login') }}">Certificate Services</a></li>
+                    <li><a href="{{ url_for('login') }}">Tax Management</a></li>
+                    <li><a href="{{ url_for('login') }}">Development Works</a></li>
+                    <li><a href="{{ url_for('login') }}">Grievance System</a></li>
+                </ul>
+            </div>
+            <div id="contact" class="footer-col">
+                <h3>Contact Us</h3>
+                <ul>
+                    <li><a href="mailto:grampanchayat@gmail.com">grampanchayat@gmail.com</a></li>
+                    <li><a href="tel:+911234567890">+91 1234567890</a></li>
+                    <li><a href="https://maps.google.com/?q=Subhanna,+8Th+Floor,+2Nd+Avenue,+Df+Block,+Sector+1,+Salt+Lake+City,+Kolkata,+West+Bengal+700064" target="_blank">Subhanna, 8Th Floor, 2Nd Avenue, Df Block, Sector 1, Salt Lake City, Kolkata, West Bengal 700064</a></li>
+                </ul>
+            </div>
+        </div>
+        <div class="copyright">
+            <p>&copy; 2025 Gram Panchayat Management System. All Rights Reserved.</p>
+        </div>
+    </footer>
+</body>
+</html>

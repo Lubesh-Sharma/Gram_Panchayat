@@ -1,0 +1,394 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Tax Information - Gram Panchayat Management System</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='styles/tax.css') }}">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/bootstrap/5.3.0/css/bootstrap.min.css" rel="stylesheet">
+</head>
+
+<body>
+    <!-- Sidebar -->
+    <aside class="sidebar">
+        <div class="sidebar-header">
+            <h2>Gram Panchayat</h2>
+            <p>Management System</p>
+        </div>
+        <div class="sidebar-menu">
+            <div class="menu-item" data-section="dashboard" onclick="activateSection('dashboard')">
+                <i class="fas fa-home"></i>
+                <span>Dashboard</span>
+            </div>
+            <div class="menu-item" data-section="tax-info" onclick="activateSection('tax-info')">
+                <i class="fas fa-file-invoice-dollar"></i>
+                <span>Tax Information</span>
+            </div>
+            <div class="menu-item" data-section="change-password" data-bs-toggle="modal"
+                data-bs-target="#changePasswordModal">
+                <i class="fas fa-key"></i>
+                <span>Change Password</span>
+            </div>
+            <div class="menu-item" data-section="citizen-portal"
+                onclick="window.location.href='{{ url_for('citizen_dashboard', user_id=user_id, citizen_id=employee.citizen_id) }}'">
+                <i class="fas fa-user"></i>
+                <span>Your Citizen Portal</span>
+            </div>
+            <div class="menu-item" onclick="window.location.href='{{ url_for('landing') }}'">
+                <i class="fas fa-sign-out-alt"></i>
+                <span>Logout</span>
+            </div>
+        </div>
+    </aside>
+
+    <!-- Navigation Bar -->
+    <nav class="navbar navbar-expand-lg navbar-dark bg-dark">
+        <div class="container">
+            <a class="navbar-brand" href="#">Gram Panchayat Management System</a>
+            <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav">
+                <span class="navbar-toggler-icon"></span>
+            </button>
+            <div class="collapse navbar-collapse" id="navbarNav">
+                <ul class="navbar-nav ms-auto">
+                    <li class="nav-item dropdown">
+                        <a class="nav-link dropdown-toggle" href="#" id="navbarDropdown" role="button"
+                            data-bs-toggle="dropdown">
+                            {{ employee_name }}
+                        </a>
+                        <ul class="dropdown-menu dropdown-menu-end">
+                            <li><a class="dropdown-item" href="#" data-bs-toggle="modal"
+                                    data-bs-target="#changePasswordModal">Change password</a></li>
+
+                            <li><a class="dropdown-item"
+                                    href="{{ url_for('citizen_dashboard', user_id=user_id, citizen_id=employee.citizen_id) }}">Access
+                                    Citizen Portal</a></li>
+                            <li><a class="dropdown-item" href="{{ url_for('landing') }}">Logout</a></li>
+                        </ul>
+                    </li>
+                </ul>
+            </div>
+        </div>
+    </nav>
+    <!-- Change Password Modal -->
+    <div class="modal fade" id="changePasswordModal" tabindex="-1" aria-labelledby="changePasswordModalLabel"
+        aria-hidden="true">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header bg-primary text-white">
+                    <h5 class="modal-title" id="changePasswordModalLabel">Change Password</h5>
+                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"
+                        aria-label="Close"></button>
+                </div>
+                <div class="modal-body">
+                    <form id="changePasswordForm">
+                        <div class="mb-3">
+                            <label for="currentPassword" class="form-label">Current Password</label>
+                            <input type="password" class="form-control" id="currentPassword" name="current-password"
+                                required>
+                        </div>
+                        <div class="mb-3">
+                            <label for="newPassword" class="form-label">New Password</label>
+                            <input type="password" class="form-control" id="newPassword" name="new-password" required>
+                        </div>
+                        <div class="mb-3">
+                            <label for="confirmPassword" class="form-label">Confirm New Password</label>
+                            <input type="password" class="form-control" id="confirmPassword" name="confirm-password"
+                                required>
+                        </div>
+                        <div id="passwordMessage" class="alert d-none"></div>
+                    </form>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                    <button type="button" class="btn btn-success" id="savePasswordBtn">Save Changes</button>
+                </div>
+            </div>
+        </div>
+    </div>
+    <header class="header text-center">
+        <div class="container">
+            <h1>Tax Information</h1>
+            <p class="lead">Tax records and management for {{ panchayat.panchayat_name }}</p>
+        </div>
+    </header>
+
+    <!-- Main Content -->
+    <div class="main-content">
+        <div class="container mt-4">
+            <!-- Dashboard Section -->
+            <div class="content-section" id="dashboard">
+                <div class="card mb-4">
+                    <div class="card-header bg-primary text-white">
+                        <h4>Panchayat Details</h4>
+                    </div>
+                    <div class="card-body">
+                        <div class="row">
+                            <div class="col-md-6">
+                                <div class="detail-item">
+                                    <span class="detail-label"><i class="fas fa-building me-2"></i>Panchayat Name:</span>
+                                    <span class="detail-value">{{ panchayat.panchayat_name }}</span>
+                                </div>
+                                <div class="detail-item">
+                                    <span class="detail-label"><i class="fas fa-calendar-alt me-2"></i>Establishment Date:</span>
+                                    <span class="detail-value">{{ panchayat.establishment_date }}</span>
+                                </div>
+                                <div class="detail-item">
+                                    <span class="detail-label"><i class="fas fa-chart-area me-2"></i>Area (sq km):</span>
+                                    <span class="detail-value">{{ panchayat.area_sq_km }}</span>
+                                </div>
+                            </div>
+                            <div class="col-md-6">
+                                <div class="detail-item">
+                                    <span class="detail-label"><i class="fas fa-envelope me-2"></i>Contact Email:</span>
+                                    <span class="detail-value"><a href="mailto:{{ panchayat.contact_email }}">{{ panchayat.contact_email }}</a></span>
+                                </div>
+                                <div class="detail-item">
+                                    <span class="detail-label"><i class="fas fa-phone me-2"></i>Contact Phone:</span>
+                                    <span class="detail-value"><a href="tel:{{ panchayat.contact_phone }}">{{ panchayat.contact_phone }}</a></span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="card mb-4">
+                    <div class="card-header bg-primary text-white">
+                        <h4>Announcements</h4>
+                    </div>
+                    <div class="card-body">
+                        <div class="table-container">
+                            <div class="table-header">
+                                <div class="table-title">Recent Announcements</div>
+                                <button class="btn btn-primary" id="addAnnouncementBtn">+ Add Announcement</button>
+                            </div>
+                            <table>
+                                <thead>
+                                    <tr>
+                                        <th>Heading</th>
+                                        <th>Detail</th>
+                                        <th>Date</th>
+                                        <th>Actions</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="announcements-list">
+                                    {% if announcements %}
+                                    {% for announcement in announcements %}
+                                    <tr>
+                                        <td>{{ announcement[1] }}</td>
+                                        <td>{{ announcement[2] }}</td>
+                                        <td>{{ announcement[3] }}</td>
+                                        <td>
+                                            <div class="action-btns">
+                                                <button class="btn btn-primary edit-announcement" data-id="{{ announcement[0] }}" title="Edit"><i class="fas fa-edit"></i></button>
+                                                <button class="btn btn-danger delete-announcement" data-id="{{ announcement[0] }}" title="Delete"><i class="fas fa-trash"></i></button>
+                                            </div>
+                                        </td>
+                                    </tr>
+                                    {% endfor %}
+                                    {% else %}
+                                    <tr>
+                                        <td colspan="4" style="text-align: center;">No announcements till now</td>
+                                    </tr>
+                                    {% endif %}
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <!-- Tax Information Section -->
+            <div class="content-section active" id="tax-info">
+                <div class="card mb-4">
+                    <div class="card-header bg-info text-white">
+                        <h4>Citizens Tax Information</h4>
+                    </div>
+                    <div class="card-body">
+                        {% if citizens %}
+                        <div class="table-responsive">
+                            <table class="table table-striped">
+                                <thead>
+                                    <tr>
+                                        <th>Citizen ID</th>
+                                        <th>Name</th>
+                                        <th>Gender</th>
+                                        <th>Occupation</th>
+                                        <th>Annual Income</th>
+                                        <th>Tax Due</th>
+                                        <th>Contact</th>
+                                        <th>Actions</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    {% for citizen in citizens %}
+                                    <tr>
+                                        <td>{{ citizen.citizen_id }}</td>
+                                        <td>{{ citizen.first_name }} {{ citizen.last_name }}</td>
+                                        <td>{{ citizen.gender }}</td>
+                                        <td>{{ citizen.occupation }}</td>
+                                        <td>₹ {{ citizen.annual_income }}</td>
+                                        <td id="tax-due-{{ citizen.citizen_id }}">₹ {{ citizen.tax_due_amount }}</td>
+                                        <td>
+                                            <a href="tel:{{ citizen.phone_number }}">{{ citizen.phone_number }}</a><br>
+                                            <a href="mailto:{{ citizen.email }}">{{ citizen.email }}</a>
+                                        </td>
+                                        <td>
+                                            <button type="button" class="btn btn-primary btn-sm update-tax"
+                                                data-citizen-id="{{ citizen.citizen_id }}"
+                                                data-tax-due="{{ citizen.tax_due_amount }}"
+                                                data-income="{{ citizen.annual_income }}"
+                                                data-name="{{ citizen.first_name }} {{ citizen.last_name }}">
+                                                Update
+                                            </button>
+                                        </td>
+                                    </tr>
+                                    {% endfor %}
+                                </tbody>
+                            </table>
+                        </div>
+                        {% else %}
+                        <div class="alert alert-info">No citizens found for this panchayat.</div>
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Tax Update Modal -->
+    <div class="modal fade" id="taxUpdateModal" tabindex="-1" aria-labelledby="taxUpdateModalLabel" aria-hidden="true">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header bg-primary text-white">
+                    <h5 class="modal-title" id="taxUpdateModalLabel">Update Tax Amount</h5>
+                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"
+                        aria-label="Close"></button>
+                </div>
+                <div class="modal-body">
+                    <p>Updating tax for: <strong id="modal-citizen-name"></strong></p>
+                    <div class="table-responsive">
+                        <table class="table table-bordered">
+                            <thead>
+                                <tr>
+                                    <th>Current Amount</th>
+                                    <th>Updated Amount</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <tr>
+                                    <td id="modal-current-tax"></td>
+                                    <td id="modal-updated-tax" class="table-success"></td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                    <button type="button" class="btn btn-success" id="confirm-update">Update</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Add Announcement Modal -->
+    <div class="modal fade" id="addAnnouncementModal" tabindex="-1" aria-labelledby="addAnnouncementModalLabel" aria-hidden="true">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title" id="addAnnouncementModalLabel">Add Announcement</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body">
+                    <div class="form-group">
+                        <label for="announcementHeading">Heading</label>
+                        <input type="text" id="announcementHeading" class="form-control">
+                    </div>
+                    <div class="form-group">
+                        <label for="announcementDetail">Detail</label>
+                        <textarea id="announcementDetail" class="form-control"></textarea>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                    <button type="button" class="btn btn-primary" id="saveAnnouncementBtn">Save</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Edit Announcement Modal -->
+    <div class="modal fade" id="editAnnouncementModal" tabindex="-1" aria-labelledby="editAnnouncementModalLabel" aria-hidden="true">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title" id="editAnnouncementModalLabel">Edit Announcement</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body">
+                    <div class="form-group">
+                        <label for="editAnnouncementHeading">Heading</label>
+                        <input type="text" id="editAnnouncementHeading" class="form-control">
+                    </div>
+                    <div class="form-group">
+                        <label for="editAnnouncementDetail">Detail</label>
+                        <textarea id="editAnnouncementDetail" class="form-control"></textarea>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                    <button type="button" class="btn btn-primary" id="updateAnnouncementBtn">Update</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Footer -->
+    <footer class="footer text-center">
+        <div class="container">
+            <p>© 2025 Gram Panchayat Management System | Government of India</p>
+        </div>
+    </footer>
+
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/bootstrap/5.3.0/js/bootstrap.bundle.min.js"></script>
+    <script>
+        const updateTaxUrl = "{{ url_for('update_tax') }}";
+        const addAnnouncementUrl = "{{ url_for('add_announcement') }}";
+        const getAnnouncementsUrl = "{{ url_for('get_announcements') }}";
+        const getAnnouncementUrl = "{{ url_for('get_announcement', announcement_id=0).replace('0', '') }}";
+        const updateAnnouncementUrl = "{{ url_for('update_announcement', announcement_id=0).replace('0', '') }}";
+        const deleteAnnouncementUrl = "{{ url_for('delete_announcement', announcement_id=0).replace('0', '') }}";
+        const changePasswordUrl = "{{ url_for('change_password', user_id=user_id) }}";
+        const logoutUrl = "{{ url_for('logout_ptw') }}";
+        const landingUrl = "{{ url_for('landing') }}";
+        const citizenDashboardUrl = "{{ url_for('citizen_dashboard', user_id=user_id, citizen_id=employee.citizen_id) }}";
+        const userId = "{{ user_id }}";
+        const employeeId = "{{ employee_id }}";
+
+        function activateSection(section) {
+            document.querySelectorAll('.menu-item').forEach(item => {
+                item.classList.remove('active');
+            });
+            document.querySelector(`.menu-item[data-section="${section}"]`).classList.add('active');
+
+            document.querySelectorAll('.content-section').forEach(content => {
+                content.classList.remove('active');
+            });
+            document.getElementById(section).classList.add('active');
+        }
+
+        // Add debugging log to check URL construction
+        console.log("Get announcement URL template:", getAnnouncementUrl);
+        console.log("Change password URL:", changePasswordUrl);
+        
+        // Refresh page on cancel button click
+        document.querySelectorAll('.btn-close, .btn-secondary').forEach(button => {
+            button.addEventListener('click', function () {
+                location.reload();
+            });
+        });
+    </script>
+    <script src="{{ url_for('static', filename='scripts/tax.js') }}"></script>
+</body>
+
+</html>

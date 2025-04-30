@@ -1,0 +1,67 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Gram Panchayat Management System - Login</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='styles/login.css') }}">
+</head>
+
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>Gram Panchayat Management System</h1>
+            <p>Login to access the system</p>
+        </div>
+
+        <!-- Flash messages for errors or alerts -->
+        {% with messages = get_flashed_messages(with_categories=true) %}
+        {% if messages %}
+        <ul class="flashes">
+            {% for category, message in messages %}
+            <li class="{{ category }}">{{ message }}</li>
+            {% endfor %}
+        </ul>
+        {% endif %}
+        {% endwith %}
+
+        <div class="login-options">
+            <div class="login-option active" id="email-login">Email &amp; Password</div>
+            <div class="login-option" id="id-login">ID &amp; Password</div>
+        </div>
+
+        <form id="login-form" action="{{ url_for('login') }}" method="POST">
+            <input type="hidden" name="login_type" id="login-type" value="email">
+            <div class="form-group" id="email-group">
+                <label for="email">Email</label>
+                <input type="email" id="email" name="email" placeholder="example@email.com">
+            </div>
+            <div class="form-group" id="id-group" style="display: none;">
+                <label for="user-id">User ID</label>
+                <input type="text" id="user-id" name="user_id" placeholder="12345">
+            </div>
+            <div class="form-group">
+                <label for="password">Password</label>
+                <input type="password" id="password" name="password" placeholder="Enter your password" required>
+            </div>
+            <button type="submit" class="btn">Login</button>
+        </form>
+
+        <div class="footer">
+            <p>Don't have an account? <a href="{{ url_for('signup') }}">Sign up here</a></p>
+        </div>
+    </div>
+
+    <script src="{{ url_for('static', filename='scripts/login.js') }}"></script>
+    {% if show_error_prompt %}
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            alert('Invalid credentials. Please try again.');
+            window.location.href = "{{ url_for('login') }}";
+        });
+    </script>
+    {% endif %}
+</body>
+
+</html>

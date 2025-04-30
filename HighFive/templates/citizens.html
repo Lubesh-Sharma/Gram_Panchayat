@@ -1,0 +1,1185 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Gram Panchayat Management System - Citizen Portal</title>
+  <link rel="stylesheet" href="{{ url_for('static', filename='styles/citizens.css') }}">
+</head>
+
+
+<body>
+  <!-- Header -->
+  <header>
+    <div class="container header-container">
+      <div class="logo">
+        <img src="{{ url_for('static', filename='images/logo.jpeg') }}" alt="GPMS Logo">
+        <div class="logo-text">
+          <h1>Gram Panchayat Management System</h1>
+          <p>Empowering Rural Governance</p>
+        </div>
+      </div>
+      <div class="menu-toggle">☰</div>
+      <nav>
+        <ul>
+          <li><a href="#dashboard" class="active">Home</a></li>
+          <li><a href="#dashboard" onclick="scrollToActivities(); return false;">Activities</a></li>
+          <li><a href="#footer">Contact</a></li>
+        </ul>
+      </nav>
+      <div class="user-panel">
+        <div class="user-info">
+          <div class="user-name">{{ data.name if data and data.name else 'Citizen' }}</div>
+          <div class="user-role">Citizen</div>
+        </div>
+        <div>
+          <button class="change-password-btn" onclick="showChangePasswordModal()">Change Password</button>
+          <button class="logout-btn" onclick="location.href='/landing'">Logout</button>
+        </div>
+      </div>
+  </header>
+
+  <!-- Hero Section -->
+  <section class="hero">
+    <div class="container">
+      <h2>Welcome to Your Village Portal</h2>
+      <p>Access government services, apply for certificates, pay taxes, and stay updated with your panchayat activities
+      </p>
+      <div class="search-bar">
+        <input type="text" id="activity-search" placeholder="Search for activities, dates, or status...">
+        <button onclick="searchActivities()">Search</button>
+      </div>
+    </div>
+  </section>
+  <!-- Add this right after the hero section and before the tab navigation -->
+  <div class="container">
+    {% with messages = get_flashed_messages(with_categories=true) %}
+    {% if messages %}
+    {% for category, message in messages %}
+    <div class="alert alert-{{ category }}">
+      {{ message }}
+    </div>
+    {% endfor %}
+    {% endif %}
+    {% endwith %}
+  </div>
+  <!-- Tab Navigation for Main Content -->
+  <nav class="tab-nav">
+    <div class="container">
+      <ul class="tab-list">
+        <li class="tab-item active" data-target="dashboard">Dashboard</li>
+        <li class="tab-item" data-target="certificates">Certificates</li>
+        <li class="tab-item" data-target="taxes">Pay Taxes</li>
+        <li class="tab-item" data-target="services">Services</li>
+        <li class="tab-item" data-target="welfare">Welfare Schemes</li>
+        <li class="tab-item" data-target="village">Village Information</li>
+        <li class="tab-item" data-target="about">About GPMS</li>
+      </ul>
+    </div>
+  </nav>
+
+  <!-- Main Content -->
+  <main class="container main-content">
+    <!-- Dashboard Section -->
+    <section id="dashboard" class="tab-content active">
+      <h2 class="dashboard-title">Citizen Dashboard</h2>
+
+      <!-- Update dashboard stats -->
+      <div class="dashboard-stats">
+        <div class="stat-card">
+          <div class="stat-title">Property Tax Due</div>
+          <div class="stat-value">₹{{ data.total_tax_due if data and data.total_tax_due else 0 }}</div>
+          <div class="stat-description">
+            {% if data and data.taxes and data.taxes|length > 0 %}
+            Due by {{ data.taxes[0][1].strftime('%d %b %Y') }}
+            {% else %}
+            Due by March 31, 2025
+            {% endif %}
+          </div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-title">Certificate Applications</div>
+          <div class="stat-value">{{ data.certificates|length if data and data.certificates else 0 }}</div>
+          <div class="stat-description">
+            {{ data.pending_certificates if data and data.pending_certificates else 0 }} Pending,
+            {{ data.approved_certificates if data and data.approved_certificates else 0 }} Approved
+          </div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-title">Service Requests</div>
+          <div class="stat-value">{{ data.service_requests|length if data and data.service_requests else 0 }}</div>
+          <div class="stat-description">
+            {% if data and data.service_requests and data.service_requests|length > 0 %}
+            {{ data.service_requests[0][3] }}
+            {% else %}
+            No active requests
+            {% endif %}
+          </div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-title">Welfare Schemes</div>
+          <div class="stat-value">{{ data.welfare_schemes|length if data and data.welfare_schemes else 0 }}</div>
+          <div class="stat-description">You might be eligible</div>
+        </div>
+      </div>
+
+      <!-- Important Announcements Slider -->
+      <h3 class="dashboard-title">Important Announcements</h3>
+      <div class="announcements-slider">
+        <div class="announcements-track">
+          {% if data and data.announcements and data.announcements|length > 0 %}
+          {% for announcement in data.announcements %}
+          <div class="announcement-card">
+            <div class="announcement-header">
+              <span class="announcement-title">{{ announcement[0] }}</span>
+              <span class="announcement-date">{{ announcement[2].strftime('%d %b %Y') }}</span>
+            </div>
+            <div class="announcement-content">
+              {{ announcement[1] }}
+            </div>
+          </div>
+          {% endfor %}
+          {% else %}
+          <div class="announcement-card">
+            <div class="announcement-header">
+              <span class="announcement-title">No Announcements</span>
+              <span class="announcement-date">{{ now().strftime('%d %b %Y') }}</span>
+            </div>
+            <div class="announcement-content">
+              There are no announcements at this time.
+            </div>
+          </div>
+          {% endif %}
+        </div>
+      </div>
+
+      <!-- Quick Access Section -->
+      <h3 class="dashboard-title">Quick Access</h3>
+      <div class="services-grid quick-access">
+        <div class="service-card">
+          <div class="service-icon">📄</div>
+          <div class="service-content">
+            <h4>Apply for Certificates</h4>
+            <p>Birth, death, residence, income, and other certificates</p>
+            <a href="#" onclick="activateTab('certificates'); return false;" class="service-btn">Apply Now</a>
+          </div>
+        </div>
+        <div class="service-card">
+          <div class="service-icon">💰</div>
+          <div class="service-content">
+            <h4>Pay Taxes & Bills</h4>
+            <p>Property tax, water charges, and other local payments</p>
+            <a href="#" onclick="activateTab('taxes'); return false;" class="service-btn">Pay Now</a>
+          </div>
+        </div>
+        <div class="service-card">
+          <div class="service-icon">🏗️</div>
+          <div class="service-content">
+            <h4>Know your Panchayat Members</h4>
+            <p>Different Department Panchayat Members</p>
+            <a href="#" onclick="activateTab('village'); return false;" class="service-btn">Show me</a>
+          </div>
+        </div>
+        <div class="service-card">
+          <div class="service-icon">🏥</div>
+          <div class="service-content">
+            <h4>Welfare Schemes</h4>
+            <p>Check eligibility and apply for government schemes</p>
+            <a href="#" onclick="activateTab('welfare'); return false;" class="service-btn">Apply Now</a>
+          </div>
+        </div>
+      </div>
+
+      <!-- Replace the entire Recent Activities section in the dashboard tab -->
+      <h3 class="dashboard-title">Recent Activities</h3>
+      <div class="table-container">
+        <table class="table">
+          <thead>
+            <tr>
+              <th>Date</th>
+              <th>Activity</th>
+              <th>Status</th>
+              <th>Action</th>
+            </tr>
+          </thead>
+          <tbody>
+            {% if data and data.recent_activities and data.recent_activities|length > 0 %}
+            {% for activity in data.recent_activities %}
+            <tr>
+              <td>{{ activity.date.strftime('%d %b %Y') }}</td>
+              <td>{{ activity.activity }}</td>
+              <td>
+                <span class="status-badge {% if activity.status == 'Completed' or activity.status == 'Approved' or activity.status == 'Enrolled' %}status-success{% elif activity.status == 'Pending' %}status-pending{% elif activity.status == 'In Progress' %}status-progress{% elif activity.status == 'Rejected' %}status-danger{% else %}status-other{% endif %}">
+                  {{ activity.status }}
+                </span>
+              </td>
+              <td>
+                {% if activity.action_type == 'certificate' %}
+                  {% if activity.status == 'Approved' %}
+                    <a href="{{ url_for('view_certificate', certificate_id=activity.id) }}" target="_blank"
+                      class="service-btn btn-outline">Download</a>
+                  {% else %}
+                    <a href="#" class="service-btn btn-outline"
+                      onclick="showCertificateDetails({{ activity.id }}); return false;">Details</a>
+                  {% endif %}
+                {% elif activity.action_type == 'welfare' %}
+                  <a href="#" class="service-btn btn-outline"
+                    onclick="showWelfareDetails({{ activity.id }}); return false;">Details</a>
+                {% elif activity.action_type == 'tax' %}
+                  <a href="#" class="service-btn btn-outline"
+                    onclick="showReceipt('{{ activity.id }}', '{{ activity.date.strftime('%d %b %Y') }}', 'Online', '{{ data.name if data and data.name else 'Citizen' }}', '{{ data.village_info.panchayat_name if data and data.village_info else 'Gram Panchayat' }}', '{{ activity.amount }}'); return false;">Receipt</a>
+                {% elif activity.action_type == 'service' %}
+                  <button class="service-btn" onclick="showServiceDetails('{{ activity.id }}')">View</button>
+                {% else %}
+                  <a href="#" class="service-btn btn-outline">View</a>
+                {% endif %}
+              </td>
+            </tr>
+            {% endfor %}
+            {% else %}
+            <tr>
+              <td colspan="4" class="text-center">No recent activities found</td>
+            </tr>
+            {% endif %}
+          </tbody>
+        </table>
+      </div>
+    </section>
+
+    <!-- Certificates Section -->
+    <section id="certificates" class="tab-content">
+      <h2 class="dashboard-title">Certificate Applications</h2>
+      <div class="alert"
+        style="background-color:#d4edda; color:#155724; padding:1rem; border:1px solid #c3e6cb; border-radius:4px; margin-bottom:1rem;">
+        You can apply for various certificates issued by the Gram Panchayat. Processing time varies based on the
+        certificate type.
+      </div>
+
+      <!-- Certificate Types Grid -->
+<div class="services-grid">
+  {% if data and data.certificate_types and data.certificate_types|length > 0 %}
+  {% for cert_type in data.certificate_types %}
+  <div class="service-card" onclick="showCertificateForm('{{ cert_type[1] }}')">
+    <div class="service-icon">
+      {% if 'birth' in cert_type[1]|lower %}👶
+      {% elif 'death' in cert_type[1]|lower %}📜
+      {% elif 'income' in cert_type[1]|lower %}💰
+      {% elif 'residence' in cert_type[1]|lower %}🏠
+      {% elif 'aadhar' in cert_type[1]|lower %}🪪
+      {% elif 'voter' in cert_type[1]|lower %}🗳️
+      {% else %}📄{% endif %}
+    </div>
+    <div class="service-content">
+      <h4>{{ cert_type[1] }}</h4>
+      <p>{{ cert_type[2] or 'Apply for this certificate' }}</p>
+      <a href="#" class="btn" onclick="showCertificateForm('{{ cert_type[1] }}'); return false;">Apply Now</a>
+    </div>
+  </div>
+  {% endfor %}
+  {% else %}
+  <div class="alert"
+    style="background-color:#f8d7da; color:#721c24; padding:1rem; border:1px solid #f5c6cb; border-radius:4px;">
+    No certificate types available at this time. Please check back later.
+  </div>
+  {% endif %}
+</div>
+
+      <!-- Certificate Application Modal Pop-up -->
+      <div id="certificate-modal" class="modal-overlay" style="display: none;">
+        <div class="modal-content">
+          <button class="modal-close" onclick="resetCertificateForm()">✖</button>
+          <form id="certificate-application-form" method="POST"
+            action="{{ url_for('apply_certificate', user_id=user_id, citizen_id=citizen_id) }}">
+            <input type="hidden" id="certificate-type-input" name="certificate-type" value="">
+            <h3 class="dashboard-title">Apply for <span id="selected-certificate-type">Certificate</span></h3>
+            <div class="alert"
+              style="background-color:#f8d7da; color:#721c24; padding:1rem; border:1px solid #f5c6cb; border-radius:4px; margin-bottom:1rem;">
+              Please fill out all required fields marked with an asterisk (*).
+            </div>
+
+
+            <!-- Common Information Section -->
+            <div class="form-section">
+              <h4 class="section-title">Personal Information</h4>
+              <div class="form-grid">
+                <div class="form-group">
+                  <label for="applicant-name" class="form-label required-field">Applicant Name</label>
+                  <input type="text" id="applicant-name" class="form-input"
+                    value="{{ data.name if data and data.name else '' }}" readonly>
+                </div>
+                <div class="form-group">
+                  <label for="description" class="form-label required-field">Purpose of Certificate</label>
+                  <textarea id="description" name="description" class="form-textarea" required></textarea>
+                  <p class="field-help">Briefly explain why you need this certificate</p>
+                </div>
+              </div>
+            </div>
+
+            <!-- Certificate Type Specific Information -->
+            <div id="birth-certificate-section" class="certificate-specific-section" style="display: none;">
+              <h4 class="section-title">Birth Certificate Details</h4>
+              <div class="form-grid">
+                <div class="form-group">
+                  <label for="birth-date" class="form-label required-field">Date of Birth</label>
+                  <input type="date" id="birth-date" name="birth-date" class="form-input">
+                </div>
+                <div class="form-group">
+                  <label for="birth-place" class="form-label required-field">Place of Birth</label>
+                  <input type="text" id="birth-place" name="birth-place" class="form-input">
+                </div>
+              </div>
+            </div>
+
+            <div id="income-certificate-section" class="certificate-specific-section" style="display: none;">
+              <h4 class="section-title">Income Certificate Details</h4>
+              <div class="form-grid">
+                <div class="form-group">
+                  <label for="income-amount" class="form-label required-field">Annual Income (₹)</label>
+                  <input type="number" id="income-amount" name="income-amount" class="form-input">
+                </div>
+                <div class="form-group">
+                  <label for="income-source" class="form-label required-field">Source of Income</label>
+                  <select id="income-source" name="income-source" class="form-input">
+                    <option value="">-- Select --</option>
+                    <option value="Salary">Salary</option>
+                    <option value="Business">Business</option>
+                    <option value="Agriculture">Agriculture</option>
+                    <option value="Other">Other</option>
+                  </select>
+                </div>
+              </div>
+            </div>
+
+            <div id="aadhar-certificate-section" class="certificate-specific-section" style="display: none;">
+              <h4 class="section-title">Aadhar Card Details</h4>
+              <div class="form-grid">
+                <div class="form-group">
+                  <label for="aadhar-mobile" class="form-label required-field">Mobile Number</label>
+                  <input type="tel" id="aadhar-mobile" name="aadhar-mobile" class="form-input">
+                </div>
+              </div>
+            </div>
+
+            <div id="voter-certificate-section" class="certificate-specific-section" style="display: none;">
+              <h4 class="section-title">Voter ID Details</h4>
+              <div class="form-grid">
+                <div class="form-group">
+                  <label for="voter-age" class="form-label required-field">Age (years)</label>
+                  <input type="number" id="voter-age" name="voter-age" class="form-input" min="18">
+                </div>
+              </div>
+            </div>
+
+            <div id="bpl-certificate-section" class="certificate-specific-section" style="display: none;">
+              <h4 class="section-title">BPL Certificate Details</h4>
+              <div class="form-grid">
+                <div class="form-group">
+                  <label for="bpl-family-members" class="form-label required-field">Number of Family Members</label>
+                  <input type="number" id="bpl-family-members" name="bpl-family-members" class="form-input" min="1">
+                </div>
+                <div class="form-group">
+                  <label for="bpl-reason" class="form-label required-field">Reason for Application</label>
+                  <textarea id="bpl-reason" name="bpl-reason" class="form-textarea"></textarea>
+                </div>
+              </div>
+            </div>
+
+            <!-- Supporting Documents Section -->
+            <div class="form-section">
+              <h4 class="section-title">Supporting Documents</h4>
+              <p class="field-help">Upload all required documents in PDF or image format (JPG, PNG). Maximum file size:
+                2MB per file.</p>
+              <div class="doc-upload-area" id="doc-upload-area">
+                <div class="doc-upload-icon">📎</div>
+                <div class="doc-upload-text">Drag & Drop files here or Click to browse</div>
+                <div class="doc-upload-helper">Supported formats: PDF, JPG, PNG (Max: 2MB each)</div>
+              </div>
+              <ul class="doc-list" id="doc-list">
+                <!-- Uploaded documents will appear here -->
+              </ul>
+            </div>
+
+            <!-- Form Actions -->
+            <div class="form-actions" style="margin-top: 2rem;">
+              <button type="submit" class="btn btn-primary">Submit Application</button>
+              <button type="button" class="btn btn-outline" onclick="resetCertificateForm()">Cancel</button>
+            </div>
+          </form>
+        </div>
+      </div>
+
+      <h3 class="dashboard-title">Application Status</h3>
+      <div class="table-container">
+        <table class="table">
+          <thead>
+            <tr>
+              <th>Application ID</th>
+              <th>Certificate Type</th>
+              <th>Applied Date</th>
+              <th>Status</th>
+              <th>Action</th>
+            </tr>
+          </thead>
+          <tbody>
+            {% if data and data.certificates and data.certificates|length > 0 %}
+            {% for cert in data.certificates %}
+            <tr>
+              <td>CERT-{{ cert[0] }}</td>
+              <td>{{ cert[1] }}</td>
+              <td>{{ cert[2].strftime('%d %b %Y') }}</td>
+              <td>{{ cert[3] }}</td>
+              <td>
+                {% if cert[3] == 'Approved' %}
+                <a href="{{ url_for('view_certificate', certificate_id=cert[0]) }}" target="_blank"
+                  class="service-btn btn-outline">View</a>
+                {% else %}
+                <button class="btn-outline" onclick="showCertificateDetails({{ cert[0] }})">Details</button>
+                {% endif %}
+              </td>
+            </tr>
+            {% endfor %}
+            {% else %}
+            <tr>
+              <td colspan="5" class="text-center">No certificate applications found</td>
+            </tr>
+            {% endif %}
+          </tbody>
+        </table>
+      </div>
+    </section>
+
+    <!-- Taxes Section -->
+    <section id="taxes" class="tab-content">
+      <h2 class="dashboard-title">Pay Taxes & Bills</h2>
+
+      {% if data and data.total_tax_due > 0 %}
+      <div class="alert" style="background-color: #fff3cd; color: #856404; border: 1px solid #ffeeba;">
+        You have pending tax dues of ₹{{ data.total_tax_due }}. Please make the payment to avoid late fees.
+      </div>
+      {% else %}
+      <div class="alert" style="background-color: #d4edda; color: #155724; border: 1px solid #c3e6cb;">
+        You have no pending tax dues at this time. Thank you for being a responsible citizen!
+      </div>
+      {% endif %}
+
+      <div class="dashboard-stats">
+        <div class="stat-card">
+          <div class="stat-title">Property Tax Due</div>
+          <div class="stat-value">₹{{ data.total_tax_due or 0 }}</div>
+          <div class="stat-description">
+            <button class="service-btn pay-tax" data-type="property" data-amount="{{ data.total_tax_due or 0 }}">Pay
+              Now</button>
+          </div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-title">Last Payment</div>
+          <div class="stat-value">
+            {% if data.tax_payments and data.tax_payments|length > 0 %}
+            {{ data.tax_payments[0][1].strftime('%d %b %Y') }}
+            {% else %}
+            No record
+            {% endif %}
+          </div>
+          <div class="stat-description">Mode:
+            {% if data.tax_payments and data.tax_payments|length > 0 %}
+            {{ data.tax_payments[0][2] }}
+            {% else %}
+            N/A
+            {% endif %}
+          </div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-title">Payment History</div>
+          <div class="stat-value">{{ data.tax_payments|length }}</div>
+          <div class="stat-description">Previous payments</div>
+        </div>
+      </div>
+
+      <h3 class="dashboard-title">Payment History</h3>
+      <div class="table-container">
+        <table class="table">
+          <thead>
+            <tr>
+              <th>Receipt ID</th>
+              <th>Date</th>
+              <th>Mode</th>
+              <th>Amount</th>
+            </tr>
+          </thead>
+          <tbody>
+            {% if data.tax_payments and data.tax_payments|length > 0 %}
+            {% for payment in data.tax_payments %}
+            <tr>
+              <td>TXNID-{{ payment[0] }}</td>
+              <td>{{ payment[1].strftime('%d %b %Y') }}</td>
+              <td>{{ payment[2] }}</td>
+              <td>₹{{ "%.2f"|format(payment[1]|float) if payment[1] is not none else "0.00" }}</td>
+            </tr>
+            {% endfor %}
+            {% else %}
+            <tr>
+              <td colspan="4" style="text-align: center;">No payment records found</td>
+            </tr>
+            {% endif %}
+          </tbody>
+        </table>
+      </div>
+
+      <!-- Tax Payment Modal -->
+      <div id="payment-modal" class="modal-overlay" style="display: none;">
+        <div class="modal-content">
+          <button class="modal-close" onclick="hidePaymentModal()">✖</button>
+          <h3>Property Tax Payment</h3>
+          <form id="tax-payment-form" method="POST"
+            action="{{ url_for('pay_tax', user_id=user_id, citizen_id=citizen_id) }}">
+            <div class="form-group">
+              <label for="payment-amount" class="required-field">Payment Amount (₹)</label>
+              <input type="number" id="payment-amount" name="amount" class="form-input" required min="1">
+            </div>
+            <div class="form-group">
+              <label for="payment-mode" class="required-field">Payment Mode</label>
+              <select id="payment-mode" name="payment_mode" class="form-select" required>
+                <option value="">Select Payment Mode</option>
+                <option value="UPI">UPI</option>
+                <option value="Net Banking">Net Banking</option>
+                <option value="Credit Card">Credit Card</option>
+                <option value="Debit Card">Debit Card</option>
+                <option value="Cash">Cash</option>
+              </select>
+            </div>
+            <div class="form-actions">
+              <button type="button" class="btn btn-outline" onclick="hidePaymentModal()">Cancel</button>
+              <button type="submit" class="btn btn-primary">Confirm Payment</button>
+            </div>
+          </form>
+        </div>
+      </div>
+    </section>
+
+    <!-- Services Section -->
+    <section id="services" class="tab-content">
+      <h2 class="dashboard-title">Service Requests</h2>
+      <div class="alert" style="background-color: #e7f3fe; color: #0c5460; border: 1px solid #bee5eb;">
+        Request various services from the Gram Panchayat including water supply, road repairs, waste management, etc.
+      </div>
+
+      <!-- This services-grid will be populated dynamically from the database -->
+      <div class="services-grid">
+        <!-- Loading indicator will appear here while fetching services -->
+        <div class="loading-spinner" style="margin: 2rem auto; text-align: center;">Loading services...</div>
+      </div>
+
+      <!-- Service Request Modal -->
+      <div id="service-modal" class="modal-overlay" style="display: none;">
+        <div class="modal-content">
+          <button class="modal-close" onclick="resetServiceForm()">✖</button>
+          <h3>Service Request - <span id="selected-service-type">Service Type</span></h3>
+
+          <form id="service-request-form"
+            action="{{ url_for('request_service', user_id=user_id, citizen_id=citizen_id) }}" method="POST">
+            <input type="hidden" id="service-type-input" name="service-type">
+            <input type="hidden" id="service-id-input" name="service-id">
+
+            <div class="form-group">
+              <label for="description" class="required-field">Issue Description</label>
+              <textarea id="description" name="description" class="form-textarea"
+                placeholder="Please provide details of the issue including location and any relevant information"
+                required rows="5"></textarea>
+            </div>
+
+            <div class="form-actions">
+              <button type="button" class="btn btn-outline" onclick="resetServiceForm()">Cancel</button>
+              <button type="submit" class="btn btn-primary">Submit Request</button>
+            </div>
+          </form>
+        </div>
+      </div>
+
+      <!-- Service Request Status -->
+      <h3 class="dashboard-title">Request Status</h3>
+      <div class="table-container">
+        <table class="table">
+          <thead>
+            <tr>
+              <th>Request ID</th>
+              <th>Service Type</th>
+              <th>Request Date</th>
+              <th>Status</th>
+              <th>Action</th>
+            </tr>
+          </thead>
+          <tbody>
+            {% for service in data.service_requests %}
+            <tr>
+              <td>REQ-{{ service[0] }}</td>
+              <td>{{ service[1] }}</td>
+              <td>{{ service[2].strftime('%d %b %Y') }}</td>
+              <td>
+                <span class="status-badge status-{{ 'success' if service[3] == 'Resolved' or service[3] == 'Approved' 
+                                           else 'pending' if service[3] == 'Pending' 
+                                           else 'progress' if service[3] == 'In Progress' 
+                                           else 'danger' if service[3] == 'Rejected' 
+                                           else 'other' }}">
+                  {{ service[3] }}
+                </span>
+              </td>
+              <!-- <td>{{ service[5] }}</td> -->
+              <td>
+                <button class="service-btn" onclick="showServiceDetails('{{ service[0] }}')">View</button>
+              </td>
+            </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+    </section>
+
+    <!-- Welfare Schemes Section -->
+    <!-- Welfare Schemes Section -->
+    <section id="welfare" class="tab-content">
+      <h2 class="dashboard-title">Welfare Schemes</h2>
+      <div class="alert"
+        style="background-color:#d4edda; color:#155724; padding:1rem; border:1px solid #c3e6cb; border-radius:4px; margin-bottom:1rem;">
+        Based on your profile, you might be eligible for the following welfare schemes. Check and apply now.
+      </div>
+      <div class="services-grid">
+        {% if data and data.available_welfare_schemes and data.available_welfare_schemes|length > 0 %}
+        {% for scheme in data.available_welfare_schemes %}
+        <div class="service-card" onclick="showWelfareForm('{{ scheme[1] }}')">
+          <div class="service-icon">
+            {% if 'kisan' in scheme[1]|lower or 'farm' in scheme[1]|lower %}👨‍🌾
+            {% elif 'education' in scheme[1]|lower %}🏫
+            {% elif 'health' in scheme[1]|lower %}🏥
+            {% else %}💡{% endif %}
+          </div>
+          <div class="service-content">
+            <h4>{{ scheme[1] }}</h4>
+            <p>{{ scheme[2] or 'Apply for this welfare scheme' }}</p>
+            <a href="#" class="service-btn" onclick="showWelfareForm('{{ scheme[1] }}'); return false;">Apply Now</a>
+          </div>
+        </div>
+        {% endfor %}
+        {% else %}
+        <div class="alert"
+          style="background-color:#f8d7da; color:#721c24; padding:1rem; border:1px solid #f5c6cb; border-radius:4px;">
+          No welfare schemes available at this time. Please check back later.
+        </div>
+        {% endif %}
+      </div>
+
+      <!-- Rest of the welfare section remains the same -->
+    </section>
+
+
+    <!-- Village Information Section -->
+    <section id="village" class="tab-content">
+      <h2 class="dashboard-title">Village Information</h2>
+      <p>This section provides detailed information about your Gram Panchayat. Citizens can view all village-related
+        details below but cannot modify any data.</p>
+
+      <div class="village-info">
+        {% if data and data.village_info %}
+        <h3>{{ data.village_info.panchayat_name }}</h3>
+        <p><strong>Established on:</strong> {{ data.village_info.establishment_date.strftime('%d %b %Y') }}</p>
+        <p><strong>Area:</strong> {{ data.village_info.area_sq_km }} sq km</p>
+        <p><strong>Contact Email:</strong> {{ data.village_info.contact_email }}</p>
+        <p><strong>Contact Phone:</strong> {{ data.village_info.contact_phone }}</p>
+        <p><strong>Address:</strong> {{ data.village_info.address }}</p>
+        {% else %}
+        <p>No village information available.</p>
+        {% endif %}
+      </div>
+
+      <!-- Add Panchayat Members section -->
+      <h3 class="dashboard-title">Panchayat Members</h3>
+      <div class="panchayat-members">
+        {% if data and data.panchayat_members and data.panchayat_members|length > 0 %}
+        <div class="table-container">
+          <table class="table">
+            <thead>
+              <tr>
+                <th>Name</th>
+                <th>Designation</th>
+                <th>Department</th>
+                <th>Email</th>
+              </tr>
+            </thead>
+            <tbody>
+              {% for member in data.panchayat_members %}
+              <tr>
+                <td>{{ member[0] }} {{ member[1] }}</td>
+                <td>{{ member[2] }}</td>
+                <td>{{ member[3] }}</td>
+                <td class="member-email">
+                  <a href="mailto:{{ member[4] }}">{{ member[4] }}</a>
+                </td>
+              </tr>
+              {% endfor %}
+            </tbody>
+          </table>
+        </div>
+        {% else %}
+        <p>No panchayat member information available.</p>
+        {% endif %}
+      </div>
+
+      <!-- You could add more village information sections here -->
+    </section>
+
+    <!-- About Section -->
+    <section id="about" class="tab-content">
+      <h2 class="dashboard-title">About Gram Panchayat Management System</h2>
+      <p>
+        The Gram Panchayat Management System (GPMS) is an online-based application that can be accessed anywhere. It
+        is
+        designed to monitor gram panchayat activities for both citizens and members. The system covers:
+      </p>
+      <ul style="margin: 1rem 0 2rem 20px;">
+        <li>Citizen taxes</li>
+        <li>Incomes</li>
+        <li>Expenditures</li>
+        <li>Asset management</li>
+        <li>Citizen-centric services (certificates like residence, birth, etc.)</li>
+        <li>Agricultural data</li>
+        <li>Environmental data</li>
+        <li>Panchayat committee members with roles</li>
+        <li>Census data</li>
+        <li>Various government welfare schemes</li>
+      </ul>
+    </section>
+  </main>
+
+  <!-- Footer -->
+  <footer>
+    <div id="footer">
+      <div class="container">
+        <div class="footer-grid">
+          <div class="footer-col">
+            <h4>About GPMS</h4>
+            <ul class="footer-links">
+              <li><a href="#">About Us</a></li>
+              <li><a href="#">Our Mission</a></li>
+              <li><a href="#">Panchayat Members</a></li>
+              <li><a href="#">Development Projects</a></li>
+            </ul>
+          </div>
+          <div class="footer-col">
+            <h4>Citizen Services</h4>
+            <ul class="footer-links">
+              <li><a href="#">Apply for Certificates</a></li>
+              <li><a href="#">Pay Taxes & Bills</a></li>
+              <li><a href="#">Download Forms</a></li>
+              <li><a href="#">Welfare Schemes</a></li>
+            </ul>
+          </div>
+          <div class="footer-col">
+            <h4>Information</h4>
+            <ul class="footer-links">
+              <li><a href="#">Village Directory</a></li>
+              <li><a href="#">Announcement</a></li>
+              <li><a href="#">Government Orders</a></li>
+            </ul>
+          </div>
+          <div class="footer-col">
+            <h4>Contact Us</h4>
+            <div class="footer-contact">
+              {% if data and data.village_info %}
+              <p><i>🏢</i> {{ data.village_info.address }}</p>
+              <p><i>📞</i> {{ data.village_info.contact_phone }}</p>
+              <p><i>✉️</i> {{ data.village_info.contact_email }}</p>
+              <p><i>🕒</i> Office Hours: 10:00 AM - 5:00 PM (Mon-Sat)</p>
+              {% else %}
+              <p>No contact information available.</p>
+              {% endif %}
+            </div>
+          </div>
+        </div>
+        <div class="footer-bottom">
+          <p>&copy; 2025 Gram Panchayat Management System. All Rights Reserved.</p>
+        </div>
+      </div>
+    </div>
+  </footer>
+
+  <!-- Modal & Notification Container -->
+  <div class="modal-overlay" id="modal-overlay"></div>
+  <div class="notification" id="notification"></div>
+  <div id="receipt-modal" class="modal-overlay" style="display: none;">
+    <div class="modal-content">
+      <button class="modal-close" onclick="hideReceiptModal()">✖</button>
+      <div id="receipt-content">
+        <div style="border: 2px solid #073763; padding: 20px; max-width: 600px; margin: 0 auto;">
+          <div style="text-align: center; margin-bottom: 20px; border-bottom: 1px solid #073763; padding-bottom: 10px;">
+            <h2 style="color: #073763; margin: 0;">Payment Receipt</h2>
+            <p style="margin: 5px 0;">Gram Panchayat Management System</p>
+          </div>
+
+          <div id="receipt-details">
+            <!-- Receipt details will be populated via JavaScript -->
+          </div>
+
+          <div style="text-align: center; margin-top: 30px;">
+            <p>This is an electronically generated receipt.</p>
+            <p>No signature required.</p>
+          </div>
+
+          <div style="text-align: right; margin-top: 20px; font-size: 0.9em;">
+            <p style="margin: 2px 0;">Generated on: <span id="receipt-generated-date"></span></p>
+            <div style="width: 100%; border-top: 1px dashed #ccc; margin: 10px 0;"></div>
+            <p style="margin: 5px 0;">© 2025 Gram Panchayat Management System</p>
+          </div>
+        </div>
+      </div>
+      <div class="form-actions" style="margin-top: 20px; text-align: center;">
+        <button type="button" class="btn btn-primary" onclick="printReceipt()">Print Receipt</button>
+        <button type="button" class="btn btn-outline" onclick="hideReceiptModal()">Close</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Certificate Details Modal -->
+  <div id="certificate-details-modal" class="modal-overlay" style="display: none;">
+    <div class="modal-content">
+      <button class="modal-close" onclick="this.parentNode.parentNode.style.display='none'">✖</button>
+      <h3 class="dashboard-title">Certificate Details</h3>
+      <div id="certificate-details-content">
+        <!-- Certificate details will be loaded here dynamically -->
+        <div style="text-align:center; padding: 20px;">
+          <div class="loading-spinner"></div>
+          <p>Loading certificate details...</p>
+        </div>
+      </div>
+      <div class="form-actions" style="margin-top:20px;">
+        <button type="button" class="btn btn-outline"
+          onclick="document.getElementById('certificate-details-modal').style.display='none'">Close</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Change Password Modal -->
+  <div id="change-password-modal" class="modal-overlay" style="display: none;">
+    <div class="modal-content">
+      <button class="modal-close" onclick="hideChangePasswordModal()">✖</button>
+      <h3>Change Password</h3>
+      <form id="change-password-form" method="POST" action="{{ url_for('change_password', user_id=user_id) }}">
+        <div class="form-group">
+          <label for="current-password" class="form-label required-field">Current Password</label>
+          <input type="password" id="current-password" name="current-password" class="form-input" required>
+        </div>
+        <div class="form-group">
+          <label for="new-password" class="form-label required-field">New Password</label>
+          <input type="password" id="new-password" name="new-password" class="form-input" required>
+        </div>
+        <div class="form-group">
+          <label for="confirm-password" class="form-label required-field">Confirm New Password</label>
+          <input type="password" id="confirm-password" name="confirm-password" class="form-input" required>
+          <p class="field-help" id="password-match-message" style="color: #dc3545; display: none;">Passwords do not
+            match</p>
+        </div>
+        <div class="form-actions">
+          <button type="submit" class="btn btn-primary" id="change-password-submit">Change Password</button>
+          <button type="button" class="btn btn-outline" onclick="hideChangePasswordModal()">Cancel</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- Add this right before the closing </main> tag -->
+
+  <!-- Welfare Scheme Application Modal -->
+  <div id="welfare-modal" class="modal-overlay" style="display: none;">
+    <div class="modal-content">
+      <button class="modal-close" onclick="resetWelfareForm()">✖</button>
+      <form id="welfare-application-form" method="POST" action="">
+        <input type="hidden" id="welfare-scheme-input" name="welfare-scheme" value="">
+        <h3 class="dashboard-title">Apply for <span id="selected-welfare-scheme">Welfare Scheme</span></h3>
+
+        <div class="form-section">
+          <h4 class="section-title">Application Details</h4>
+          <div class="form-group">
+            <label for="welfare-reason" class="form-label required-field">Reason for Application</label>
+            <textarea id="welfare-reason" name="welfare-reason" class="form-textarea" required></textarea>
+            <p class="field-help">Briefly explain why you need to enroll in this welfare scheme</p>
+          </div>
+
+          <div class="form-group">
+            <label for="family-income" class="form-label required-field">Annual Family Income (₹)</label>
+            <input type="number" id="family-income" name="family-income" class="form-input" required>
+            <p class="field-help">Enter your total annual family income</p>
+          </div>
+        </div>
+
+        <!-- Supporting Documents Section -->
+        <div class="form-section">
+          <h4 class="section-title">Supporting Documents</h4>
+          <p class="field-help">Upload all required documents in PDF or image format (JPG, PNG). Maximum file size: 2MB
+            per file.</p>
+          <div class="doc-upload-area" id="welfare-doc-upload-area">
+            <div class="doc-upload-icon">📎</div>
+            <div class="doc-upload-text">Drag & Drop files here or Click to browse</div>
+            <div class="doc-upload-helper">Supported formats: PDF, JPG, PNG (Max: 2MB each)</div>
+          </div>
+          <ul class="doc-list" id="welfare-doc-list">
+            <!-- Uploaded documents will appear here -->
+          </ul>
+        </div>
+
+        <!-- Form Actions -->
+        <div class="form-actions" style="margin-top: 2rem;">
+          <button type="submit" class="btn btn-primary">Submit Application</button>
+          <button type="button" class="btn btn-outline" onclick="resetWelfareForm()">Cancel</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+
+  <script>
+    function scrollToActivities() {
+      // Scroll to the Recent Activities section
+      const activitiesHeader = document.querySelector('.dashboard-title:nth-of-type(3)');
+      if (activitiesHeader) {
+        setTimeout(() => {
+          window.scrollTo({
+            top: activitiesHeader.offsetTop - 100,
+            behavior: 'smooth'
+          });
+        }, 100);
+      }
+    }
+
+
+    function searchActivities() {
+      // Get the search query
+      const searchQuery = document.getElementById('activity-search').value.toLowerCase().trim();
+
+      if (!searchQuery) {
+        showNotification('Please enter a search term', 'warning');
+        return;
+      }
+
+      // First make sure the dashboard tab is active
+      document.querySelectorAll('.tab-item').forEach(item => {
+        if (item.getAttribute('data-target') === 'dashboard') {
+          item.click();
+        }
+      });
+
+      // Wait a moment for tab to become active
+      setTimeout(() => {
+        // Clear ALL previous highlights first
+        clearAllHighlights();
+
+        // Get all activity rows - be more specific with the selector
+        const activityTable = document.querySelector('#dashboard .table, .recent-activities-table');
+        if (!activityTable) {
+          showNotification('Could not find activities table', 'warning');
+          return;
+        }
+
+        const activityRows = activityTable.querySelectorAll('tbody tr');
+        console.log('Found', activityRows.length, 'activity rows');
+
+        let foundMatch = false;
+        let firstMatchRow = null;
+
+        // Loop through each row and check for matches
+        activityRows.forEach(row => {
+          // Get the text content of the entire row
+          const rowText = row.textContent.toLowerCase();
+
+          // Check if the search query is found in the row text
+          if (rowText.includes(searchQuery)) {
+            console.log('Found match:', rowText);
+
+            // Highlight the row with !important to override other styles
+            row.setAttribute('style', 'background-color: rgba(255, 255, 0, 0.4) !important');
+            row.classList.add('search-highlight');
+            foundMatch = true;
+
+            // Remember the first match for scrolling
+            if (!firstMatchRow) {
+              firstMatchRow = row;
+            }
+          }
+        });
+
+        // If we found a match, scroll to the first one
+        if (foundMatch && firstMatchRow) {
+          // Find the activities section
+          const activitiesSection = document.querySelector('#dashboard h3.section-title, #dashboard h2.dashboard-title, .dashboard-title');
+
+          if (activitiesSection) {
+            console.log('Scrolling to activities section');
+            // Scroll to the activities section
+            activitiesSection.scrollIntoView({ behavior: 'smooth', block: 'start' });
+
+            // Then after a delay, scroll to the specific row
+            setTimeout(() => {
+              console.log('Scrolling to match row');
+              firstMatchRow.scrollIntoView({ behavior: 'smooth', block: 'center' });
+
+              // Add a pulsing border to make it more noticeable
+              firstMatchRow.style.boxShadow = '0 0 8px 2px #ffcc00';
+            }, 500);
+          } else {
+            // If we can't find the section header, just scroll to the row
+            firstMatchRow.scrollIntoView({ behavior: 'smooth', block: 'center' });
+          }
+
+          showNotification('Found matching activities', 'success');
+        } else {
+          showNotification('No matching activities found', 'warning');
+        }
+      }, 300); // Wait for tab switch to complete
+    }
+
+    // Function to clear all highlighting
+    function clearAllHighlights() {
+      // Get all table rows in the document
+      const allRows = document.querySelectorAll('table tr');
+
+      // Remove highlighting from each row
+      allRows.forEach(row => {
+        // Remove the search-highlight class
+        row.classList.remove('search-highlight');
+
+        // Clear any inline styles
+        row.removeAttribute('style');
+
+        // Reset box-shadow specifically (in case it was applied)
+        row.style.boxShadow = 'none';
+      });
+
+      console.log('Cleared all previous highlights');
+    }
+
+    // Add event listener for Enter key in the search input
+    document.addEventListener('DOMContentLoaded', function () {
+      const searchInput = document.getElementById('activity-search');
+      if (searchInput) {
+        searchInput.addEventListener('keypress', function (event) {
+          if (event.key === 'Enter') {
+            event.preventDefault();
+            searchActivities();
+          }
+        });
+      }
+
+      console.log('Search functionality initialized');
+    });
+
+    function activateTab(tabId) {
+      // Find and click the corresponding tab item
+      document.querySelectorAll('.tab-item').forEach(item => {
+        if (item.getAttribute('data-target') === tabId) {
+          item.click();
+        }
+      });
+
+      // After a short delay, scroll to the section
+      setTimeout(() => {
+        const targetElement = document.getElementById(tabId);
+        if (targetElement) {
+          targetElement.scrollIntoView({ behavior: 'smooth', block: 'start' });
+        }
+      }, 100);
+    }
+
+// Function to show certificate details
+// function showCertificateDetails(certificateId) {
+//   // Display the modal
+//   const modal = document.getElementById('certificate-details-modal');
+//   modal.style.display = 'flex';
+
+//   // COMPLETELY REPLACE the modal's content
+//   const modalContent = document.querySelector('#certificate-details-modal .modal-content');
+
+//   // Show loading indicator
+//   modalContent.innerHTML = `
+//     <button class="modal-close" onclick="document.getElementById('certificate-details-modal').style.display='none'">✖</button>
+//     <h3 class="dashboard-title">Certificate Details</h3>
+//     <div style="text-align:center; padding: 20px;">
+//       <div class="loading-spinner"></div>
+//       <p>Loading certificate details...</p>
+//     </div>
+//   `;
+
+//   // Fetch certificate details from server
+//   fetch(`/get_certificate_details/${certificateId}`)
+//     .then(response => response.json())
+//     .then(data => {
+//       if (data.success && data.certificate) {
+//         // Get status class for styling
+//         const statusClass = getStatusClass(data.certificate.status);
+        
+//         // COMPLETELY REPLACE the modal content
+//         modalContent.innerHTML = `
+//           <button class="modal-close" onclick="document.getElementById('certificate-details-modal').style.display='none'">✖</button>
+//           <h3 class="dashboard-title">Certificate Details</h3>
+//           <div class="service-details">
+//             <div class="details-row">
+//               <div class="detail-label">Certificate Type:</div>
+//               <div class="detail-value">${data.certificate.type}</div>
+//             </div>
+//             <div class="details-row">
+//               <div class="detail-label">Application ID:</div>
+//               <div class="detail-value">CERT-${data.certificate.id}</div>
+//             </div>
+//             <div class="details-row">
+//               <div class="detail-label">Application Date:</div>
+//               <div class="detail-value">${data.certificate.date}</div>
+//             </div>
+//             <div class="details-row">
+//               <div class="detail-label">Status:</div>
+//               <div class="detail-value">
+//                 <span class="status-badge ${statusClass}">
+//                   ${data.certificate.status}
+//                 </span>
+//               </div>
+//             </div>
+//             <div class="details-row">
+//               <div class="detail-label">Description:</div>
+//               <div class="detail-value">
+//                 <p>${data.certificate.description || 'No description available'}</p>
+//               </div>
+//             </div>
+//           </div>
+//           <div class="form-actions" style="margin-top:20px;">
+//             <button type="button" class="btn btn-outline" onclick="document.getElementById('certificate-details-modal').style.display='none'">Close</button>
+//           </div>
+//         `;
+//       } else {
+//         modalContent.innerHTML = `
+//           <button class="modal-close" onclick="document.getElementById('certificate-details-modal').style.display='none'">✖</button>
+//           <h3 class="dashboard-title">Certificate Details</h3>
+//           <div class="alert" style="background-color:#f8d7da; color:#721c24; padding:1rem; border:1px solid #f5c6cb; border-radius:4px;">
+//             Error loading certificate details. ${data.message || 'Please try again later.'}
+//           </div>
+//           <div class="form-actions" style="margin-top:20px;">
+//             <button type="button" class="btn btn-outline" onclick="document.getElementById('certificate-details-modal').style.display='none'">Close</button>
+//           </div>
+//         `;
+//       }
+//     })
+//     .catch(error => {
+//       console.error('Error fetching certificate details:', error);
+//       modalContent.innerHTML = `
+//         <button class="modal-close" onclick="document.getElementById('certificate-details-modal').style.display='none'">✖</button>
+//         <h3 class="dashboard-title">Certificate Details</h3>
+//         <div class="alert" style="background-color:#f8d7da; color:#721c24; padding:1rem; border:1px solid #f5c6cb; border-radius:4px;">
+//           An error occurred while loading certificate details. Please try again later.
+//         </div>
+//         <div class="form-actions" style="margin-top:20px;">
+//           <button type="button" class="btn btn-outline" onclick="document.getElementById('certificate-details-modal').style.display='none'">Close</button>
+//         </div>
+//       `;
+//     });
+// } </script>
+
+  <script src="{{ url_for('static', filename='scripts/citizens.js') }}">
+  </script>
+</body>
+
+</html>

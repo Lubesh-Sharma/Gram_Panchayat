@@ -1,0 +1,65 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Gram Panchayat Management System - Error</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='styles/landing.css') }}">
+    <style>
+        /* Error Page Styling */
+        body {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            margin: 0;
+            text-align: center;
+        }
+
+        .error-message {
+            max-width: 600px;
+            padding: 2rem;
+            background: white;
+            border-radius: 12px;
+            box-shadow: 0 4px 10px rgba(0, 0, 0, 0.1);
+        }
+
+        .error-message h2 {
+            font-size: 3rem;
+            color: #e74c3c;
+            margin-bottom: 1rem;
+        }
+
+        .error-message p {
+            font-size: 1.2rem;
+            margin-bottom: 2rem;
+            color: #333;
+        }
+
+        .error-message button {
+            padding: 1rem 2rem;
+            font-size: 1.5rem;
+            color: white;
+            background-color: #e74c3c;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            transition: background-color 0.3s;
+        }
+
+        .error-message button:hover {
+            background-color: #c0392b;
+        }
+    </style>
+</head>
+
+<body>
+    <section class="error-message">
+        <h2>Error</h2>
+        <p>Sorry, an error occurred. Please try again later.</p>
+        <button onclick="window.history.back()">Back</button>
+    </section>
+</body>
+
+</html>

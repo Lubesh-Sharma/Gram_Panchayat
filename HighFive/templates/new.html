@@ -1,0 +1,2454 @@
+
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Panchayat Member Dashboard</title>
+    <style>
+        :root {
+            --primary: #3b82f6;
+            --secondary: #64748b;
+            --success: #22c55e;
+            --danger: #ef4444;
+            --warning: #f59e0b;
+            --info: #0ea5e9;
+            --light: #f8fafc;
+            --dark: #1e293b;
+            --gray: #94a3b8;
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        }
+
+        body {
+            background-color: #f1f5f9;
+            color: var(--dark);
+            line-height: 1.6;
+        }
+
+        .container {
+            width: 100%;
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 0 15px;
+        }
+
+        /* Header Styles */
+        header {
+            background-color: white;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+            position: sticky;
+            top: 0;
+            z-index: 100;
+        }
+
+        .header-container {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 15px 0;
+        }
+
+        .logo {
+            display: flex;
+            align-items: center;
+        }
+
+        .logo img {
+            height: 40px;
+            margin-right: 10px;
+        }
+
+        .logo-text h1 {
+            font-size: 1.2rem;
+            font-weight: 600;
+            color: var(--primary);
+            margin: 0;
+        }
+
+        .logo-text p {
+            font-size: 0.8rem;
+            color: var(--secondary);
+            margin: 0;
+        }
+
+        nav ul {
+            display: flex;
+            list-style: none;
+        }
+
+        nav ul li {
+            margin: 0 15px;
+        }
+
+        nav ul li a {
+            text-decoration: none;
+            color: var(--dark);
+            font-weight: 500;
+            transition: color 0.3s;
+        }
+
+        nav ul li a:hover {
+            color: var(--primary);
+        }
+
+        .user-panel {
+            display: flex;
+            align-items: center;
+        }
+
+        .user-info {
+            margin-right: 15px;
+            text-align: right;
+        }
+
+        .user-info .name {
+            font-weight: 500;
+            font-size: 0.9rem;
+        }
+
+        .user-info .role {
+            color: var(--secondary);
+            font-size: 0.8rem;
+        }
+
+        .logout-btn {
+            background-color: transparent;
+            border: 1px solid var(--danger);
+            color: var(--danger);
+            padding: 5px 15px;
+            border-radius: 4px;
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+
+        .logout-btn:hover {
+            background-color: var(--danger);
+            color: white;
+        }
+
+        /* Main Content Layout */
+        .main-content {
+            display: flex;
+            padding: 20px 0;
+        }
+
+        /* Sidebar Styles */
+        .sidebar {
+            width: 250px;
+            background-color: white;
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
+            padding: 20px;
+            margin-right: 20px;
+            height: calc(100vh - 90px);
+            position: sticky;
+            top: 90px;
+            overflow-y: auto;
+        }
+
+        .sidebar-title {
+            color: var(--primary);
+            font-size: 1.2rem;
+            margin-bottom: 20px;
+            padding-bottom: 10px;
+            border-bottom: 1px solid #e2e8f0;
+        }
+
+        .sidebar-menu {
+            list-style: none;
+        }
+
+        .sidebar-menu-title {
+            font-size: 0.8rem;
+            text-transform: uppercase;
+            color: var(--secondary);
+            margin: 20px 0 10px;
+            font-weight: 600;
+        }
+
+        .sidebar-menu li {
+            margin-bottom: 5px;
+        }
+
+        .sidebar-menu a {
+            display: flex;
+            align-items: center;
+            text-decoration: none;
+            color: var(--dark);
+            padding: 10px;
+            border-radius: 4px;
+            transition: all 0.3s;
+        }
+
+        .sidebar-menu a:hover {
+            background-color: #f8fafc;
+            color: var(--primary);
+        }
+
+        .sidebar-menu a.active {
+            background-color: #e0f2fe;
+            color: var(--primary);
+            font-weight: 500;
+        }
+
+        .sidebar-menu a i {
+            margin-right: 10px;
+            font-size: 1rem;
+        }
+
+        /* Content Area Styles */
+        .content {
+            flex: 1;
+        }
+
+        .content-card {
+            background-color: white;
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
+            padding: 20px;
+            margin-bottom: 20px;
+        }
+
+        .content-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px;
+        }
+
+        .content-title {
+            font-size: 1.2rem;
+            font-weight: 600;
+            color: var(--primary);
+        }
+
+        .content-actions {
+            display: flex;
+            gap: 10px;
+        }
+
+        .btn {
+            border: none;
+            padding: 8px 15px;
+            border-radius: 4px;
+            cursor: pointer;
+            font-weight: 500;
+            font-size: 0.9rem;
+            transition: all 0.3s;
+        }
+
+        .btn-primary {
+            background-color: var(--primary);
+            color: white;
+        }
+
+        .btn-primary:hover {
+            background-color: #2563eb;
+        }
+
+        .btn-secondary {
+            background-color: #f1f5f9;
+            color: var(--secondary);
+        }
+
+        .btn-secondary:hover {
+            background-color: #e2e8f0;
+        }
+
+        .btn-success {
+            background-color: var(--success);
+            color: white;
+        }
+
+        .btn-success:hover {
+            background-color: #16a34a;
+        }
+
+        .btn-danger {
+            background-color: var(--danger);
+            color: white;
+        }
+
+        .btn-danger:hover {
+            background-color: #dc2626;
+        }
+
+        .btn-sm {
+            padding: 4px 10px;
+            font-size: 0.8rem;
+        }
+
+        /* Department Sections */
+        .department-section {
+            display: none;
+            /* Hidden by default */
+        }
+
+        .department-section.active {
+            display: block;
+        }
+
+        /* Member Profile Card */
+        .member-profile {
+            display: flex;
+            align-items: center;
+            padding: 20px;
+            background-color: #f8fafc;
+            border-radius: 8px;
+            margin-bottom: 20px;
+        }
+
+        .member-avatar {
+            width: 80px;
+            height: 80px;
+            border-radius: 50%;
+            background-color: #e2e8f0;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 2rem;
+            color: var(--primary);
+            margin-right: 20px;
+        }
+
+        .member-details h3 {
+            font-size: 1.2rem;
+            margin-bottom: 5px;
+        }
+
+        .member-details p {
+            margin: 5px 0;
+            color: var(--secondary);
+        }
+
+        .member-id {
+            background-color: var(--primary);
+            color: white;
+            padding: 2px 8px;
+            border-radius: 4px;
+            font-size: 0.8rem;
+            display: inline-block;
+            margin-top: 5px;
+        }
+
+        .department-badge {
+            background-color: #e0f2fe;
+            color: var(--primary);
+            padding: 5px 10px;
+            border-radius: 4px;
+            font-size: 0.9rem;
+            font-weight: 500;
+        }
+
+        /* Dashboard Cards */
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 20px;
+            margin-bottom: 20px;
+        }
+
+        .stat-card {
+            background-color: #f8fafc;
+            border-radius: 8px;
+            padding: 15px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            text-align: center;
+            transition: all 0.3s;
+        }
+
+        .stat-card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.1);
+        }
+
+        .stat-icon {
+            font-size: 2rem;
+            margin-bottom: 10px;
+            color: var(--primary);
+        }
+
+        .stat-value {
+            font-size: 1.5rem;
+            font-weight: 700;
+            color: var(--dark);
+            margin-bottom: 5px;
+        }
+
+        .stat-label {
+            font-size: 0.9rem;
+            color: var(--secondary);
+        }
+
+        /* Table Styles */
+        .data-table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 20px;
+        }
+
+        .data-table th,
+        .data-table td {
+            padding: 12px 15px;
+            text-align: left;
+            border-bottom: 1px solid #e2e8f0;
+        }
+
+        .data-table th {
+            font-weight: 600;
+            background-color: #f8fafc;
+            color: var(--secondary);
+            font-size: 0.9rem;
+        }
+
+        .data-table tbody tr:hover {
+            background-color: #f8fafc;
+        }
+
+        .table-status {
+            padding: 4px 8px;
+            border-radius: 4px;
+            font-size: 0.75rem;
+            font-weight: 500;
+            display: inline-block;
+        }
+
+        .status-approved {
+            background-color: #dcfce7;
+            color: var(--success);
+        }
+
+        .status-pending {
+            background-color: #fef9c3;
+            color: var(--warning);
+        }
+
+        .status-rejected {
+            background-color: #fee2e2;
+            color: var(--danger);
+        }
+
+        /* Announcements */
+        .announcements-list {
+            display: flex;
+            flex-direction: column;
+            gap: 15px;
+        }
+
+        .announcement-item {
+            padding: 15px;
+            background-color: #f8fafc;
+            border-left: 3px solid var(--primary);
+            border-radius: 0 4px 4px 0;
+        }
+
+        .announcement-date {
+            font-size: 0.8rem;
+            color: var(--secondary);
+            margin-bottom: 5px;
+        }
+
+        .announcement-title {
+            font-size: 1.1rem;
+            font-weight: 600;
+            margin-bottom: 5px;
+        }
+
+        .announcement-text {
+            font-size: 0.9rem;
+        }
+
+        /* Profile Section */
+        .profile-details {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 20px;
+        }
+
+        .profile-section {
+            background-color: #f8fafc;
+            padding: 15px;
+            border-radius: 8px;
+        }
+
+        .profile-section-title {
+            font-size: 1.1rem;
+            color: var(--primary);
+            margin-bottom: 15px;
+            padding-bottom: 8px;
+            border-bottom: 1px solid #e2e8f0;
+        }
+
+        .profile-field {
+            display: flex;
+            margin-bottom: 10px;
+        }
+
+        .field-label {
+            font-weight: 600;
+            width: 120px;
+            color: var(--secondary);
+        }
+
+        .field-value {
+            flex: 1;
+        }
+
+        /* Responsive Styles */
+        @media (max-width: 992px) {
+            .main-content {
+                flex-direction: column;
+            }
+
+            .sidebar {
+                width: 100%;
+                margin-right: 0;
+                margin-bottom: 20px;
+                height: auto;
+                position: static;
+            }
+
+            .stats-grid {
+                grid-template-columns: repeat(2, 1fr);
+            }
+
+            .profile-details {
+                grid-template-columns: 1fr;
+            }
+        }
+
+        @media (max-width: 768px) {
+            .header-container {
+                flex-direction: column;
+            }
+
+            .logo {
+                margin-bottom: 15px;
+            }
+
+            nav ul {
+                flex-wrap: wrap;
+                justify-content: center;
+            }
+
+            nav ul li {
+                margin: 5px;
+            }
+
+            .data-table {
+                font-size: 0.9rem;
+            }
+
+            .data-table th,
+            .data-table td {
+                padding: 8px;
+            }
+        }
+
+        @media (max-width: 576px) {
+            .stats-grid {
+                grid-template-columns: 1fr;
+            }
+
+            .content-header {
+                flex-direction: column;
+                align-items: flex-start;
+                gap: 10px;
+            }
+
+            .member-profile {
+                flex-direction: column;
+                text-align: center;
+            }
+
+            .member-avatar {
+                margin-right: 0;
+                margin-bottom: 15px;
+            }
+        }
+    </style>
+</head>
+
+<body>
+    <!-- Header -->
+    <header>
+        <div class="container header-container">
+            <div class="logo">
+                <img src="https://via.placeholder.com/60" alt="GPMS Logo">
+                <div class="logo-text">
+                    <h1>Gram Panchayat Management System</h1>
+                    <p>Serving the community efficiently</p>
+                </div>
+            </div>
+
+            <nav>
+                <ul>
+                    <li><a href="#">Home</a></li>
+                    <li><a href="#">Dashboard</a></li>
+                    <li><a href="#">Profile</a></li>
+                    <li><a href="#">Help</a></li>
+                </ul>
+            </nav>
+
+            <div class="user-panel">
+                <div class="user-info">
+                    <div class="name" id="memberName">Loading...</div>
+                    <div class="role" id="memberRole">Loading...</div>
+                </div>
+                <button class="logout-btn" id="logoutBtn">Logout</button>
+            </div>
+        </div>
+    </header>
+
+    <!-- Main Content -->
+    <div class="container main-content">
+        <!-- Sidebar -->
+        <div class="sidebar">
+            <h3 class="sidebar-title">Member Dashboard</h3>
+
+            <ul class="sidebar-menu">
+                <li><a href="#" class="active" data-section="dashboard"><i>📊</i> Overview</a></li>
+
+                <!-- Certificate Department -->
+                <div class="sidebar-menu-title department-menu certificate-dept">Census & Certificates</div>
+                <li class="department-menu certificate-dept"><a href="#" data-section="census"><i>👥</i> Census
+                        Management</a></li>
+                <li class="department-menu certificate-dept"><a href="#" data-section="certificates"><i>📝</i>
+                        Certificates</a></li>
+                <li class="department-menu certificate-dept"><a href="#" data-section="birth-death"><i>📅</i> Birth &
+                        Death Records</a></li>
+
+                <!-- Service Department -->
+                <div class="sidebar-menu-title department-menu service-dept">Service Management</div>
+                <li class="department-menu service-dept"><a href="#" data-section="service-requests"><i>🔍</i> Service
+                        Requests</a></li>
+                <li class="department-menu service-dept"><a href="#" data-section="complaints"><i>📢</i> Complaints</a>
+                </li>
+                <li class="department-menu service-dept"><a href="#" data-section="feedback"><i>📋</i> Citizen
+                        Feedback</a></li>
+
+                <!-- Budget Department -->
+                <div class="sidebar-menu-title department-menu budget-dept">Financial Management</div>
+                <li class="department-menu budget-dept"><a href="#" data-section="projects"><i>🚧</i> Projects</a></li>
+                <li class="department-menu budget-dept"><a href="#" data-section="budgets"><i>💰</i> Budget
+                        Management</a></li>
+                <li class="department-menu budget-dept"><a href="#" data-section="assets"><i>📜</i> Assets &
+                        Inventory</a></li>
+
+                <!-- Tax Department -->
+                <div class="sidebar-menu-title department-menu tax-dept">Revenue Management</div>
+                <li class="department-menu tax-dept"><a href="#" data-section="property-tax"><i>🏠</i> Property Tax</a>
+                </li>
+                <li class="department-menu tax-dept"><a href="#" data-section="water-tax"><i>💧</i> Water Tax</a></li>
+                <li class="department-menu tax-dept"><a href="#" data-section="other-tax"><i>💲</i> Other Revenues</a>
+                </li>
+
+                <!-- Agriculture Department -->
+                <div class="sidebar-menu-title department-menu agriculture-dept">Agriculture & Environment</div>
+                <li class="department-menu agriculture-dept"><a href="#" data-section="agriculture"><i>🌾</i>
+                        Agriculture</a></li>
+                <li class="department-menu agriculture-dept"><a href="#" data-section="environment"><i>🌳</i>
+                        Environment</a></li>
+                <li class="department-menu agriculture-dept"><a href="#" data-section="irrigation"><i>💦</i>
+                        Irrigation</a></li>
+
+                <!-- Common for all departments -->
+                <div class="sidebar-menu-title">Common Functions</div>
+                <li><a href="#" data-section="announcements"><i>📣</i> Announcements</a></li>
+                <li><a href="#" data-section="meetings"><i>📅</i> Meetings & Events</a></li>
+                <li><a href="#" data-section="profile"><i>👤</i> My Profile</a></li>
+            </ul>
+        </div>
+
+        <!-- Content Area -->
+        <div class="content">
+            <!-- Member Profile -->
+            <div class="member-profile">
+                <div class="member-avatar" id="memberAvatar">MP</div>
+                <div class="member-details">
+                    <h3 id="profileName">Loading Name...</h3>
+                    <p>Position: <span id="profilePosition">Panchayat Member</span></p>
+                    <p>Department: <span class="department-badge" id="profileDepartment">Loading...</span></p>
+                    <div class="member-id" id="profileId">MP-2025-001</div>
+                </div>
+            </div>
+
+            <!-- Main Dashboard Overview (visible to all) -->
+            <div class="content-section" id="dashboard-section">
+                <div class="content-card">
+                    <div class="content-header">
+                        <h2 class="content-title">Dashboard Overview</h2>
+                        <div class="content-actions">
+                            <button class="btn btn-primary">Refresh</button>
+                        </div>
+                    </div>
+
+                    <div class="stats-grid">
+                        <div class="stat-card">
+                            <div class="stat-icon">📊</div>
+                            <div class="stat-value">42</div>
+                            <div class="stat-label">Pending Tasks</div>
+                        </div>
+
+                        <div class="stat-card">
+                            <div class="stat-icon">📝</div>
+                            <div class="stat-value">18</div>
+                            <div class="stat-label">Recent Applications</div>
+                        </div>
+
+                        <div class="stat-card">
+                            <div class="stat-icon">✅</div>
+                            <div class="stat-value">127</div>
+                            <div class="stat-label">Completed Tasks</div>
+                        </div>
+
+                        <div class="stat-card">
+                            <div class="stat-icon">🔔</div>
+                            <div class="stat-value">5</div>
+                            <div class="stat-label">Notifications</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Certificate Department Sections -->
+            <div class="department-section certificate-dept" id="census-section">
+                <div class="content-card">
+                    <div class="content-header">
+                        <h2 class="content-title">Census Management</h2>
+                        <div class="content-actions">
+                            <button class="btn btn-primary">Add New Record</button>
+                        </div>
+                    </div>
+
+                    <table class="data-table">
+                        <thead>
+                            <tr>
+                                <th>Household ID</th>
+                                <th>Head of Family</th>
+                                <th>Members</th>
+                                <th>Address</th>
+                                <th>Last Updated</th>
+                                <th>Status</th>
+                                <th>Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr>
+                                <td>HH-2025-1023</td>
+                                <td>Rajesh Kumar</td>
+                                <td>4</td>
+                                <td>Ward 3, House #45</td>
+                                <td>10 Feb 2025</td>
+                                <td><span class="table-status status-approved">Verified</span></td>
+                                <td>
+                                    <button class="btn btn-secondary btn-sm">Edit</button>
+                                    <button class="btn btn-secondary btn-sm">View</button>
+                                </td>
+                            </tr>
+                            <tr>
+                                <td>HH-2025-1024</td>
+                                <td>Sunita Sharma</td>
+                                <td>5</td>
+                                <td>Ward 2, House #17</td>
+                                <td>15 Feb 2025</td>
+                                <td><span class="table-status status-pending">Pending</span></td>
+                                <td>
+                                    <button class="btn btn-secondary btn-sm">Verify</button>
+                                    <button class="btn btn-secondary btn-sm">View</button>
+                                </td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+
+            <div class="department-section certificate-dept" id="certificates-section">
+                <div class="content-card">
+                    <div class="content-header">
+                        <h2 class="content-title">Certificate Applications</h2>
+                        <div class="content-actions">
+                            <button class="btn btn-primary">Process All</button>
+                        </div>
+                    </div>
+
+                    <table class="data-table">
+                        <thead>
+                            <tr>
+                                <th>Application ID</th>
+                                <th>Citizen Name</th>
+                                <th>Certificate Type</th>
+                                <th>Date Applied</th>
+                                <th>Status</th>
+                                <th>Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr>
+                                <td>CERT-2025-0042</td>
+                                <td>Priya Singh</td>
+                                <td>Birth Certificate</td>
+                                <td>22 Feb 2025</td>
+                                <td><span class="table-status status-pending">Pending</span></td>
+                                <td>
+                                    <button class="btn btn-success btn-sm">Approve</button>
+                                    <button class="btn btn-danger btn-sm">Reject</button>
+                                </td>
+                            </tr>
+                            <tr>
+                                <td>CERT-2025-0041</td>
+                                <td>Mohan Das</td>
+                                <td>Income Certificate</td>
+                                <td>20 Feb 2025</td>
+                                <td><span class="table-status status-pending">Pending</span></td>
+                                <td>
+                                    <button class="btn btn-success btn-sm">Approve</button>
+                                    <button class="btn btn-danger btn-sm">Reject</button>
+                                </td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+
+            <!-- Service Department Sections -->
+            <div class="department-section service-dept" id="service-requests-section">
+                <div class="content-card">
+                    <div class="content-header">
+                        <h2 class="content-title">Service Requests</h2>
+                        <div class="content-actions">
+                            <button class="btn btn-primary">Assign Workers</button>
+                        </div>
+                    </div>
+
+                    <table class="data-table">
+                        <thead>
+                            <tr>
+                                <th>Request ID</th>
+                                <th>Citizen Name</th>
+                                <th>Service Type</th>
+                                <th>Location</th>
+                                <th>Date Requested</th>
+                                <th>Status</th>
+                                <th>Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr>
+                                <td>SRV-2025-0078</td>
+                                <td>Amit Patel</td>
+                                <td>Water Supply Issue</td>
+                                <td>Ward 4, Block C</td>
+                                <td>25 Feb 2025</td>
+                                <td><span class="table-status status-pending">Pending</span></td>
+                                <td>
+                                    <button class="btn btn-secondary btn-sm">Assign</button>
+                                    <button class="btn btn-secondary btn-sm">Details</button>
+                                </td>
+                            </tr>
+                            <tr>
+                                <td>SRV-2025-0077</td>
+                                <td>Kavita Sharma</td>
+                                <td>Road Repair</td>
+                                <td>Ward 2, Main Road</td>
+                                <td>24 Feb 2025</td>
+                                <td><span class="table-status status-approved">In Progress</span></td>
+                                <td>
+                                    <button class="btn btn-success btn-sm">Complete</button>
+                                    <button class="btn btn-secondary btn-sm">Details</button>
+                                </td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+
+            <!-- Budget Department Sections -->
+            <div class="department-section budget-dept" id="projects-section">
+                <div class="content-card">
+                    <div class="content-header">
+                        <h2 class="content-title">Project Management</h2>
+                        <div class="content-actions">
+                            <button class="btn btn-primary">Add New Project</button>
+                        </div>
+                    </div>
+
+                    <table class="data-table">
+                        <thead>
+                            <tr>
+                                <th>Project ID</th>
+                                <th>Project Name</th>
+                                <th>Start Date</th>
+                                <th>Budget</th>
+                                <th>Status</th>
+                                <th>Completion</th>
+                                <th>Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr>
+                                <td>PRJ-2025-005</td>
+                                <td>Community Center Construction</td>
+                                <td>15 Jan 2025</td>
+                                <td>₹8,50,000</td>
+                                <td><span class="table-status status-approved">In Progress</span></td>
+                                <td>45%</td>
+                                <td>
+                                    <button class="btn btn-secondary btn-sm">Update</button>
+                                    <button class="btn btn-secondary btn-sm">Details</button>
+                                </td>
+                            </tr>
+                            <tr>
+                                <td>PRJ-2025-006</td>
+                                <td>Solar Street Lights</td>
+                                <td>10 Feb 2025</td>
+                                <td>₹3,20,000</td>
+                                <td><span class="table-status status-approved">In Progress</span></td>
+                                <td>30%</td>
+                                <td>
+                                    <button class="btn btn-secondary btn-sm">Update</button>
+                                    <button class="btn btn-secondary btn-sm">Details</button>
+                                </td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+
+            <!-- Tax Department Sections -->
+            <div class="department-section tax-dept" id="property-tax-section">
+                <div class="content-card">
+                    <divat_member.html -->
+                        <!DOCTYPE html>
+                        <html lang="en">
+
+                        <head>
+                            <meta charset="UTF-8">
+                            <meta name="viewport" content="width=device-width, initial-scale=1.0">
+                            <title>Panchayat Member Dashboard</title>
+                            <style>
+                                :root {
+                                    --primary: #3b82f6;
+                                    --secondary: #64748b;
+                                    --success: #22c55e;
+                                    --danger: #ef4444;
+                                    --warning: #f59e0b;
+                                    --info: #0ea5e9;
+                                    --light: #f8fafc;
+                                    --dark: #1e293b;
+                                    --gray: #94a3b8;
+                                }
+
+                                * {
+                                    margin: 0;
+                                    padding: 0;
+                                    box-sizing: border-box;
+                                    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+                                }
+
+                                body {
+                                    background-color: #f1f5f9;
+                                    color: var(--dark);
+                                    line-height: 1.6;
+                                }
+
+                                .container {
+                                    width: 100%;
+                                    max-width: 1200px;
+                                    margin: 0 auto;
+                                    padding: 0 15px;
+                                }
+
+                                /* Header Styles */
+                                header {
+                                    background-color: white;
+                                    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+                                    position: sticky;
+                                    top: 0;
+                                    z-index: 100;
+                                }
+
+                                .header-container {
+                                    display: flex;
+                                    align-items: center;
+                                    justify-content: space-between;
+                                    padding: 15px 0;
+                                }
+
+                                .logo {
+                                    display: flex;
+                                    align-items: center;
+                                }
+
+                                .logo img {
+                                    height: 40px;
+                                    margin-right: 10px;
+                                }
+
+                                .logo-text h1 {
+                                    font-size: 1.2rem;
+                                    font-weight: 600;
+                                    color: var(--primary);
+                                    margin: 0;
+                                }
+
+                                .logo-text p {
+                                    font-size: 0.8rem;
+                                    color: var(--secondary);
+                                    margin: 0;
+                                }
+
+                                nav ul {
+                                    display: flex;
+                                    list-style: none;
+                                }
+
+                                nav ul li {
+                                    margin: 0 15px;
+                                }
+
+                                nav ul li a {
+                                    text-decoration: none;
+                                    color: var(--dark);
+                                    font-weight: 500;
+                                    transition: color 0.3s;
+                                }
+
+                                nav ul li a:hover {
+                                    color: var(--primary);
+                                }
+
+                                .user-panel {
+                                    display: flex;
+                                    align-items: center;
+                                }
+
+                                .user-info {
+                                    margin-right: 15px;
+                                    text-align: right;
+                                }
+
+                                .user-info .name {
+                                    font-weight: 500;
+                                    font-size: 0.9rem;
+                                }
+
+                                .user-info .role {
+                                    color: var(--secondary);
+                                    font-size: 0.8rem;
+                                }
+
+                                .logout-btn {
+                                    background-color: transparent;
+                                    border: 1px solid var(--danger);
+                                    color: var(--danger);
+                                    padding: 5px 15px;
+                                    border-radius: 4px;
+                                    cursor: pointer;
+                                    transition: all 0.3s;
+                                }
+
+                                .logout-btn:hover {
+                                    background-color: var(--danger);
+                                    color: white;
+                                }
+
+                                /* Main Content Layout */
+                                .main-content {
+                                    display: flex;
+                                    padding: 20px 0;
+                                }
+
+                                /* Sidebar Styles */
+                                .sidebar {
+                                    width: 250px;
+                                    background-color: white;
+                                    border-radius: 8px;
+                                    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
+                                    padding: 20px;
+                                    margin-right: 20px;
+                                    height: calc(100vh - 90px);
+                                    position: sticky;
+                                    top: 90px;
+                                    overflow-y: auto;
+                                }
+
+                                .sidebar-title {
+                                    color: var(--primary);
+                                    font-size: 1.2rem;
+                                    margin-bottom: 20px;
+                                    padding-bottom: 10px;
+                                    border-bottom: 1px solid #e2e8f0;
+                                }
+
+                                .sidebar-menu {
+                                    list-style: none;
+                                }
+
+                                .sidebar-menu-title {
+                                    font-size: 0.8rem;
+                                    text-transform: uppercase;
+                                    color: var(--secondary);
+                                    margin: 20px 0 10px;
+                                    font-weight: 600;
+                                }
+
+                                .sidebar-menu li {
+                                    margin-bottom: 5px;
+                                }
+
+                                .sidebar-menu a {
+                                    display: flex;
+                                    align-items: center;
+                                    text-decoration: none;
+                                    color: var(--dark);
+                                    padding: 10px;
+                                    border-radius: 4px;
+                                    transition: all 0.3s;
+                                }
+
+                                .sidebar-menu a:hover {
+                                    background-color: #f8fafc;
+                                    color: var(--primary);
+                                }
+
+                                .sidebar-menu a.active {
+                                    background-color: #e0f2fe;
+                                    color: var(--primary);
+                                    font-weight: 500;
+                                }
+
+                                .sidebar-menu a i {
+                                    margin-right: 10px;
+                                    font-size: 1rem;
+                                }
+
+                                /* Content Area Styles */
+                                .content {
+                                    flex: 1;
+                                }
+
+                                .content-card {
+                                    background-color: white;
+                                    border-radius: 8px;
+                                    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
+                                    padding: 20px;
+                                    margin-bottom: 20px;
+                                }
+
+                                .content-header {
+                                    display: flex;
+                                    justify-content: space-between;
+                                    align-items: center;
+                                    margin-bottom: 20px;
+                                }
+
+                                .content-title {
+                                    font-size: 1.2rem;
+                                    font-weight: 600;
+                                    color: var(--primary);
+                                }
+
+                                .content-actions {
+                                    display: flex;
+                                    gap: 10px;
+                                }
+
+                                .btn {
+                                    border: none;
+                                    padding: 8px 15px;
+                                    border-radius: 4px;
+                                    cursor: pointer;
+                                    font-weight: 500;
+                                    font-size: 0.9rem;
+                                    transition: all 0.3s;
+                                }
+
+                                .btn-primary {
+                                    background-color: var(--primary);
+                                    color: white;
+                                }
+
+                                .btn-primary:hover {
+                                    background-color: #2563eb;
+                                }
+
+                                .btn-secondary {
+                                    background-color: #f1f5f9;
+                                    color: var(--secondary);
+                                }
+
+                                .btn-secondary:hover {
+                                    background-color: #e2e8f0;
+                                }
+
+                                .btn-success {
+                                    background-color: var(--success);
+                                    color: white;
+                                }
+
+                                .btn-success:hover {
+                                    background-color: #16a34a;
+                                }
+
+                                .btn-danger {
+                                    background-color: var(--danger);
+                                    color: white;
+                                }
+
+                                .btn-danger:hover {
+                                    background-color: #dc2626;
+                                }
+
+                                .btn-sm {
+                                    padding: 4px 10px;
+                                    font-size: 0.8rem;
+                                }
+
+                                /* Department Sections */
+                                .department-section {
+                                    display: none;
+                                    /* Hidden by default */
+                                }
+
+                                .department-section.active {
+                                    display: block;
+                                }
+
+                                /* Member Profile Card */
+                                .member-profile {
+                                    display: flex;
+                                    align-items: center;
+                                    padding: 20px;
+                                    background-color: #f8fafc;
+                                    border-radius: 8px;
+                                    margin-bottom: 20px;
+                                }
+
+                                .member-avatar {
+                                    width: 80px;
+                                    height: 80px;
+                                    border-radius: 50%;
+                                    background-color: #e2e8f0;
+                                    display: flex;
+                                    align-items: center;
+                                    justify-content: center;
+                                    font-size: 2rem;
+                                    color: var(--primary);
+                                    margin-right: 20px;
+                                }
+
+                                .member-details h3 {
+                                    font-size: 1.2rem;
+                                    margin-bottom: 5px;
+                                }
+
+                                .member-details p {
+                                    margin: 5px 0;
+                                    color: var(--secondary);
+                                }
+
+                                .member-id {
+                                    background-color: var(--primary);
+                                    color: white;
+                                    padding: 2px 8px;
+                                    border-radius: 4px;
+                                    font-size: 0.8rem;
+                                    display: inline-block;
+                                    margin-top: 5px;
+                                }
+
+                                .department-badge {
+                                    background-color: #e0f2fe;
+                                    color: var(--primary);
+                                    padding: 5px 10px;
+                                    border-radius: 4px;
+                                    font-size: 0.9rem;
+                                    font-weight: 500;
+                                }
+
+                                /* Dashboard Cards */
+                                .stats-grid {
+                                    display: grid;
+                                    grid-template-columns: repeat(4, 1fr);
+                                    gap: 20px;
+                                    margin-bottom: 20px;
+                                }
+
+                                .stat-card {
+                                    background-color: #f8fafc;
+                                    border-radius: 8px;
+                                    padding: 15px;
+                                    display: flex;
+                                    flex-direction: column;
+                                    align-items: center;
+                                    justify-content: center;
+                                    text-align: center;
+                                    transition: all 0.3s;
+                                }
+
+                                .stat-card:hover {
+                                    transform: translateY(-5px);
+                                    box-shadow: 0 5px 15px rgba(0, 0, 0, 0.1);
+                                }
+
+                                .stat-icon {
+                                    font-size: 2rem;
+                                    margin-bottom: 10px;
+                                    color: var(--primary);
+                                }
+
+                                .stat-value {
+                                    font-size: 1.5rem;
+                                    font-weight: 700;
+                                    color: var(--dark);
+                                    margin-bottom: 5px;
+                                }
+
+                                .stat-label {
+                                    font-size: 0.9rem;
+                                    color: var(--secondary);
+                                }
+
+                                /* Table Styles */
+                                .data-table {
+                                    width: 100%;
+                                    border-collapse: collapse;
+                                    margin-top: 20px;
+                                }
+
+                                .data-table th,
+                                .data-table td {
+                                    padding: 12px 15px;
+                                    text-align: left;
+                                    border-bottom: 1px solid #e2e8f0;
+                                }
+
+                                .data-table th {
+                                    font-weight: 600;
+                                    background-color: #f8fafc;
+                                    color: var(--secondary);
+                                    font-size: 0.9rem;
+                                }
+
+                                .data-table tbody tr:hover {
+                                    background-color: #f8fafc;
+                                }
+
+                                .table-status {
+                                    padding: 4px 8px;
+                                    border-radius: 4px;
+                                    font-size: 0.75rem;
+                                    font-weight: 500;
+                                    display: inline-block;
+                                }
+
+                                .status-approved {
+                                    background-color: #dcfce7;
+                                    color: var(--success);
+                                }
+
+                                .status-pending {
+                                    background-color: #fef9c3;
+                                    color: var(--warning);
+                                }
+
+                                .status-rejected {
+                                    background-color: #fee2e2;
+                                    color: var(--danger);
+                                }
+
+                                /* Announcements */
+                                .announcements-list {
+                                    display: flex;
+                                    flex-direction: column;
+                                    gap: 15px;
+                                }
+
+                                .announcement-item {
+                                    padding: 15px;
+                                    background-color: #f8fafc;
+                                    border-left: 3px solid var(--primary);
+                                    border-radius: 0 4px 4px 0;
+                                }
+
+                                .announcement-date {
+                                    font-size: 0.8rem;
+                                    color: var(--secondary);
+                                    margin-bottom: 5px;
+                                }
+
+                                .announcement-title {
+                                    font-size: 1.1rem;
+                                    font-weight: 600;
+                                    margin-bottom: 5px;
+                                }
+
+                                .announcement-text {
+                                    font-size: 0.9rem;
+                                }
+
+                                /* Profile Section */
+                                .profile-details {
+                                    display: grid;
+                                    grid-template-columns: 1fr 1fr;
+                                    gap: 20px;
+                                }
+
+                                .profile-section {
+                                    background-color: #f8fafc;
+                                    padding: 15px;
+                                    border-radius: 8px;
+                                }
+
+                                .profile-section-title {
+                                    font-size: 1.1rem;
+                                    color: var(--primary);
+                                    margin-bottom: 15px;
+                                    padding-bottom: 8px;
+                                    border-bottom: 1px solid #e2e8f0;
+                                }
+
+                                .profile-field {
+                                    display: flex;
+                                    margin-bottom: 10px;
+                                }
+
+                                .field-label {
+                                    font-weight: 600;
+                                    width: 120px;
+                                    color: var(--secondary);
+                                }
+
+                                .field-value {
+                                    flex: 1;
+                                }
+
+                                /* Responsive Styles */
+                                @media (max-width: 992px) {
+                                    .main-content {
+                                        flex-direction: column;
+                                    }
+
+                                    .sidebar {
+                                        width: 100%;
+                                        margin-right: 0;
+                                        margin-bottom: 20px;
+                                        height: auto;
+                                        position: static;
+                                    }
+
+                                    .stats-grid {
+                                        grid-template-columns: repeat(2, 1fr);
+                                    }
+
+                                    .profile-details {
+                                        grid-template-columns: 1fr;
+                                    }
+                                }
+
+                                @media (max-width: 768px) {
+                                    .header-container {
+                                        flex-direction: column;
+                                    }
+
+                                    .logo {
+                                        margin-bottom: 15px;
+                                    }
+
+                                    nav ul {
+                                        flex-wrap: wrap;
+                                        justify-content: center;
+                                    }
+
+                                    nav ul li {
+                                        margin: 5px;
+                                    }
+
+                                    .data-table {
+                                        font-size: 0.9rem;
+                                    }
+
+                                    .data-table th,
+                                    .data-table td {
+                                        padding: 8px;
+                                    }
+                                }
+
+                                @media (max-width: 576px) {
+                                    .stats-grid {
+                                        grid-template-columns: 1fr;
+                                    }
+
+                                    .content-header {
+                                        flex-direction: column;
+                                        align-items: flex-start;
+                                        gap: 10px;
+                                    }
+
+                                    .member-profile {
+                                        flex-direction: column;
+                                        text-align: center;
+                                    }
+
+                                    .member-avatar {
+                                        margin-right: 0;
+                                        margin-bottom: 15px;
+                                    }
+                                }
+                            </style>
+                        </head>
+
+                        <body>
+                            <!-- Header -->
+                            <header>
+                                <div class="container header-container">
+                                    <div class="logo">
+                                        <img src="https://via.placeholder.com/60" alt="GPMS Logo">
+                                        <div class="logo-text">
+                                            <h1>Gram Panchayat Management System</h1>
+                                            <p>Serving the community efficiently</p>
+                                        </div>
+                                    </div>
+
+                                    <nav>
+                                        <ul>
+                                            <li><a href="#">Home</a></li>
+                                            <li><a href="#">Dashboard</a></li>
+                                            <li><a href="#">Profile</a></li>
+                                            <li><a href="#">Help</a></li>
+                                        </ul>
+                                    </nav>
+
+                                    <div class="user-panel">
+                                        <div class="user-info">
+                                            <div class="name" id="memberName">Loading...</div>
+                                            <div class="role" id="memberRole">Loading...</div>
+                                        </div>
+                                        <button class="logout-btn" id="logoutBtn">Logout</button>
+                                    </div>
+                                </div>
+                            </header>
+
+                            <!-- Main Content -->
+                            <div class="container main-content">
+                                <!-- Sidebar -->
+                                <div class="sidebar">
+                                    <h3 class="sidebar-title">Member Dashboard</h3>
+
+                                    <ul class="sidebar-menu">
+                                        <li><a href="#" class="active" data-section="dashboard"><i>📊</i> Overview</a>
+                                        </li>
+
+                                        <!-- Certificate Department -->
+                                        <div class="sidebar-menu-title department-menu certificate-dept">Census &
+                                            Certificates</div>
+                                        <li class="department-menu certificate-dept"><a href="#"
+                                                data-section="census"><i>👥</i> Census Management</a></li>
+                                        <li class="department-menu certificate-dept"><a href="#"
+                                                data-section="certificates"><i>📝</i> Certificates</a></li>
+                                        <li class="department-menu certificate-dept"><a href="#"
+                                                data-section="birth-death"><i>📅</i> Birth & Death Records</a></li>
+
+                                        <!-- Service Department -->
+                                        <div class="sidebar-menu-title department-menu service-dept">Service Management
+                                        </div>
+                                        <li class="department-menu service-dept"><a href="#"
+                                                data-section="service-requests"><i>🔍</i> Service Requests</a></li>
+                                        <li class="department-menu service-dept"><a href="#"
+                                                data-section="complaints"><i>📢</i> Complaints</a></li>
+                                        <li class="department-menu service-dept"><a href="#"
+                                                data-section="feedback"><i>📋</i> Citizen Feedback</a></li>
+
+                                        <!-- Budget Department -->
+                                        <div class="sidebar-menu-title department-menu budget-dept">Financial Management
+                                        </div>
+                                        <li class="department-menu budget-dept"><a href="#"
+                                                data-section="projects"><i>🚧</i> Projects</a></li>
+                                        <li class="department-menu budget-dept"><a href="#"
+                                                data-section="budgets"><i>💰</i> Budget Management</a></li>
+                                        <li class="department-menu budget-dept"><a href="#"
+                                                data-section="assets"><i>📜</i> Assets & Inventory</a></li>
+
+                                        <!-- Tax Department -->
+                                        <div class="sidebar-menu-title department-menu tax-dept">Revenue Management
+                                        </div>
+                                        <li class="department-menu tax-dept"><a href="#"
+                                                data-section="property-tax"><i>🏠</i> Property Tax</a></li>
+                                        <li class="department-menu tax-dept"><a href="#"
+                                                data-section="water-tax"><i>💧</i> Water Tax</a></li>
+                                        <li class="department-menu tax-dept"><a href="#"
+                                                data-section="other-tax"><i>💲</i> Other Revenues</a></li>
+
+                                        <!-- Agriculture Department -->
+                                        <div class="sidebar-menu-title department-menu agriculture-dept">Agriculture &
+                                            Environment</div>
+                                        <li class="department-menu agriculture-dept"><a href="#"
+                                                data-section="agriculture"><i>🌾</i> Agriculture</a></li>
+                                        <li class="department-menu agriculture-dept"><a href="#"
+                                                data-section="environment"><i>🌳</i> Environment</a></li>
+                                        <li class="department-menu agriculture-dept"><a href="#"
+                                                data-section="irrigation"><i>💦</i> Irrigation</a></li>
+
+                                        <!-- Common for all departments -->
+                                        <div class="sidebar-menu-title">Common Functions</div>
+                                        <li><a href="#" data-section="announcements"><i>📣</i> Announcements</a></li>
+                                        <li><a href="#" data-section="meetings"><i>📅</i> Meetings & Events</a></li>
+                                        <li><a href="#" data-section="profile"><i>👤</i> My Profile</a></li>
+                                    </ul>
+                                </div>
+
+                                <!-- Content Area -->
+                                <div class="content">
+                                    <!-- Member Profile -->
+                                    <div class="member-profile">
+                                        <div class="member-avatar" id="memberAvatar">MP</div>
+                                        <div class="member-details">
+                                            <h3 id="profileName">Loading Name...</h3>
+                                            <p>Position: <span id="profilePosition">Panchayat Member</span></p>
+                                            <p>Department: <span class="department-badge"
+                                                    id="profileDepartment">Loading...</span></p>
+                                            <div class="member-id" id="profileId">MP-2025-001</div>
+                                        </div>
+                                    </div>
+
+                                    <!-- Main Dashboard Overview (visible to all) -->
+                                    <div class="content-section" id="dashboard-section">
+                                        <div class="content-card">
+                                            <div class="content-header">
+                                                <h2 class="content-title">Dashboard Overview</h2>
+                                                <div class="content-actions">
+                                                    <button class="btn btn-primary">Refresh</button>
+                                                </div>
+                                            </div>
+
+                                            <div class="stats-grid">
+                                                <div class="stat-card">
+                                                    <div class="stat-icon">📊</div>
+                                                    <div class="stat-value">42</div>
+                                                    <div class="stat-label">Pending Tasks</div>
+                                                </div>
+
+                                                <div class="stat-card">
+                                                    <div class="stat-icon">📝</div>
+                                                    <div class="stat-value">18</div>
+                                                    <div class="stat-label">Recent Applications</div>
+                                                </div>
+
+                                                <div class="stat-card">
+                                                    <div class="stat-icon">✅</div>
+                                                    <div class="stat-value">127</div>
+                                                    <div class="stat-label">Completed Tasks</div>
+                                                </div>
+
+                                                <div class="stat-card">
+                                                    <div class="stat-icon">🔔</div>
+                                                    <div class="stat-value">5</div>
+                                                    <div class="stat-label">Notifications</div>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+
+                                    <!-- Certificate Department Sections -->
+                                    <div class="department-section certificate-dept" id="census-section">
+                                        <div class="content-card">
+                                            <div class="content-header">
+                                                <h2 class="content-title">Census Management</h2>
+                                                <div class="content-actions">
+                                                    <button class="btn btn-primary">Add New Record</button>
+                                                </div>
+                                            </div>
+
+                                            <table class="data-table">
+                                                <thead>
+                                                    <tr>
+                                                        <th>Household ID</th>
+                                                        <th>Head of Family</th>
+                                                        <th>Members</th>
+                                                        <th>Address</th>
+                                                        <th>Last Updated</th>
+                                                        <th>Status</th>
+                                                        <th>Actions</th>
+                                                    </tr>
+                                                </thead>
+                                                <tbody>
+                                                    <tr>
+                                                        <td>HH-2025-1023</td>
+                                                        <td>Rajesh Kumar</td>
+                                                        <td>4</td>
+                                                        <td>Ward 3, House #45</td>
+                                                        <td>10 Feb 2025</td>
+                                                        <td><span class="table-status status-approved">Verified</span>
+                                                        </td>
+                                                        <td>
+                                                            <button class="btn btn-secondary btn-sm">Edit</button>
+                                                            <button class="btn btn-secondary btn-sm">View</button>
+                                                        </td>
+                                                    </tr>
+                                                    <tr>
+                                                        <td>HH-2025-1024</td>
+                                                        <td>Sunita Sharma</td>
+                                                        <td>5</td>
+                                                        <td>Ward 2, House #17</td>
+                                                        <td>15 Feb 2025</td>
+                                                        <td><span class="table-status status-pending">Pending</span>
+                                                        </td>
+                                                        <td>
+                                                            <button class="btn btn-secondary btn-sm">Verify</button>
+                                                            <button class="btn btn-secondary btn-sm">View</button>
+                                                        </td>
+                                                    </tr>
+                                                </tbody>
+                                            </table>
+                                        </div>
+                                    </div>
+
+                                    <div class="department-section certificate-dept" id="certificates-section">
+                                        <div class="content-card">
+                                            <div class="content-header">
+                                                <h2 class="content-title">Certificate Applications</h2>
+                                                <div class="content-actions">
+                                                    <button class="btn btn-primary">Process All</button>
+                                                </div>
+                                            </div>
+
+                                            <table class="data-table">
+                                                <thead>
+                                                    <tr>
+                                                        <th>Application ID</th>
+                                                        <th>Citizen Name</th>
+                                                        <th>Certificate Type</th>
+                                                        <th>Date Applied</th>
+                                                        <th>Status</th>
+                                                        <th>Actions</th>
+                                                    </tr>
+                                                </thead>
+                                                <tbody>
+                                                    <tr>
+                                                        <td>CERT-2025-0042</td>
+                                                        <td>Priya Singh</td>
+                                                        <td>Birth Certificate</td>
+                                                        <td>22 Feb 2025</td>
+                                                        <td><span class="table-status status-pending">Pending</span>
+                                                        </td>
+                                                        <td>
+                                                            <button class="btn btn-success btn-sm">Approve</button>
+                                                            <button class="btn btn-danger btn-sm">Reject</button>
+                                                        </td>
+                                                    </tr>
+                                                    <tr>
+                                                        <td>CERT-2025-0041</td>
+                                                        <td>Mohan Das</td>
+                                                        <td>Income Certificate</td>
+                                                        <td>20 Feb 2025</td>
+                                                        <td><span class="table-status status-pending">Pending</span>
+                                                        </td>
+                                                        <td>
+                                                            <button class="btn btn-success btn-sm">Approve</button>
+                                                            <button class="btn btn-danger btn-sm">Reject</button>
+                                                        </td>
+                                                    </tr>
+                                                </tbody>
+                                            </table>
+                                        </div>
+                                    </div>
+
+                                    <!-- Service Department Sections -->
+                                    <div class="department-section service-dept" id="service-requests-section">
+                                        <div class="content-card">
+                                            <div class="content-header">
+                                                <h2 class="content-title">Service Requests</h2>
+                                                <div class="content-actions">
+                                                    <button class="btn btn-primary">Assign Workers</button>
+                                                </div>
+                                            </div>
+
+                                            <table class="data-table">
+                                                <thead>
+                                                    <tr>
+                                                        <th>Request ID</th>
+                                                        <th>Citizen Name</th>
+                                                        <th>Service Type</th>
+                                                        <th>Location</th>
+                                                        <th>Date Requested</th>
+                                                        <th>Status</th>
+                                                        <th>Actions</th>
+                                                    </tr>
+                                                </thead>
+                                                <tbody>
+                                                    <tr>
+                                                        <td>SRV-2025-0078</td>
+                                                        <td>Amit Patel</td>
+                                                        <td>Water Supply Issue</td>
+                                                        <td>Ward 4, Block C</td>
+                                                        <td>25 Feb 2025</td>
+                                                        <td><span class="table-status status-pending">Pending</span>
+                                                        </td>
+                                                        <td>
+                                                            <button class="btn btn-secondary btn-sm">Assign</button>
+                                                            <button class="btn btn-secondary btn-sm">Details</button>
+                                                        </td>
+                                                    </tr>
+                                                    <tr>
+                                                        <td>SRV-2025-0077</td>
+                                                        <td>Kavita Sharma</td>
+                                                        <td>Road Repair</td>
+                                                        <td>Ward 2, Main Road</td>
+                                                        <td>24 Feb 2025</td>
+                                                        <td><span class="table-status status-approved">In
+                                                                Progress</span></td>
+                                                        <td>
+                                                            <button class="btn btn-success btn-sm">Complete</button>
+                                                            <button class="btn btn-secondary btn-sm">Details</button>
+                                                        </td>
+                                                    </tr>
+                                                </tbody>
+                                            </table>
+                                        </div>
+                                    </div>
+
+                                    <!-- Budget Department Sections -->
+                                    <div class="department-section budget-dept" id="projects-section">
+                                        <div class="content-card">
+                                            <div class="content-header">
+                                                <h2 class="content-title">Project Management</h2>
+                                                <div class="content-actions">
+                                                    <button class="btn btn-primary">Add New Project</button>
+                                                </div>
+                                            </div>
+
+                                            <table class="data-table">
+                                                <thead>
+                                                    <tr>
+                                                        <th>Project ID</th>
+                                                        <th>Project Name</th>
+                                                        <th>Start Date</th>
+                                                        <th>Budget</th>
+                                                        <th>Status</th>
+                                                        <th>Completion</th>
+                                                        <th>Actions</th>
+                                                    </tr>
+                                                </thead>
+                                                <tbody>
+                                                    <tr>
+                                                        <td>PRJ-2025-005</td>
+                                                        <td>Community Center Construction</td>
+                                                        <td>15 Jan 2025</td>
+                                                        <td>₹8,50,000</td>
+                                                        <td><span class="table-status status-approved">In
+                                                                Progress</span></td>
+                                                        <td>45%</td>
+                                                        <td>
+                                                            <button class="btn btn-secondary btn-sm">Update</button>
+                                                            <button class="btn btn-secondary btn-sm">Details</button>
+                                                        </td>
+                                                    </tr>
+                                                    <tr>
+                                                        <td>PRJ-2025-006</td>
+                                                        <td>Solar Street Lights</td>
+                                                        <td>10 Feb 2025</td>
+                                                        <td>₹3,20,000</td>
+                                                        <td><span class="table-status status-approved">In
+                                                                Progress</span></td>
+                                                        <td>30%</td>
+                                                        <td>
+                                                            <button class="btn btn-secondary btn-sm">Update</button>
+                                                            <button class="btn btn-secondary btn-sm">Details</button>
+                                                        </td>
+                                                    </tr>
+                                                </tbody>
+                                            </table>
+                                        </div>
+                                    </div>
+
+                                    <!-- Tax Department Sections -->
+                                    <div class="department-section tax-dept" id="property-tax-section">
+                                        <div class="content-card">
+                                            <div class="content-header">
+                                                <h2 class="content-title">Property Tax Collection</h2>
+                                                <div class="content-actions">
+                                                    <button class="btn btn-primary">Generate Reports</button>
+                                                </div>
+                                            </div>
+
+                                            <table class="data-table">
+                                                <thead>
+                                                    <tr>
+                                                        <th>Property ID</th>
+                                                        <th>Owner Name</th>
+                                                        <th>Property Type</th>
+                                                        <th>Location</th>
+                                                        <th>Annual Tax</th>
+                                                        <th>Status</th>
+                                                        <th>Actions</th>
+                                                    </tr>
+                                                </thead>
+                                                <tbody>
+                                                    <tr>
+                                                        <td>PROP-2025-102</td>
+                                                        <td>Ramesh Verma</td>
+                                                        <td>Residential</td>
+                                                        <td>Ward 3, Plot #45</td>
+                                                        <td>₹3,200</td>
+                                                        <td><span class="table-status status-approved">Paid</span></td>
+                                                        <td>
+                                                            <button class="btn btn-secondary btn-sm">View
+                                                                Receipt</button>
+                                                            <button class="btn btn-secondary btn-sm">Details</button>
+                                                        </td>
+                                                    </tr>
+                                                    <tr>
+                                                        <td>PROP-2025-103</td>
+                                                        <td>Sunil Kumar</td>
+                                                        <td>Commercial</td>
+                                                        <td>Ward 1, Shop #12</td>
+                                                        <td>₹8,500</td>
+                                                        <td><span class="table-status status-pending">Pending</span>
+                                                        </td>
+                                                        <td>
+                                                            <button class="btn btn-success btn-sm">Collect</button>
+                                                            <button class="btn btn-secondary btn-sm">Details</button>
+                                                        </td>
+                                                    </tr>
+                                                </tbody>
+                                            </table>
+                                        </div>
+                                    </div>
+
+                                    <div class="department-section tax-dept" id="water-tax-section">
+                                        <div class="content-card">
+                                            <div class="content-header">
+                                                <h2 class="content-title">Water Tax Collection</h2>
+                                                <div class="content-actions">
+                                                    <button class="btn btn-primary">Generate Reports</button>
+                                                </div>
+                                            </div>
+
+                                            <table class="data-table">
+                                                <thead>
+                                                    <tr>
+                                                        <th>Connection ID</th>
+                                                        <th>Consumer Name</th>
+                                                        <th>Connection Type</th>
+                                                        <th>Location</th>
+                                                        <th>Monthly Tax</th>
+                                                        <th>Status</th>
+                                                        <th>Actions</th>
+                                                    </tr>
+                                                </thead>
+                                                <tbody>
+                                                    <tr>
+                                                        <td>WAT-2025-205</td>
+                                                        <td>Priya Sharma</td>
+                                                        <td>Residential</td>
+                                                        <td>Ward 2, House #28</td>
+                                                        <td>₹450</td>
+                                                        <td><span class="table-status status-pending">Pending</span>
+                                                        </td>
+                                                        <td>
+                                                            <button class="btn btn-success btn-sm">Collect</button>
+                                                            <button class="btn btn-secondary btn-sm">Details</button>
+                                                        </td>
+                                                    </tr>
+                                                    <tr>
+                                                        <td>WAT-2025-206</td>
+                                                        <td>Mohan Singh</td>
+                                                        <td>Commercial</td>
+                                                        <td>Ward 1, Shop #05</td>
+                                                        <td>₹1,200</td>
+                                                        <td><span class="table-status status-approved">Paid</span></td>
+                                                        <td>
+                                                            <button class="btn btn-secondary btn-sm">View
+                                                                Receipt</button>
+                                                            <button class="btn btn-secondary btn-sm">Details</button>
+                                                        </td>
+                                                    </tr>
+                                                </tbody>
+                                            </table>
+                                        </div>
+                                    </div>
+
+                                    <div class="department-section tax-dept" id="other-tax-section">
+                                        <div class="content-card">
+                                            <div class="content-header">
+                                                <h2 class="content-title">Other Revenue Collections</h2>
+                                                <div class="content-actions">
+                                                    <button class="btn btn-primary">Generate Reports</button>
+                                                </div>
+                                            </div>
+
+                                            <table class="data-table">
+                                                <thead>
+                                                    <tr>
+                                                        <th>Receipt ID</th>
+                                                        <th>Payee Name</th>
+                                                        <th>Revenue Type</th>
+                                                        <th>Amount</th>
+                                                        <th>Date</th>
+                                                        <th>Status</th>
+                                                        <th>Actions</th>
+                                                    </tr>
+                                                </thead>
+                                                <tbody>
+                                                    <tr>
+                                                        <td>REV-2025-075</td>
+                                                        <td>Anil Patel</td>
+                                                        <td>Shop License Fee</td>
+                                                        <td>₹5,000</td>
+                                                        <td>15 Feb 2025</td>
+                                                        <td><span class="table-status status-approved">Collected</span>
+                                                        </td>
+                                                        <td>
+                                                            <button class="btn btn-secondary btn-sm">View
+                                                                Receipt</button>
+                                                            <button class="btn btn-secondary btn-sm">Details</button>
+                                                        </td>
+                                                    </tr>
+                                                    <tr>
+                                                        <td>REV-2025-076</td>
+                                                        <td>Panchayat Market</td>
+                                                        <td>Market Stall Rent</td>
+                                                        <td>₹12,500</td>
+                                                        <td>20 Feb 2025</td>
+                                                        <td><span class="table-status status-approved">Collected</span>
+                                                        </td>
+                                                        <td>
+                                                            <button class="btn btn-secondary btn-sm">View
+                                                                Receipt</button>
+                                                            <button class="btn btn-secondary btn-sm">Details</button>
+                                                        </td>
+                                                    </tr>
+                                                </tbody>
+                                            </table>
+                                        </div>
+                                    </div>
+
+                                    <!-- Agriculture Department Sections -->
+                                    <div class="department-section agriculture-dept" id="agriculture-section">
+                                        <div class="content-card">
+                                            <div class="content-header">
+                                                <h2 class="content-title">Agricultural Activities</h2>
+                                                <div class="content-actions">
+                                                    <button class="btn btn-primary">Schedule Training</button>
+                                                </div>
+                                            </div>
+
+                                            <table class="data-table">
+                                                <thead>
+                                                    <tr>
+                                                        <th>Farmer ID</th>
+                                                        <th>Name</th>
+                                                        <th>Land Area</th>
+                                                        <th>Main Crops</th>
+                                                        <th>Scheme Enrolled</th>
+                                                        <th>Status</th>
+                                                        <th>Actions</th>
+                                                    </tr>
+                                                </thead>
+                                                <tbody>
+                                                    <tr>
+                                                        <td>FRM-2025-032</td>
+                                                        <td>Harish Patel</td>
+                                                        <td>4.5 acres</td>
+                                                        <td>Rice, Wheat</td>
+                                                        <td>PM Kisan</td>
+                                                        <td><span class="table-status status-approved">Active</span>
+                                                        </td>
+                                                        <td>
+                                                            <button class="btn btn-secondary btn-sm">View
+                                                                Details</button>
+                                                            <button class="btn btn-secondary btn-sm">Update</button>
+                                                        </td>
+                                                    </tr>
+                                                    <tr>
+                                                        <td>FRM-2025-033</td>
+                                                        <td>Ramesh Singh</td>
+                                                        <td>2.3 acres</td>
+                                                        <td>Vegetables, Pulses</td>
+                                                        <td>Soil Health Card</td>
+                                                        <td><span class="table-status status-approved">Active</span>
+                                                        </td>
+                                                        <td>
+                                                            <button class="btn btn-secondary btn-sm">View
+                                                                Details</button>
+                                                            <button class="btn btn-secondary btn-sm">Update</button>
+                                                        </td>
+                                                    </tr>
+                                                </tbody>
+                                            </table>
+                                        </div>
+                                    </div>
+                                    <div class="department-section agriculture-dept" id="environment-section">
+                                        <div class="content-card">
+                                            <div class="content-header">
+                                                <h2 class="content-title">Environment Initiatives</h2>
+                                                <div class="content-actions">
+                                                    <button class="btn btn-primary">New Initiative</button>
+                                                </div>
+                                            </div>
+
+                                            <table class="data-table">
+                                                <thead>
+                                                    <tr>
+                                                        <th>Initiative ID</th>
+                                                        <th>Name</th>
+                                                        <th>Start Date</th>
+                                                        <th>Area Covered</th>
+                                                        <th>Type</th>
+                                                        <th>Status</th>
+                                                        <th>Actions</th>
+                                                    </tr>
+                                                </thead>
+                                                <tbody>
+                                                    <tr>
+                                                        <td>ENV-2025-007</td>
+                                                        <td>Tree Plantation Drive</td>
+                                                        <td>12 Jan 2025</td>
+                                                        <td>Ward 3 & 4</td>
+                                                        <td>Afforestation</td>
+                                                        <td><span class="table-status status-approved">Ongoing</span>
+                                                        </td>
+                                                        <td>
+                                                            <button class="btn btn-secondary btn-sm">Progress</button>
+                                                            <button class="btn btn-secondary btn-sm">Details</button>
+                                                        </td>
+                                                    </tr>
+                                                    <tr>
+                                                        <td>ENV-2025-008</td>
+                                                        <td>Waste Segregation</td>
+                                                        <td>05 Feb 2025</td>
+                                                        <td>Entire Panchayat</td>
+                                                        <td>Waste Management</td>
+                                                        <td><span class="table-status status-pending">Planning</span>
+                                                        </td>
+                                                        <td>
+                                                            <button class="btn btn-secondary btn-sm">Update</button>
+                                                            <button class="btn btn-secondary btn-sm">Details</button>
+                                                        </td>
+                                                    </tr>
+                                                </tbody>
+                                            </table>
+                                        </div>
+                                    </div>
+
+                                    <div class="department-section agriculture-dept" id="irrigation-section">
+                                        <div class="content-card">
+                                            <div class="content-header">
+                                                <h2 class="content-title">Irrigation Management</h2>
+                                                <div class="content-actions">
+                                                    <button class="btn btn-primary">Add Project</button>
+                                                </div>
+                                            </div>
+
+                                            <table class="data-table">
+                                                <thead>
+                                                    <tr>
+                                                        <th>Project ID</th>
+                                                        <th>Project Name</th>
+                                                        <th>Location</th>
+                                                        <th>Area Coverage</th>
+                                                        <th>Water Source</th>
+                                                        <th>Status</th>
+                                                        <th>Actions</th>
+                                                    </tr>
+                                                </thead>
+                                                <tbody>
+                                                    <tr>
+                                                        <td>IRG-2025-003</td>
+                                                        <td>Drip Irrigation Network</td>
+                                                        <td>Eastern Fields</td>
+                                                        <td>120 acres</td>
+                                                        <td>Borewell</td>
+                                                        <td><span
+                                                                class="table-status status-approved">Operational</span>
+                                                        </td>
+                                                        <td>
+                                                            <button
+                                                                class="btn btn-secondary btn-sm">Maintenance</button>
+                                                            <button class="btn btn-secondary btn-sm">Details</button>
+                                                        </td>
+                                                    </tr>
+                                                    <tr>
+                                                        <td>IRG-2025-004</td>
+                                                        <td>Canal Repair Work</td>
+                                                        <td>South Canal</td>
+                                                        <td>300 acres</td>
+                                                        <td>River Diversion</td>
+                                                        <td><span class="table-status status-pending">In Progress</span>
+                                                        </td>
+                                                        <td>
+                                                            <button class="btn btn-secondary btn-sm">Update</button>
+                                                            <button class="btn btn-secondary btn-sm">Details</button>
+                                                        </td>
+                                                    </tr>
+                                                </tbody>
+                                            </table>
+                                        </div>
+                                    </div>
+
+                                    <!-- Common Sections for all departments -->
+                                    <div class="content-section" id="announcements-section">
+                                        <div class="content-card">
+                                            <div class="content-header">
+                                                <h2 class="content-title">Announcements</h2>
+                                                <div class="content-actions">
+                                                    <button class="btn btn-primary">New Announcement</button>
+                                                </div>
+                                            </div>
+
+                                            <div class="announcements-list">
+                                                <div class="announcement-item">
+                                                    <div class="announcement-date">25 Feb 2025</div>
+                                                    <h3 class="announcement-title">Monthly Panchayat Meeting</h3>
+                                                    <p class="announcement-text">The monthly panchayat meeting will be
+                                                        held on March 5th, 2025 at 10:00 AM in the Panchayat Hall. All
+                                                        members are requested to attend.</p>
+                                                </div>
+
+                                                <div class="announcement-item">
+                                                    <div class="announcement-date">20 Feb 2025</div>
+                                                    <h3 class="announcement-title">New Government Scheme Launch</h3>
+                                                    <p class="announcement-text">A new agricultural subsidy scheme will
+                                                        be launched on March 1st. All department heads should prepare
+                                                        implementation plans.</p>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+
+                                    <div class="content-section" id="meetings-section">
+                                        <div class="content-card">
+                                            <div class="content-header">
+                                                <h2 class="content-title">Meetings & Events</h2>
+                                                <div class="content-actions">
+                                                    <button class="btn btn-primary">Schedule Meeting</button>
+                                                </div>
+                                            </div>
+
+                                            <table class="data-table">
+                                                <thead>
+                                                    <tr>
+                                                        <th>Date & Time</th>
+                                                        <th>Title</th>
+                                                        <th>Venue</th>
+                                                        <th>Department</th>
+                                                        <th>Status</th>
+                                                        <th>Actions</th>
+                                                    </tr>
+                                                </thead>
+                                                <tbody>
+                                                    <tr>
+                                                        <td>05 Mar 2025, 10:00 AM</td>
+                                                        <td>Monthly Panchayat Meeting</td>
+                                                        <td>Panchayat Hall</td>
+                                                        <td>All Departments</td>
+                                                        <td><span class="table-status status-pending">Upcoming</span>
+                                                        </td>
+                                                        <td>
+                                                            <button class="btn btn-secondary btn-sm">RSVP</button>
+                                                            <button class="btn btn-secondary btn-sm">Details</button>
+                                                        </td>
+                                                    </tr>
+                                                    <tr>
+                                                        <td>10 Mar 2025, 3:00 PM</td>
+                                                        <td>Budget Planning Session</td>
+                                                        <td>Conference Room</td>
+                                                        <td>Budget Department</td>
+                                                        <td><span class="table-status status-pending">Upcoming</span>
+                                                        </td>
+                                                        <td>
+                                                            <button class="btn btn-secondary btn-sm">RSVP</button>
+                                                            <button class="btn btn-secondary btn-sm">Details</button>
+                                                        </td>
+                                                    </tr>
+                                                </tbody>
+                                            </table>
+                                        </div>
+                                    </div>
+
+                                    <div class="content-section" id="profile-section">
+                                        <div class="content-card">
+                                            <div class="content-header">
+                                                <h2 class="content-title">My Profile</h2>
+                                                <div class="content-actions">
+                                                    <button class="btn btn-primary">Edit Profile</button>
+                                                </div>
+                                            </div>
+
+                                            <div class="profile-details">
+                                                <div class="profile-section">
+                                                    <h3 class="profile-section-title">Personal Information</h3>
+                                                    <div class="profile-section-content">
+                                                        <div class="profile-field">
+                                                            <div class="field-label">Full Name</div>
+                                                            <div class="field-value" id="profile-full-name">Loading...
+                                                            </div>
+                                                        </div>
+                                                        <div class="profile-field">
+                                                            <div class="field-label">Member ID</div>
+                                                            <div class="field-value" id="profile-member-id">Loading...
+                                                            </div>
+                                                        </div>
+                                                        <div class="profile-field">
+                                                            <div class="field-label">Department</div>
+                                                            <div class="field-value" id="profile-department">Loading...
+                                                            </div>
+                                                        </div>
+                                                        <div class="profile-field">
+                                                            <div class="field-label">Position</div>
+                                                            <div class="field-value">Panchayat Member</div>
+                                                        </div>
+                                                    </div>
+                                                </div>
+
+                                                <div class="profile-section">
+                                                    <h3 class="profile-section-title">Contact Information</h3>
+                                                    <div class="profile-section-content">
+                                                        <div class="profile-field">
+                                                            <div class="field-label">Email</div>
+                                                            <div class="field-value" id="profile-email">Loading...</div>
+                                                        </div>
+                                                        <div class="profile-field">
+                                                            <div class="field-label">Phone</div>
+                                                            <div class="field-value" id="profile-phone">Loading...</div>
+                                                        </div>
+                                                        <div class="profile-field">
+                                                            <div class="field-label">Address</div>
+                                                            <div class="field-value" id="profile-address">Loading...
+                                                            </div>
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+
+                                </div>
+                            </div>
+
+                            <!-- JavaScript for the dashboard -->
+                            <script>
+                                // Mock data for demonstration
+                                const memberData = {
+                                    certificate: {
+                                        name: "Anita Sharma",
+                                        id: "MP-2025-001",
+                                        department: "Certificate",
+                                        email: "anita.sharma@panchayat.gov.in",
+                                        phone: "+91 9876543210",
+                                        address: "Ward 3, House #12, Village"
+                                    },
+                                    service: {
+                                        name: "Rajiv Kumar",
+                                        id: "MP-2025-002",
+                                        department: "Service",
+                                        email: "rajiv.kumar@panchayat.gov.in",
+                                        phone: "+91 9876543211",
+                                        address: "Ward 1, House #45, Village"
+                                    },
+                                    budget: {
+                                        name: "Suresh Patel",
+                                        id: "MP-2025-003",
+                                        department: "Budget",
+                                        email: "suresh.patel@panchayat.gov.in",
+                                        phone: "+91 9876543212",
+                                        address: "Ward 2, House #78, Village"
+                                    },
+                                    tax: {
+                                        name: "Meera Singh",
+                                        id: "MP-2025-004",
+                                        department: "Tax",
+                                        email: "meera.singh@panchayat.gov.in",
+                                        phone: "+91 9876543213",
+                                        address: "Ward 4, House #23, Village"
+                                    },
+                                    agriculture: {
+                                        name: "Dinesh Verma",
+                                        id: "MP-2025-005",
+                                        department: "Agriculture",
+                                        email: "dinesh.verma@panchayat.gov.in",
+                                        phone: "+91 9876543214",
+                                        address: "Ward 5, House #56, Village"
+                                    }
+                                };
+
+                                // Get URL parameter to determine member role (for testing purposes)
+                                const urlParams = new URLSearchParams(window.location.search);
+                                const memberRole = urlParams.get('role') || 'certificate'; // Default to certificate if not specified
+                                // <div class="department-section agriculture-dept" id="environment-section">
+                                <div class="content-card">
+                                    <div class="content-header">
+                                        <h2 class="content-title">Environment Initiatives</h2>
+                                        <div class="content-actions">
+                                            <button class="btn btn-primary">New Initiative</button>
+                                        </div>
+                                    </div>
+
+                                    <table class="data-table">
+                                        <thead>
+                                            <tr>
+                                                <th>Initiative ID</th>
+                                                <th>Name</th>
+                                                <th>Start Date</th>
+                                                <th>Area Covered</th>
+                                                <th>Type</th>
+                                                <th>Status</th>
+                                                <th>Actions</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody>
+                                            <tr>
+                                                <td>ENV-2025-007</td>
+                                                <td>Tree Plantation Drive</td>
+                                                <td>12 Jan 2025</td>
+                                                <td>Ward 3 & 4</td>
+                                                <td>Afforestation</td>
+                                                <td><span class="table-status status-approved">Ongoing</span></td>
+                                                <td>
+                                                    <button class="btn btn-secondary btn-sm">Progress</button>
+                                                    <button class="btn btn-secondary btn-sm">Details</button>
+                                                </td>
+                                            </tr>
+                                            <tr>
+                                                <td>ENV-2025-008</td>
+                                                <td>Waste Segregation</td>
+                                                <td>05 Feb 2025</td>
+                                                <td>Entire Panchayat</td>
+                                                <td>Waste Management</td>
+                                                <td><span class="table-status status-pending">Planning</span></td>
+                                                <td>
+                                                    <button class="btn btn-secondary btn-sm">Update</button>
+                                                    <button class="btn btn-secondary btn-sm">Details</button>
+                                                </td>
+                                            </tr>
+                                        </tbody>
+                                    </table>
+                                </div>
+                                // Set the member profile details based on the role
+                                document.getElementById('profileName').innerText = memberData[memberRole].name;
+                                document.getElementById('profilePosition').innerText = 'Panchayat Member';
+                                document.getElementById('profileDepartment').innerText = memberData[memberRole].department;
+                                document.getElementById('profileId').innerText = memberData[memberRole].id;
+                                document.getElementById('profile-full-name').innerText = memberData[memberRole].name;
+                                document.getElementById('profile-email').innerText = memberData[memberRole].email;
+                                document.getElementById('profile-phone').innerText = memberData[memberRole].phone;
+                                document.getElementById('profile-address').innerText = memberData[memberRole].address;
+                            </script>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</body>

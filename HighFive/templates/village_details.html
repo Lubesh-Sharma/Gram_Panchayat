@@ -1,0 +1,161 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{{ panchayat.panchayat_name }} Details - Gram Panchayat Management System</title>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/bootstrap/5.3.0/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="{{ url_for('static', filename='styles/government_dashboard.css') }}">
+</head>
+<body>
+    <!-- Navigation Bar -->
+    <nav class="navbar navbar-expand-lg navbar-dark bg-dark">
+        <div class="container">
+            <a class="navbar-brand" href="#">Gram Panchayat Management System</a>
+            <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav">
+                <span class="navbar-toggler-icon"></span>
+            </button>
+            <div class="collapse navbar-collapse" id="navbarNav">
+                <ul class="navbar-nav ms-auto">
+                    <li class="nav-item">
+                        <a class="nav-link" href="{{ url_for('monitor_dashboard', user_id=session.get('user_id', 0)) }}">Government Dashboard</a>
+                    </li>
+                    <li class="nav-item dropdown">
+                        <a class="nav-link dropdown-toggle" href="#" id="navbarDropdown" role="button" data-bs-toggle="dropdown">
+                            Admin User
+                        </a>
+                        <ul class="dropdown-menu dropdown-menu-end">
+                            <li><a class="dropdown-item" href="{{ url_for('landing') }}">Logout</a></li>
+                        </ul>
+                    </li>
+                </ul>
+            </div>
+        </div>
+    </nav>
+
+    <!-- Header Section -->
+    <header class="header text-center">
+        <div class="container">
+            <h1>{{ panchayat.panchayat_name }} Details</h1>
+            <p class="lead">Complete information about the panchayat, employees, and citizens</p>
+        </div>
+    </header>
+
+    <!-- Main Content -->
+    <div class="container mt-4">
+        <!-- Panchayat Information Card -->
+        <div class="card mb-4">
+            <div class="card-header bg-primary text-white">
+                <h4>Panchayat Information</h4>
+            </div>
+            <div class="card-body">
+                <div class="row">
+                    <div class="col-md-6">
+                        <p><strong>Panchayat Name:</strong> {{ panchayat.panchayat_name }}</p>
+                        <p><strong>Establishment Date:</strong> {{ panchayat.establishment_date }}</p>
+                        <p><strong>Area:</strong> {{ panchayat.area_sq_km }} sq. km</p>
+                    </div>
+                    <div class="col-md-6">
+                        <p><strong>Contact Email:</strong> <a href="mailto:{{ panchayat.contact_email }}">{{ panchayat.contact_email }}</a></p>
+                        <p><strong>Contact Phone:</strong> <a href="tel:{{ panchayat.contact_phone }}">{{ panchayat.contact_phone }}</a></p>
+                        <p><strong>Total Citizens:</strong> {{ citizen_count }}</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Employees Section -->
+        <div class="card mb-4">
+            <div class="card-header bg-success text-white">
+                <h4>Panchayat Employees</h4>
+            </div>
+            <div class="card-body">
+                {% if employees %}
+                <div class="table-responsive">
+                    <table class="table table-striped">
+                        <thead>
+                            <tr>
+                                <th>Name</th>
+                                <th>Designation</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for employee in employees %}
+                            <tr>
+                                <td>{{ employee.name }}</td>
+                                <td>{{ employee.designation }}</td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+                {% else %}
+                <div class="alert alert-info">No employees found for this panchayat.</div>
+                {% endif %}
+            </div>
+        </div>
+
+        <!-- Citizens Section -->
+        <div class="card mb-4">
+            <div class="card-header bg-info text-white">
+                <h4>Registered Citizens ({{ citizen_count }})</h4>
+            </div>
+            <div class="card-body">
+                {% if citizens %}
+                <div class="table-responsive">
+                    <table class="table table-striped">
+                        <thead>
+                            <tr>
+                                <th>Name</th>
+                                <th>Gender</th>
+                                <th>Date of Birth</th>
+                                <th>Education</th>
+                                <th>Occupation</th>
+                                <th>Annual Income</th>
+                                <th>Tax Due</th>
+                                <th>Contact</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for citizen in citizens %}
+                            <tr>
+                                <td>{{ citizen.name }}</td>
+                                <td>{{ citizen.gender }}</td>
+                                <td>{{ citizen.dob }}</td>
+                                <td>{{ citizen.education }}</td>
+                                <td>{{ citizen.occupation }}</td>
+                                <td>₹ {{ citizen.annual_income }}</td>
+                                <td>₹ {{ citizen.tax_due }}</td>
+                                <td>
+                                    <a href="tel:{{ citizen.phone }}">{{ citizen.phone }}</a><br>
+                                    <a href="mailto:{{ citizen.email }}">{{ citizen.email }}</a>
+                                </td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+                {% else %}
+                <div class="alert alert-info">No citizens found for this panchayat.</div>
+                {% endif %}
+            </div>
+        </div>
+
+        <!-- Action Buttons -->
+        <div class="d-flex justify-content-between mb-4">
+            <a href="{{ url_for('monitor_dashboard', user_id=session.get('user_id', 0)) }}" class="btn btn-secondary">
+                Back to Dashboard
+            </a> 
+        </div>
+    </div>
+
+    <!-- Footer -->
+    <footer class="footer text-center">
+        <div class="container">
+            <p>© 2025 Gram Panchayat Management System | Government of India</p>
+        </div>
+    </footer>
+
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/bootstrap/5.3.0/js/bootstrap.bundle.min.js"></script>
+</body>
+</html>
