@@ -4,3 +4,5 @@ pdfkit
 python-dotenv
 flask-compress
 flask-socketio
+gunicorn
+eventlet

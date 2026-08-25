@@ -170,6 +170,13 @@ def init_db_pool():
             print("Failed to initialize database pool:", e)
             db_pool = None
 
+# Auto-initialize database schema and connection pool on startup
+try:
+    init_db_schema()
+    init_db_pool()
+except Exception as startup_err:
+    print("Startup initialization notice:", startup_err)
+
 # Middleware: Add browser cache headers for static assets
 @app.after_request
 def add_static_cache_headers(response):
