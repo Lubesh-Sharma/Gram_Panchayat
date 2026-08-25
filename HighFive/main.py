@@ -35,13 +35,23 @@ try:
 except Exception as socket_err:
     print("Flask-SocketIO initialization notice:", socket_err)
 
-DB_CONFIG = {
-    'dbname': os.environ.get('DB_NAME'),
-    'user': os.environ.get('DB_USER'),
-    'password': os.environ.get('DB_PASSWORD'),
-    'host': os.environ.get('DB_HOST'),
-    'port': os.environ.get('DB_PORT')
-}
+DATABASE_URL = os.environ.get('DATABASE_URL')
+if DATABASE_URL:
+    DB_CONFIG = DATABASE_URL
+else:
+    DB_CONFIG = {
+        'dbname': os.environ.get('DB_NAME'),
+        'user': os.environ.get('DB_USER'),
+        'password': os.environ.get('DB_PASSWORD'),
+        'host': os.environ.get('DB_HOST'),
+        'port': os.environ.get('DB_PORT')
+    }
+
+def connect_db():
+    if isinstance(DB_CONFIG, str):
+        return psycopg2.connect(DB_CONFIG)
+    return psycopg2.connect(**DB_CONFIG)
+
 PATH_NAME = os.environ.get('PATH_NAME', 'public')
 
 def sync_admin_records(conn):
@@ -98,7 +108,7 @@ def sync_admin_records(conn):
 def init_db_schema():
     print("Checking database schema initialization...")
     try:
-        conn = psycopg2.connect(**DB_CONFIG)
+        conn = connect_db()
         conn.autocommit = True
         with conn.cursor() as cur:
             cur.execute(f"CREATE SCHEMA IF NOT EXISTS {PATH_NAME};")
@@ -151,7 +161,10 @@ def init_db_pool():
         try:
             min_conn = int(os.environ.get('DB_MIN_CONN', 2))
             max_conn = int(os.environ.get('DB_MAX_CONN', 20))
-            db_pool = ThreadedConnectionPool(min_conn, max_conn, **DB_CONFIG)
+            if isinstance(DB_CONFIG, str):
+                db_pool = ThreadedConnectionPool(min_conn, max_conn, dsn=DB_CONFIG)
+            else:
+                db_pool = ThreadedConnectionPool(min_conn, max_conn, **DB_CONFIG)
             print("PostgreSQL connection pool initialized.")
         except Exception as e:
             print("Failed to initialize database pool:", e)
@@ -215,7 +228,7 @@ def get_db_connection():
 
     # Direct connection fallback if pool is unavailable or exhausted
     try:
-        conn = psycopg2.connect(**DB_CONFIG)
+        conn = connect_db()
         conn.autocommit = True
         with conn.cursor() as cur:
             cur.execute(f"SET search_path TO {PATH_NAME};")
