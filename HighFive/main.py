@@ -248,7 +248,7 @@ def get_db_connection():
 if socketio:
     @socketio.on('connect')
     def handle_ws_connect():
-        print("Real-time WebSocket client connected.")
+        print("Real-time WebSocket client connected.", flush=True)
 
     @socketio.on('subscribe_panchayat')
     def handle_subscribe_panchayat(data):
@@ -256,7 +256,7 @@ if socketio:
         if panchayat_id:
             room = f"panchayat_{panchayat_id}"
             join_room(room)
-            print(f"Client subscribed to real-time room: {room}")
+            print(f"Client subscribed to real-time room: {room}", flush=True)
 
 def emit_realtime_event(event_name, data, panchayat_id=None):
     if socketio:
@@ -264,8 +264,9 @@ def emit_realtime_event(event_name, data, panchayat_id=None):
             if panchayat_id:
                 socketio.emit(event_name, data, room=f"panchayat_{panchayat_id}")
             socketio.emit(event_name, data)
+            print(f"Realtime event '{event_name}' emitted (panchayat: {panchayat_id}).", flush=True)
         except Exception as socket_err:
-            print(f"Realtime socket emit warning ({event_name}): {socket_err}")
+            print(f"Realtime socket emit warning ({event_name}): {socket_err}", flush=True)
 
 # Utility: Hash password for comparison (SHA-256 for better security)
 def hash_password(password):
