@@ -45,6 +45,8 @@ body {
     cursor: pointer;
     transition: all 0.3s;
     border-left: 3px solid transparent;
+    text-decoration: none;
+    color: inherit;
 }
 
 .menu-item:hover {

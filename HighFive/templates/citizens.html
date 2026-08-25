@@ -5,7 +5,38 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Gram Panchayat Management System - Citizen Portal</title>
+  <link rel="manifest" href="{{ url_for('static', filename='manifest.json') }}">
+  <meta name="theme-color" content="#073763">
   <link rel="stylesheet" href="{{ url_for('static', filename='styles/citizens.css') }}">
+  <link rel="prefetch" href="{{ url_for('static', filename='scripts/citizens.js') }}">
+  <script src="https://cdn.socket.io/4.7.5/socket.io.min.js"></script>
+  <script>
+    if ('serviceWorker' in navigator) {
+      window.addEventListener('load', () => {
+        navigator.serviceWorker.register("{{ url_for('static', filename='sw.js') }}")
+          .then(reg => console.log('ServiceWorker registered:', reg.scope))
+          .catch(err => console.log('ServiceWorker registration failed:', err));
+      });
+    }
+
+    // Initialize Real-Time WebSocket Push Notifications
+    document.addEventListener('DOMContentLoaded', () => {
+      if (typeof io !== 'undefined') {
+        const socket = io();
+        socket.on('connect', () => {
+          console.log('[WebSocket] Connected to real-time server');
+        });
+
+        socket.on('new_certificate_application', (data) => {
+          console.log('[Push Notification] New Certificate Application Event:', data);
+        });
+
+        socket.on('new_service_request', (data) => {
+          console.log('[Push Notification] New Service Request Event:', data);
+        });
+      }
+    });
+  </script>
 </head>
 
 
@@ -31,13 +62,14 @@
       <div class="user-panel">
         <div class="user-info">
           <div class="user-name">{{ data.name if data and data.name else 'Citizen' }}</div>
-          <div class="user-role">Citizen</div>
+          <div class="user-role">{% if is_admin_preview %}Admin Preview Mode{% else %}Citizen{% endif %}</div>
         </div>
         <div>
           <button class="change-password-btn" onclick="showChangePasswordModal()">Change Password</button>
           <button class="logout-btn" onclick="location.href='/landing'">Logout</button>
         </div>
       </div>
+    </div>
   </header>
 
   <!-- Hero Section -->
@@ -144,7 +176,7 @@
           <div class="announcement-card">
             <div class="announcement-header">
               <span class="announcement-title">No Announcements</span>
-              <span class="announcement-date">{{ now().strftime('%d %b %Y') }}</span>
+              <span class="announcement-date">Recent</span>
             </div>
             <div class="announcement-content">
               There are no announcements at this time.
@@ -221,14 +253,20 @@
                       class="service-btn btn-outline">Download</a>
                   {% else %}
                     <a href="#" class="service-btn btn-outline"
-                      onclick="showCertificateDetails({{ activity.id }}); return false;">Details</a>
+                      onclick="showCertificateDetails('{{ activity.id }}'); return false;">Details</a>
                   {% endif %}
                 {% elif activity.action_type == 'welfare' %}
                   <a href="#" class="service-btn btn-outline"
-                    onclick="showWelfareDetails({{ activity.id }}); return false;">Details</a>
+                    onclick="showWelfareDetails('{{ activity.id }}'); return false;">Details</a>
                 {% elif activity.action_type == 'tax' %}
                   <a href="#" class="service-btn btn-outline"
-                    onclick="showReceipt('{{ activity.id }}', '{{ activity.date.strftime('%d %b %Y') }}', 'Online', '{{ data.name if data and data.name else 'Citizen' }}', '{{ data.village_info.panchayat_name if data and data.village_info else 'Gram Panchayat' }}', '{{ activity.amount }}'); return false;">Receipt</a>
+                    data-id="{{ activity.id }}"
+                    data-date="{{ activity.date.strftime('%d %b %Y') if activity.date else '' }}"
+                    data-mode="Online"
+                    data-name="{{ data.name if data and data.name else 'Citizen' }}"
+                    data-panchayat="{{ data.village_info.panchayat_name if data and data.village_info else 'Gram Panchayat' }}"
+                    data-amount="{{ activity.amount }}"
+                    onclick="showTaxReceiptFromData(this); return false;">Receipt</a>
                 {% elif activity.action_type == 'service' %}
                   <button class="service-btn" onclick="showServiceDetails('{{ activity.id }}')">View</button>
                 {% else %}
@@ -289,7 +327,7 @@
       <div id="certificate-modal" class="modal-overlay" style="display: none;">
         <div class="modal-content">
           <button class="modal-close" onclick="resetCertificateForm()">✖</button>
-          <form id="certificate-application-form" method="POST"
+          <form id="certificate-application-form" method="POST" enctype="multipart/form-data"
             action="{{ url_for('apply_certificate', user_id=user_id, citizen_id=citizen_id) }}">
             <input type="hidden" id="certificate-type-input" name="certificate-type" value="">
             <h3 class="dashboard-title">Apply for <span id="selected-certificate-type">Certificate</span></h3>
@@ -309,8 +347,8 @@
                     value="{{ data.name if data and data.name else '' }}" readonly>
                 </div>
                 <div class="form-group">
-                  <label for="description" class="form-label required-field">Purpose of Certificate</label>
-                  <textarea id="description" name="description" class="form-textarea" required></textarea>
+                  <label for="cert-description" class="form-label required-field">Purpose of Certificate</label>
+                  <textarea id="cert-description" name="description" class="form-textarea" required></textarea>
                   <p class="field-help">Briefly explain why you need this certificate</p>
                 </div>
               </div>
@@ -340,13 +378,7 @@
                 </div>
                 <div class="form-group">
                   <label for="income-source" class="form-label required-field">Source of Income</label>
-                  <select id="income-source" name="income-source" class="form-input">
-                    <option value="">-- Select --</option>
-                    <option value="Salary">Salary</option>
-                    <option value="Business">Business</option>
-                    <option value="Agriculture">Agriculture</option>
-                    <option value="Other">Other</option>
-                  </select>
+                  <input type="text" id="income-source" name="income-source" class="form-input">
                 </div>
               </div>
             </div>
@@ -354,6 +386,10 @@
             <div id="aadhar-certificate-section" class="certificate-specific-section" style="display: none;">
               <h4 class="section-title">Aadhar Card Details</h4>
               <div class="form-grid">
+                <div class="form-group">
+                  <label for="aadhar-number" class="form-label">Existing Aadhar Number (if any)</label>
+                  <input type="text" id="aadhar-number" name="aadhar-number" class="form-input">
+                </div>
                 <div class="form-group">
                   <label for="aadhar-mobile" class="form-label required-field">Mobile Number</label>
                   <input type="tel" id="aadhar-mobile" name="aadhar-mobile" class="form-input">
@@ -365,8 +401,12 @@
               <h4 class="section-title">Voter ID Details</h4>
               <div class="form-grid">
                 <div class="form-group">
-                  <label for="voter-age" class="form-label required-field">Age (years)</label>
+                  <label for="voter-age" class="form-label required-field">Age</label>
                   <input type="number" id="voter-age" name="voter-age" class="form-input" min="18">
+                </div>
+                <div class="form-group">
+                  <label for="voter-address" class="form-label required-field">Address Proof</label>
+                  <input type="text" id="voter-address" name="voter-address" class="form-input">
                 </div>
               </div>
             </div>
@@ -376,7 +416,7 @@
               <div class="form-grid">
                 <div class="form-group">
                   <label for="bpl-family-members" class="form-label required-field">Number of Family Members</label>
-                  <input type="number" id="bpl-family-members" name="bpl-family-members" class="form-input" min="1">
+                  <input type="number" id="bpl-family-members" name="bpl-family-members" class="form-input">
                 </div>
                 <div class="form-group">
                   <label for="bpl-reason" class="form-label required-field">Reason for Application</label>
@@ -388,15 +428,15 @@
             <!-- Supporting Documents Section -->
             <div class="form-section">
               <h4 class="section-title">Supporting Documents</h4>
-              <p class="field-help">Upload all required documents in PDF or image format (JPG, PNG). Maximum file size:
-                2MB per file.</p>
-              <div class="doc-upload-area" id="doc-upload-area">
+              <p class="field-help">Upload required documents in PDF or image format (JPG, PNG, DOC). Maximum file size: 5MB.</p>
+              <div class="doc-upload-area" id="doc-upload-area" style="cursor: pointer;" onclick="document.getElementById('cert-doc-file').click();">
+                <input type="file" id="cert-doc-file" name="document" accept=".pdf,.png,.jpg,.jpeg,.doc,.docx" style="display: none;" onchange="handleFileSelect(this, 'doc-list')">
                 <div class="doc-upload-icon">📎</div>
-                <div class="doc-upload-text">Drag & Drop files here or Click to browse</div>
-                <div class="doc-upload-helper">Supported formats: PDF, JPG, PNG (Max: 2MB each)</div>
+                <div class="doc-upload-text" id="cert-doc-text">Click to browse or drop document file (PDF, PNG, JPG)</div>
+                <div class="doc-upload-helper">Supported formats: PDF, JPG, PNG, DOC (Max: 5MB)</div>
               </div>
               <ul class="doc-list" id="doc-list">
-                <!-- Uploaded documents will appear here -->
+                <!-- Selected file will appear here -->
               </ul>
             </div>
 
@@ -434,7 +474,7 @@
                 <a href="{{ url_for('view_certificate', certificate_id=cert[0]) }}" target="_blank"
                   class="service-btn btn-outline">View</a>
                 {% else %}
-                <button class="btn-outline" onclick="showCertificateDetails({{ cert[0] }})">Details</button>
+                <button class="btn-outline" onclick="showCertificateDetails('{{ cert[0] }}')">Details</button>
                 {% endif %}
               </td>
             </tr>
@@ -475,14 +515,14 @@
         <div class="stat-card">
           <div class="stat-title">Last Payment</div>
           <div class="stat-value">
-            {% if data.tax_payments and data.tax_payments|length > 0 %}
+            {% if data and data.tax_payments and data.tax_payments|length > 0 %}
             {{ data.tax_payments[0][1].strftime('%d %b %Y') }}
             {% else %}
             No record
             {% endif %}
           </div>
           <div class="stat-description">Mode:
-            {% if data.tax_payments and data.tax_payments|length > 0 %}
+            {% if data and data.tax_payments and data.tax_payments|length > 0 %}
             {{ data.tax_payments[0][2] }}
             {% else %}
             N/A
@@ -491,7 +531,7 @@
         </div>
         <div class="stat-card">
           <div class="stat-title">Payment History</div>
-          <div class="stat-value">{{ data.tax_payments|length }}</div>
+          <div class="stat-value">{{ data.tax_payments|length if data and data.tax_payments else 0 }}</div>
           <div class="stat-description">Previous payments</div>
         </div>
       </div>
@@ -508,13 +548,13 @@
             </tr>
           </thead>
           <tbody>
-            {% if data.tax_payments and data.tax_payments|length > 0 %}
+            {% if data and data.tax_payments and data.tax_payments|length > 0 %}
             {% for payment in data.tax_payments %}
             <tr>
               <td>TXNID-{{ payment[0] }}</td>
-              <td>{{ payment[1].strftime('%d %b %Y') }}</td>
+              <td>{{ payment[1].strftime('%d %b %Y') if payment[1] else 'N/A' }}</td>
               <td>{{ payment[2] }}</td>
-              <td>₹{{ "%.2f"|format(payment[1]|float) if payment[1] is not none else "0.00" }}</td>
+              <td>₹{{ "%.2f"|format(payment[3]|float) if payment and payment|length > 3 and payment[3] is not none else "0.00" }}</td>
             </tr>
             {% endfor %}
             {% else %}
@@ -576,16 +616,26 @@
           <button class="modal-close" onclick="resetServiceForm()">✖</button>
           <h3>Service Request - <span id="selected-service-type">Service Type</span></h3>
 
-          <form id="service-request-form"
+          <form id="service-request-form" enctype="multipart/form-data"
             action="{{ url_for('request_service', user_id=user_id, citizen_id=citizen_id) }}" method="POST">
             <input type="hidden" id="service-type-input" name="service-type">
             <input type="hidden" id="service-id-input" name="service-id">
 
             <div class="form-group">
-              <label for="description" class="required-field">Issue Description</label>
-              <textarea id="description" name="description" class="form-textarea"
+              <label for="service-description" class="required-field">Issue Description</label>
+              <textarea id="service-description" name="description" class="form-textarea"
                 placeholder="Please provide details of the issue including location and any relevant information"
                 required rows="5"></textarea>
+            </div>
+
+            <div class="form-group" style="margin-top: 1rem;">
+              <label class="form-label">Supporting Document (Optional)</label>
+              <div class="doc-upload-area" id="service-doc-upload-area" style="cursor: pointer;" onclick="document.getElementById('service-doc-file').click();">
+                <input type="file" id="service-doc-file" name="document" accept=".pdf,.png,.jpg,.jpeg,.doc,.docx" style="display: none;" onchange="handleFileSelect(this, 'service-doc-list')">
+                <div class="doc-upload-icon">📎</div>
+                <div class="doc-upload-text">Click to browse or attach document (PDF, PNG, JPG)</div>
+              </div>
+              <ul class="doc-list" id="service-doc-list"></ul>
             </div>
 
             <div class="form-actions">
@@ -610,11 +660,12 @@
             </tr>
           </thead>
           <tbody>
+            {% if data and data.service_requests and data.service_requests|length > 0 %}
             {% for service in data.service_requests %}
             <tr>
               <td>REQ-{{ service[0] }}</td>
               <td>{{ service[1] }}</td>
-              <td>{{ service[2].strftime('%d %b %Y') }}</td>
+              <td>{{ service[2].strftime('%d %b %Y') if service[2] else 'N/A' }}</td>
               <td>
                 <span class="status-badge status-{{ 'success' if service[3] == 'Resolved' or service[3] == 'Approved' 
                                            else 'pending' if service[3] == 'Pending' 
@@ -624,12 +675,16 @@
                   {{ service[3] }}
                 </span>
               </td>
-              <!-- <td>{{ service[5] }}</td> -->
               <td>
                 <button class="service-btn" onclick="showServiceDetails('{{ service[0] }}')">View</button>
               </td>
             </tr>
             {% endfor %}
+            {% else %}
+            <tr>
+              <td colspan="5" style="text-align: center;">No service requests found</td>
+            </tr>
+            {% endif %}
           </tbody>
         </table>
       </div>
@@ -891,7 +946,7 @@
   <div id="welfare-modal" class="modal-overlay" style="display: none;">
     <div class="modal-content">
       <button class="modal-close" onclick="resetWelfareForm()">✖</button>
-      <form id="welfare-application-form" method="POST" action="">
+      <form id="welfare-application-form" method="POST" enctype="multipart/form-data" action="">
         <input type="hidden" id="welfare-scheme-input" name="welfare-scheme" value="">
         <h3 class="dashboard-title">Apply for <span id="selected-welfare-scheme">Welfare Scheme</span></h3>
 
@@ -913,12 +968,12 @@
         <!-- Supporting Documents Section -->
         <div class="form-section">
           <h4 class="section-title">Supporting Documents</h4>
-          <p class="field-help">Upload all required documents in PDF or image format (JPG, PNG). Maximum file size: 2MB
-            per file.</p>
-          <div class="doc-upload-area" id="welfare-doc-upload-area">
+          <p class="field-help">Upload all required documents in PDF or image format (JPG, PNG, DOC). Maximum file size: 5MB.</p>
+          <div class="doc-upload-area" id="welfare-doc-upload-area" style="cursor: pointer;" onclick="document.getElementById('welfare-doc-file').click();">
+            <input type="file" id="welfare-doc-file" name="document" accept=".pdf,.png,.jpg,.jpeg,.doc,.docx" style="display: none;" onchange="handleFileSelect(this, 'welfare-doc-list')">
             <div class="doc-upload-icon">📎</div>
-            <div class="doc-upload-text">Drag & Drop files here or Click to browse</div>
-            <div class="doc-upload-helper">Supported formats: PDF, JPG, PNG (Max: 2MB each)</div>
+            <div class="doc-upload-text">Click to browse or drop document file (PDF, PNG, JPG)</div>
+            <div class="doc-upload-helper">Supported formats: PDF, JPG, PNG, DOC (Max: 5MB)</div>
           </div>
           <ul class="doc-list" id="welfare-doc-list">
             <!-- Uploaded documents will appear here -->
@@ -1086,100 +1141,14 @@
         }
       }, 100);
     }
-
-// Function to show certificate details
-// function showCertificateDetails(certificateId) {
-//   // Display the modal
-//   const modal = document.getElementById('certificate-details-modal');
-//   modal.style.display = 'flex';
-
-//   // COMPLETELY REPLACE the modal's content
-//   const modalContent = document.querySelector('#certificate-details-modal .modal-content');
-
-//   // Show loading indicator
-//   modalContent.innerHTML = `
-//     <button class="modal-close" onclick="document.getElementById('certificate-details-modal').style.display='none'">✖</button>
-//     <h3 class="dashboard-title">Certificate Details</h3>
-//     <div style="text-align:center; padding: 20px;">
-//       <div class="loading-spinner"></div>
-//       <p>Loading certificate details...</p>
-//     </div>
-//   `;
-
-//   // Fetch certificate details from server
-//   fetch(`/get_certificate_details/${certificateId}`)
-//     .then(response => response.json())
-//     .then(data => {
-//       if (data.success && data.certificate) {
-//         // Get status class for styling
-//         const statusClass = getStatusClass(data.certificate.status);
-        
-//         // COMPLETELY REPLACE the modal content
-//         modalContent.innerHTML = `
-//           <button class="modal-close" onclick="document.getElementById('certificate-details-modal').style.display='none'">✖</button>
-//           <h3 class="dashboard-title">Certificate Details</h3>
-//           <div class="service-details">
-//             <div class="details-row">
-//               <div class="detail-label">Certificate Type:</div>
-//               <div class="detail-value">${data.certificate.type}</div>
-//             </div>
-//             <div class="details-row">
-//               <div class="detail-label">Application ID:</div>
-//               <div class="detail-value">CERT-${data.certificate.id}</div>
-//             </div>
-//             <div class="details-row">
-//               <div class="detail-label">Application Date:</div>
-//               <div class="detail-value">${data.certificate.date}</div>
-//             </div>
-//             <div class="details-row">
-//               <div class="detail-label">Status:</div>
-//               <div class="detail-value">
-//                 <span class="status-badge ${statusClass}">
-//                   ${data.certificate.status}
-//                 </span>
-//               </div>
-//             </div>
-//             <div class="details-row">
-//               <div class="detail-label">Description:</div>
-//               <div class="detail-value">
-//                 <p>${data.certificate.description || 'No description available'}</p>
-//               </div>
-//             </div>
-//           </div>
-//           <div class="form-actions" style="margin-top:20px;">
-//             <button type="button" class="btn btn-outline" onclick="document.getElementById('certificate-details-modal').style.display='none'">Close</button>
-//           </div>
-//         `;
-//       } else {
-//         modalContent.innerHTML = `
-//           <button class="modal-close" onclick="document.getElementById('certificate-details-modal').style.display='none'">✖</button>
-//           <h3 class="dashboard-title">Certificate Details</h3>
-//           <div class="alert" style="background-color:#f8d7da; color:#721c24; padding:1rem; border:1px solid #f5c6cb; border-radius:4px;">
-//             Error loading certificate details. ${data.message || 'Please try again later.'}
-//           </div>
-//           <div class="form-actions" style="margin-top:20px;">
-//             <button type="button" class="btn btn-outline" onclick="document.getElementById('certificate-details-modal').style.display='none'">Close</button>
-//           </div>
-//         `;
-//       }
-//     })
-//     .catch(error => {
-//       console.error('Error fetching certificate details:', error);
-//       modalContent.innerHTML = `
-//         <button class="modal-close" onclick="document.getElementById('certificate-details-modal').style.display='none'">✖</button>
-//         <h3 class="dashboard-title">Certificate Details</h3>
-//         <div class="alert" style="background-color:#f8d7da; color:#721c24; padding:1rem; border:1px solid #f5c6cb; border-radius:4px;">
-//           An error occurred while loading certificate details. Please try again later.
-//         </div>
-//         <div class="form-actions" style="margin-top:20px;">
-//           <button type="button" class="btn btn-outline" onclick="document.getElementById('certificate-details-modal').style.display='none'">Close</button>
-//         </div>
-//       `;
-//     });
-// } </script>
-
-  <script src="{{ url_for('static', filename='scripts/citizens.js') }}">
   </script>
+
+  <script src="{{ url_for('static', filename='scripts/citizens.js') }}"></script>
+  <script>
+    window.CURRENT_PANCHAYAT_ID = "{{ citizen.panchayat_id if citizen else '' }}";
+  </script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/socket.io/4.7.2/socket.io.min.js"></script>
+  <script src="{{ url_for('static', filename='scripts/realtime_notifications.js') }}"></script>
 </body>
 
 </html>

@@ -254,6 +254,10 @@ function setupActionListeners() {
     });
 
     document.getElementById('switchToCitizenBtn').addEventListener('click', function() {
+        if (typeof employeeData !== 'undefined' && employeeData.name === 'Panchayat Admin') {
+            window.location.href = `/admin/dashboard/${userId}`;
+            return;
+        }
         const citizenId = employeeData.citizen_id;
         if (citizenId) {
             window.location.href = `/citizen/${userId}/${citizenId}`;

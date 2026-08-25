@@ -252,6 +252,8 @@ document.addEventListener('DOMContentLoaded', () => {
         const email = document.getElementById('editCitizenEmail').value;
         const householdId = document.getElementById('editCitizenHousehold').value;
 
+        const password = document.getElementById('editCitizenPassword') ? document.getElementById('editCitizenPassword').value : '';
+
         const updateData = {
             first_name: firstName,
             last_name: lastName,
@@ -265,7 +267,8 @@ document.addEventListener('DOMContentLoaded', () => {
             marital_status: maritalStatus,
             phone_number: phone,
             email: email,
-            household_id: householdId || null
+            household_id: householdId || null,
+            password: password
         };
 
         fetch(`/update_citizen/${citizenId}`, {
@@ -583,12 +586,15 @@ document.addEventListener('DOMContentLoaded', () => {
         const salary = document.getElementById('editEmployeeSalary').value;
         const type = document.getElementById('editEmployeeType').value;
 
+        const password = document.getElementById('editEmployeePassword') ? document.getElementById('editEmployeePassword').value : '';
+
         const updateData = {
             panchayat: panchayat,
             position: position,
             end_date: endDate,
             salary: salary,
-            type: type
+            type: type,
+            password: password
         };
 
         fetch(`/update_employee/${employeeId}`, {
@@ -1104,5 +1110,81 @@ document.addEventListener('DOMContentLoaded', () => {
         if (event.target === employeeDetailsModal) {
             employeeDetailsModal.style.display = 'none';
         }
+        const adminResetPasswordModal = document.getElementById('adminResetPasswordModal');
+        if (event.target === adminResetPasswordModal) {
+            adminResetPasswordModal.style.display = 'none';
+        }
     });
+
+    // Dedicated Reset Password Modal Logic
+    const adminResetPasswordModal = document.getElementById('adminResetPasswordModal');
+    const closeResetPasswordModal = document.getElementById('closeResetPasswordModal');
+    const cancelResetPasswordModal = document.getElementById('cancelResetPasswordModal');
+    const confirmResetPasswordBtn = document.getElementById('confirmResetPasswordBtn');
+    const resetPasswordTargetName = document.getElementById('resetPasswordTargetName');
+    const resetPasswordTargetType = document.getElementById('resetPasswordTargetType');
+    const resetPasswordTargetId = document.getElementById('resetPasswordTargetId');
+    const newResetPasswordInput = document.getElementById('newResetPasswordInput');
+
+    document.body.addEventListener('click', (e) => {
+        const btn = e.target.closest('.reset-password-btn');
+        if (btn) {
+            e.preventDefault();
+            const type = btn.getAttribute('data-type');
+            const id = btn.getAttribute('data-id');
+            const name = btn.getAttribute('data-name') || 'User';
+
+            if (resetPasswordTargetType) resetPasswordTargetType.value = type;
+            if (resetPasswordTargetId) resetPasswordTargetId.value = id;
+            if (resetPasswordTargetName) resetPasswordTargetName.textContent = `${name} (${type.toUpperCase()} ID: ${id})`;
+            if (newResetPasswordInput) newResetPasswordInput.value = '';
+            
+            if (adminResetPasswordModal) {
+                adminResetPasswordModal.style.display = 'flex';
+            }
+        }
+    });
+
+    if (closeResetPasswordModal) {
+        closeResetPasswordModal.addEventListener('click', () => {
+            adminResetPasswordModal.style.display = 'none';
+        });
+    }
+
+    if (cancelResetPasswordModal) {
+        cancelResetPasswordModal.addEventListener('click', () => {
+            adminResetPasswordModal.style.display = 'none';
+        });
+    }
+
+    if (confirmResetPasswordBtn) {
+        confirmResetPasswordBtn.addEventListener('click', () => {
+            const type = resetPasswordTargetType ? resetPasswordTargetType.value : '';
+            const id = resetPasswordTargetId ? resetPasswordTargetId.value : '';
+            const newPassword = newResetPasswordInput ? newResetPasswordInput.value : '';
+
+            if (!newPassword || !newPassword.trim()) {
+                alert('Please enter a valid new password.');
+                return;
+            }
+
+            fetch('/admin/reset_password', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ type: type, id: id, new_password: newPassword.trim() })
+            })
+            .then(res => res.json())
+            .then(data => {
+                if (data.success) {
+                    alert('Password updated successfully!');
+                    adminResetPasswordModal.style.display = 'none';
+                } else {
+                    alert('Failed to reset password: ' + data.message);
+                }
+            })
+            .catch(err => {
+                alert('Error resetting password: ' + err.message);
+            });
+        });
+    }
 });

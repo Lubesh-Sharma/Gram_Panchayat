@@ -113,6 +113,7 @@
                                     <th>Project</th>
                                     <th>Enrollment Date</th>
                                     <th>Description</th>
+                                    <th>Document</th>
                                 </tr>
                             </thead>
                             <tbody>
@@ -123,11 +124,20 @@
                                             <td>{{ request.schema_type }}</td>
                                             <td>{{ request.joining_date }}</td>
                                             <td>{{ request.description }}</td>
+                                            <td>
+                                                {% if request.document_path %}
+                                                <a href="{{ request.document_path }}" target="_blank" class="btn btn-info btn-sm text-white">
+                                                    <i class="fas fa-file-pdf"></i> View Doc
+                                                </a>
+                                                {% else %}
+                                                <span class="text-muted">None</span>
+                                                {% endif %}
+                                            </td>
                                         </tr>
                                     {% endfor %}
                                 {% else %}
                                     <tr>
-                                        <td colspan="4" class="text-center">No welfare enrollments found</td>
+                                        <td colspan="5" class="text-center">No welfare enrollments found</td>
                                     </tr>
                                 {% endif %}
                             </tbody>
@@ -320,4 +330,9 @@
         editSchemaModal.show();
     }
 </script>
+<script>
+    window.CURRENT_PANCHAYAT_ID = "{{ employee.panchayat_id if employee else '' }}";
+</script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/socket.io/4.7.2/socket.io.min.js"></script>
+<script src="{{ url_for('static', filename='scripts/realtime_notifications.js') }}"></script>
 {% endblock %}

@@ -1,15 +1,16 @@
 import os
-from flask import Flask, render_template, request, redirect, url_for, flash, jsonify, session
+from flask import Flask, render_template, request, redirect, url_for, flash, jsonify, session, make_response
 import psycopg2
 from psycopg2 import extras
+from psycopg2.pool import ThreadedConnectionPool, PoolError
 import hashlib
 from datetime import date, datetime
-from flask import request, jsonify
-from dotenv import load_dotenv  # NEW
+from dotenv import load_dotenv
 
 import platform
 import pdfkit
-from flask import make_response
+import uuid
+from werkzeug.utils import secure_filename
 
 # Load environment variables from .env
 load_dotenv()
@@ -17,7 +18,23 @@ load_dotenv()
 app = Flask(__name__)
 app.secret_key = os.environ.get("SECRET_KEY", "default-secret-key")
 
-# Database Configuration from environment
+# Low Bandwidth Optimization: Enable Gzip/Brotli payload compression
+try:
+    from flask_compress import Compress
+    Compress(app)
+    print("Flask-Compress enabled for payload compression.")
+except Exception as compress_err:
+    print("Flask-Compress initialization notice:", compress_err)
+
+# Real-Time Push Engine: Initialize SocketIO
+socketio = None
+try:
+    from flask_socketio import SocketIO, emit, join_room
+    socketio = SocketIO(app, cors_allowed_origins="*", async_mode='threading')
+    print("Flask-SocketIO enabled for real-time WebSocket push updates.")
+except Exception as socket_err:
+    print("Flask-SocketIO initialization notice:", socket_err)
+
 DB_CONFIG = {
     'dbname': os.environ.get('DB_NAME'),
     'user': os.environ.get('DB_USER'),
@@ -27,8 +44,176 @@ DB_CONFIG = {
 }
 PATH_NAME = os.environ.get('PATH_NAME', 'public')
 
-# Utility: Connect to PostgreSQL
+def sync_admin_records(conn):
+    try:
+        with conn.cursor() as cur:
+            # 1. Find or create Admin user
+            cur.execute("SELECT user_id, email FROM Users WHERE user_type = 'Admin' ORDER BY user_id LIMIT 1;")
+            admin_user = cur.fetchone()
+            if not admin_user:
+                admin_hash = 'eeac43ccab0d7a588d758fb72fd2811e7c29f03f1d4c834e2e5b67058506bdd4'
+                cur.execute("""
+                    INSERT INTO Users (password_hash, email, user_type, status, created_at)
+                    VALUES (%s, 'admin@gmail.com', 'Admin', 'Active', NOW())
+                    RETURNING user_id, email;
+                """, (admin_hash,))
+                admin_user = cur.fetchone()
+            
+            admin_id = admin_user[0]
+            admin_email = admin_user[1]
+
+            # Get default panchayat_id
+            cur.execute("SELECT panchayat_id FROM Panchayats ORDER BY panchayat_id LIMIT 1;")
+            p_res = cur.fetchone()
+            panchayat_id = p_res[0] if p_res else 1
+
+            # 2. Find or create Admin citizen record
+            cur.execute("SELECT citizen_id FROM Citizens WHERE user_id = %s;", (admin_id,))
+            cit_res = cur.fetchone()
+            if not cit_res:
+                cur.execute("""
+                    INSERT INTO Citizens (user_id, panchayat_id, first_name, last_name, gender, dob, educational_qualification, occupation, annual_income, tax_due_amount, marital_status, phone_number, email)
+                    VALUES (%s, %s, 'Panchayat', 'Admin', 'Other', '1990-01-01', 'Graduate', 'Employed', 0, 0, 'Un_married', '0000000000', %s)
+                    RETURNING citizen_id;
+                """, (admin_id, panchayat_id, admin_email))
+                admin_citizen_id = cur.fetchone()[0]
+            else:
+                admin_citizen_id = cit_res[0]
+
+            # 3. Ensure Admin employee records exist for all departments
+            departments = ['Certificate', 'Patwari', 'Budget', 'Service', 'Tax']
+            for dept in departments:
+                cur.execute("SELECT employee_id FROM Employees WHERE user_id = %s AND LOWER(department) = %s;", (admin_id, dept.lower()))
+                emp_res = cur.fetchone()
+                if not emp_res:
+                    cur.execute("""
+                        INSERT INTO Employees (user_id, panchayat_id, citizen_id, designation, join_date, end_date, department, employment_type, salary)
+                        VALUES (%s, %s, %s, 'Panchayat Admin', '2020-01-01', '2099-12-31', %s, 'Permanent', 0);
+                    """, (admin_id, panchayat_id, admin_citizen_id, dept))
+            print("Admin profile records synchronized in Citizens and Employees tables.")
+    except Exception as e:
+        print("Admin schema synchronization notice:", e)
+
+# Automated Database Schema & Index Initialization
+def init_db_schema():
+    print("Checking database schema initialization...")
+    try:
+        conn = psycopg2.connect(**DB_CONFIG)
+        conn.autocommit = True
+        with conn.cursor() as cur:
+            cur.execute(f"CREATE SCHEMA IF NOT EXISTS {PATH_NAME};")
+            cur.execute(f"SET search_path TO {PATH_NAME};")
+            
+            # Check if Users table exists in current schema
+            cur.execute("SELECT EXISTS (SELECT 1 FROM information_schema.tables WHERE table_schema = %s AND LOWER(table_name) = 'users');", (PATH_NAME,))
+            users_exist = cur.fetchone()[0]
+            
+            if not users_exist:
+                print("Database tables not found. Creating schema and inserting seed data...")
+                base_dir = os.path.dirname(os.path.abspath(__file__))
+                
+                # 1. Create tables
+                createtable_path = os.path.join(base_dir, "createtable.sql")
+                if os.path.exists(createtable_path):
+                    with open(createtable_path, "r", encoding="utf-8") as f:
+                        cur.execute(f.read())
+                    print("Tables created successfully.")
+                
+                # 2. Insert seed data
+                insertdata_path = os.path.join(base_dir, "insertData.sql")
+                if os.path.exists(insertdata_path):
+                    with open(insertdata_path, "r", encoding="utf-8") as f:
+                        cur.execute(f.read())
+                    print("Initial seed data inserted successfully.")
+                
+                # 3. Create performance indexes
+                indexes_path = os.path.join(base_dir, "create_indexes.sql")
+                if os.path.exists(indexes_path):
+                    with open(indexes_path, "r", encoding="utf-8") as f:
+                        cur.execute(f.read())
+                    print("Database indexes created successfully.")
+            else:
+                print("Database schema already exists.")
+
+            # Ensure Admin citizen & employee records exist in database tables
+            sync_admin_records(conn)
+
+        conn.close()
+    except Exception as e:
+        print("Database schema auto-initialization notice:", e)
+
+# Threaded Database Connection Pool Initialization
+db_pool = None
+
+def init_db_pool():
+    global db_pool
+    if db_pool is None:
+        try:
+            min_conn = int(os.environ.get('DB_MIN_CONN', 2))
+            max_conn = int(os.environ.get('DB_MAX_CONN', 20))
+            db_pool = ThreadedConnectionPool(min_conn, max_conn, **DB_CONFIG)
+            print("PostgreSQL connection pool initialized.")
+        except Exception as e:
+            print("Failed to initialize database pool:", e)
+            db_pool = None
+
+# Middleware: Add browser cache headers for static assets
+@app.after_request
+def add_static_cache_headers(response):
+    if request.path.startswith('/static/'):
+        response.headers['Cache-Control'] = 'public, max-age=31536000, immutable'
+    return response
+
+class PooledConnectionWrapper:
+    def __init__(self, conn, pool):
+        self._conn = conn
+        self._pool = pool
+
+    def close(self):
+        if self._pool and self._conn:
+            try:
+                self._pool.putconn(self._conn)
+            except Exception:
+                try:
+                    self._conn.close()
+                except Exception:
+                    pass
+        elif self._conn:
+            try:
+                self._conn.close()
+            except Exception:
+                pass
+        self._conn = None
+
+    def __getattr__(self, name):
+        return getattr(self._conn, name)
+
+    def __enter__(self):
+        return self
+
+    def __exit__(self, exc_type, exc_val, exc_tb):
+        self.close()
+
+# Utility: Acquire connection from PostgreSQL Connection Pool
 def get_db_connection():
+    global db_pool
+    if db_pool is None:
+        init_db_pool()
+
+    if db_pool is not None:
+        try:
+            conn = db_pool.getconn()
+            if conn:
+                conn.autocommit = True
+                with conn.cursor() as cur:
+                    cur.execute(f"SET search_path TO {PATH_NAME};")
+                return PooledConnectionWrapper(conn, db_pool)
+        except PoolError as pe:
+            print("Database pool exhausted, falling back to direct connect:", pe)
+        except Exception as e:
+            print("Database pool error:", e)
+
+    # Direct connection fallback if pool is unavailable or exhausted
     try:
         conn = psycopg2.connect(**DB_CONFIG)
         conn.autocommit = True
@@ -39,6 +224,29 @@ def get_db_connection():
         print("Database connection error:", e)
         return None
 
+# Real-Time WebSocket Handlers
+if socketio:
+    @socketio.on('connect')
+    def handle_ws_connect():
+        print("Real-time WebSocket client connected.")
+
+    @socketio.on('subscribe_panchayat')
+    def handle_subscribe_panchayat(data):
+        panchayat_id = data.get('panchayat_id') if isinstance(data, dict) else data
+        if panchayat_id:
+            room = f"panchayat_{panchayat_id}"
+            join_room(room)
+            print(f"Client subscribed to real-time room: {room}")
+
+def emit_realtime_event(event_name, data, panchayat_id=None):
+    if socketio:
+        try:
+            if panchayat_id:
+                socketio.emit(event_name, data, room=f"panchayat_{panchayat_id}")
+            socketio.emit(event_name, data)
+        except Exception as socket_err:
+            print(f"Realtime socket emit warning ({event_name}): {socket_err}")
+
 # Utility: Hash password for comparison (SHA-256 for better security)
 def hash_password(password):
     if not password:
@@ -46,6 +254,22 @@ def hash_password(password):
     secret = app.secret_key or "default-secret-key-for-hashing"
     combined = password + secret
     return hashlib.sha256(combined.encode()).hexdigest()
+
+def save_uploaded_document(file):
+    if not file or not getattr(file, 'filename', None) or file.filename == '':
+        return None
+    allowed = {'pdf', 'png', 'jpg', 'jpeg', 'doc', 'docx'}
+    ext = file.filename.rsplit('.', 1)[-1].lower() if '.' in file.filename else ''
+    if ext not in allowed:
+        return None
+    filename = secure_filename(file.filename)
+    unique_filename = f"{uuid.uuid4().hex[:8]}_{filename}"
+    upload_dir = os.path.join(app.static_folder, 'uploads', 'documents')
+    os.makedirs(upload_dir, exist_ok=True)
+    file_path = os.path.join(upload_dir, unique_filename)
+    file.save(file_path)
+    return f"/static/uploads/documents/{unique_filename}"
+
 
 
 ############################################## BASIC ROUTES #########################################################
@@ -373,7 +597,12 @@ def tax(user_id, employee_id):
                 flash("Employee not found", "danger")
                 return redirect(url_for('error_page'))
                 
-            employee_name = employee_data[0]
+            cur.execute("SELECT user_type FROM Users WHERE user_id = %s;", (user_id,))
+            u_type = cur.fetchone()
+            if u_type and u_type[0] == 'Admin':
+                employee_name = "Panchayat Admin"
+            else:
+                employee_name = employee_data[0]
             panchayat_id = employee_data[1]
             citizen_id = employee_data[2]
             
@@ -505,7 +734,12 @@ def budget(user_id, employee_id):
                 flash("Employee not found", "danger")
                 return redirect(url_for('error_page'))
                 
-            employee_name = employee_data[0]
+            cur.execute("SELECT user_type FROM Users WHERE user_id = %s;", (user_id,))
+            u_type = cur.fetchone()
+            if u_type and u_type[0] == 'Admin':
+                employee_name = "Panchayat Admin"
+            else:
+                employee_name = employee_data[0]
             panchayat_id = employee_data[1]
             citizen_id = employee_data[2]  # Get the citizen_id associated with this employee
             
@@ -776,7 +1010,7 @@ def service(user_id, employee_id):
     
     # First get employee details to access citizen_id
     cur.execute('''
-        SELECT e.employee_id, e.citizen_id, c.first_name || ' ' || c.last_name as employee_name 
+        SELECT e.employee_id, e.citizen_id, e.panchayat_id, c.first_name || ' ' || c.last_name as employee_name 
         FROM Employees e
         JOIN Citizens c ON e.citizen_id = c.citizen_id
         WHERE e.employee_id = %s
@@ -786,6 +1020,11 @@ def service(user_id, employee_id):
     if not employee:
         flash('Employee not found.', 'danger')
         return redirect(url_for('error_page'))
+    
+    cur.execute("SELECT user_type FROM Users WHERE user_id = %s;", (user_id,))
+    u_type = cur.fetchone()
+    is_admin_user = (u_type and u_type['user_type'] == 'Admin')
+    employee_name = "Panchayat Admin" if is_admin_user else employee['employee_name']
     
     cur.execute('''
         SELECT service_id, type, description
@@ -797,15 +1036,26 @@ def service(user_id, employee_id):
     for s in services:
         print(f"Service: {s['service_id']} - {s['type']}")
     
-    cur.execute('''
-        SELECT sr.request_id, sr.citizen_id, ct.first_name || ' ' || ct.last_name as citizen_name,
-                sr.service_id, s.type as service_type, sr.request_date,
-                sr.description, sr.status
-        FROM Service_Request sr
-        JOIN Citizens ct ON sr.citizen_id = ct.citizen_id
-        JOIN Service s ON sr.service_id = s.service_id
-        WHERE sr.status = 'Pending'
-    ''')
+    if is_admin_user:
+        cur.execute('''
+            SELECT sr.request_id, sr.citizen_id, ct.first_name || ' ' || ct.last_name as citizen_name,
+                    sr.service_id, s.type as service_type, sr.request_date,
+                    sr.description, sr.status, sr.document_path
+            FROM Service_Request sr
+            JOIN Citizens ct ON sr.citizen_id = ct.citizen_id
+            JOIN Service s ON sr.service_id = s.service_id
+            WHERE sr.status = 'Pending'
+        ''')
+    else:
+        cur.execute('''
+            SELECT sr.request_id, sr.citizen_id, ct.first_name || ' ' || ct.last_name as citizen_name,
+                    sr.service_id, s.type as service_type, sr.request_date,
+                    sr.description, sr.status, sr.document_path
+            FROM Service_Request sr
+            JOIN Citizens ct ON sr.citizen_id = ct.citizen_id
+            JOIN Service s ON sr.service_id = s.service_id
+            WHERE sr.status = 'Pending' AND ct.panchayat_id = %s
+        ''', (employee['panchayat_id'],))
     
     service_requests = cur.fetchall()
     
@@ -817,17 +1067,30 @@ def service(user_id, employee_id):
     ''')
     welfare_projects = cur.fetchall()
     
-    # Get welfare enrollments - Updated query to reflect new table structure
-    cur.execute('''
-        SELECT cws.enrollment_id, cws.citizen_id, 
-               c.first_name || ' ' || c.last_name as citizen_name,
-               st.type as schema_type, cws.joining_date, cws.request_date,
-               cws.status, cws.description
-        FROM Citizen_welfare_Schema cws
-        JOIN Citizens c ON cws.citizen_id = c.citizen_id
-        JOIN schema_type st ON cws.schema_id = st.schema_id
-        ORDER BY cws.request_date DESC
-    ''')
+    # Get welfare enrollments filtered by panchayat
+    if is_admin_user:
+        cur.execute('''
+            SELECT cws.enrollment_id, cws.citizen_id, 
+                   c.first_name || ' ' || c.last_name as citizen_name,
+                   st.type as schema_type, cws.joining_date, cws.request_date,
+                   cws.status, cws.description, cws.document_path
+            FROM Citizen_welfare_Schema cws
+            JOIN Citizens c ON cws.citizen_id = c.citizen_id
+            JOIN schema_type st ON cws.schema_id = st.schema_id
+            ORDER BY cws.request_date DESC
+        ''')
+    else:
+        cur.execute('''
+            SELECT cws.enrollment_id, cws.citizen_id, 
+                   c.first_name || ' ' || c.last_name as citizen_name,
+                   st.type as schema_type, cws.joining_date, cws.request_date,
+                   cws.status, cws.description, cws.document_path
+            FROM Citizen_welfare_Schema cws
+            JOIN Citizens c ON cws.citizen_id = c.citizen_id
+            JOIN schema_type st ON cws.schema_id = st.schema_id
+            WHERE c.panchayat_id = %s
+            ORDER BY cws.request_date DESC
+        ''', (employee['panchayat_id'],))
     
     welfare_requests = cur.fetchall()
     
@@ -875,6 +1138,24 @@ def update_service_request_status():
         ''', (status, description, request_id))
         
         conn.commit()
+        try:
+            cur.execute("SELECT citizen_id FROM Service_Request WHERE request_id = %s;", (request_id,))
+            sr_r = cur.fetchone()
+            if sr_r:
+                cit_id = sr_r[0]
+                cur.execute("SELECT panchayat_id FROM Citizens WHERE citizen_id = %s;", (cit_id,))
+                cit_r = cur.fetchone()
+                p_id = cit_r[0] if cit_r else None
+                emit_realtime_event('status_updated', {
+                    'type': 'Service Request',
+                    'id': request_id,
+                    'citizen_id': cit_id,
+                    'panchayat_id': p_id,
+                    'status': status
+                }, p_id)
+        except Exception as emit_err:
+            print("Error emitting service status update:", emit_err)
+
         flash(f'Service request marked as {status} successfully!', 'success')
     except Exception as e:
         conn.rollback()
@@ -1030,63 +1311,62 @@ def delete_service():
 @app.route('/welfare/<int:user_id>/<int:employee_id>')
 def welfare(user_id, employee_id):
     conn = get_db_connection()
-    cur = conn.cursor(cursor_factory=psycopg2.extras.DictCursor)
-    
-    # First get employee details to access citizen_id
-    cur.execute('''
-        SELECT e.employee_id, e.citizen_id, c.first_name || ' ' || c.last_name as employee_name 
-        FROM Employees e
-        JOIN Citizens c ON e.citizen_id = c.citizen_id
-        WHERE e.employee_id = %s
-    ''', (employee_id,))
-    
-    employee = cur.fetchone()
-    if not employee:
-        flash('Employee not found.', 'danger')
-        return redirect(url_for('error_page'))
-    
-    cur.execute('''
-        SELECT project_id, type, description
-        FROM Welfare_Project
-        ORDER BY type
-    ''')
-    welfare_projects = cur.fetchall()
-    
-    for p in welfare_projects:
-        print(f"Welfare Project: {p['project_id']} - {p['type']}")
-    
-    cur.execute('''
-        SELECT wr.request_id, wr.citizen_id, ct.first_name || ' ' || ct.last_name as citizen_name,
-                wr.project_id, wp.type as project_type, wr.request_date,
-                wr.description, wr.status
-        FROM Welfare_Request wr
-        JOIN Citizens ct ON wr.citizen_id = ct.citizen_id
-        JOIN Welfare_Project wp ON wr.project_id = wp.project_id
-        WHERE wr.status = 'Pending'
-    ''')
-    
-    welfare_requests = cur.fetchall()
-    
-    # Get announcements
-    cur.execute("""
-        SELECT announcement_id, heading, detail, date
-        FROM Announcements
-        ORDER BY date DESC
-        LIMIT 10;
-    """)
-    announcements = cur.fetchall()
-    
-    cur.close()
-    conn.close()
-    
-    return render_template('welfare.html',
-                           welfare_projects=welfare_projects,
-                           welfare_requests=welfare_requests,
-                           user_id=user_id,
-                           employee_id=employee_id,
-                           employee=employee,
-                           employee_name=employee['employee_name'],
-                           announcements=announcements)
+    if not conn:
+        flash('Database connection error.', 'danger')
+        return redirect(url_for('login'))
+    try:
+        cur = conn.cursor(cursor_factory=psycopg2.extras.DictCursor)
+        cur.execute('''
+            SELECT e.employee_id, e.citizen_id, c.first_name || ' ' || c.last_name as employee_name 
+            FROM Employees e
+            JOIN Citizens c ON e.citizen_id = c.citizen_id
+            WHERE e.employee_id = %s
+        ''', (employee_id,))
+        employee = cur.fetchone()
+        
+        cur.execute("SELECT user_type FROM Users WHERE user_id = %s;", (user_id,))
+        u_type = cur.fetchone()
+        employee_name = "Panchayat Admin" if (u_type and u_type['user_type'] == 'Admin') else (employee['employee_name'] if employee else "Employee")
+        
+        cur.execute('''
+            SELECT schema_id as project_id, type, description
+            FROM schema_type
+            ORDER BY type
+        ''')
+        welfare_projects = cur.fetchall()
+        
+        cur.execute('''
+            SELECT cws.enrollment_id as request_id, cws.citizen_id, 
+                   ct.first_name || ' ' || ct.last_name as citizen_name,
+                   cws.schema_id as project_id, st.type as project_type, 
+                   cws.request_date, cws.description, cws.status
+            FROM Citizen_welfare_Schema cws
+            JOIN Citizens ct ON cws.citizen_id = ct.citizen_id
+            JOIN schema_type st ON cws.schema_id = st.schema_id
+            WHERE cws.status = 'Pending'
+        ''')
+        welfare_requests = cur.fetchall()
+        
+        cur.execute("""
+            SELECT announcement_id, heading, detail, date
+            FROM Announcements
+            ORDER BY date DESC
+        """)
+        announcements = cur.fetchall()
+        
+        return render_template('welfare.html',
+                               user_id=user_id,
+                               employee_id=employee_id,
+                               employee_name=employee_name,
+                               welfare_projects=welfare_projects,
+                               welfare_requests=welfare_requests,
+                               announcements=announcements)
+    except Exception as e:
+        print("Error loading welfare route:", e)
+        flash('Error loading welfare page.', 'danger')
+        return redirect(url_for('admin_dashboard', admin_id=user_id))
+    finally:
+        conn.close()
 
 @app.route('/update_welfare_request_status', methods=['POST'])
 def update_welfare_request_status():
@@ -1268,7 +1548,7 @@ def welfare_projects(user_id, employee_id):
     
     # First get employee details to access citizen_id
     cur.execute('''
-        SELECT e.employee_id, e.citizen_id, c.first_name || ' ' || c.last_name as employee_name 
+        SELECT e.employee_id, e.citizen_id, e.panchayat_id, c.first_name || ' ' || c.last_name as employee_name 
         FROM Employees e
         JOIN Citizens c ON e.citizen_id = c.citizen_id
         WHERE e.employee_id = %s
@@ -1278,6 +1558,10 @@ def welfare_projects(user_id, employee_id):
     if not employee:
         flash('Employee not found.', 'danger')
         return redirect(url_for('error_page'))
+
+    cur.execute("SELECT user_type FROM Users WHERE user_id = %s;", (user_id,))
+    u_type = cur.fetchone()
+    is_admin_user = (u_type and u_type['user_type'] == 'Admin')
     
     # Get all welfare schemas (projects)
     cur.execute('''
@@ -1288,16 +1572,29 @@ def welfare_projects(user_id, employee_id):
     welfare_projects = cur.fetchall()
     
     # Get pending welfare requests
-    cur.execute('''
-        SELECT cws.citizen_id, cws.schema_id, 
-               c.first_name || ' ' || c.last_name as citizen_name,
-               st.type as schema_type, cws.joining_date,
-               st.description
-        FROM Citizen_welfare_Schema cws
-        JOIN Citizens c ON cws.citizen_id = c.citizen_id
-        JOIN schema_type st ON cws.schema_id = st.schema_id
-        ORDER BY cws.joining_date DESC
-    ''')
+    if is_admin_user:
+        cur.execute('''
+            SELECT cws.citizen_id, cws.schema_id, 
+                   c.first_name || ' ' || c.last_name as citizen_name,
+                   st.type as schema_type, cws.joining_date,
+                   st.description, cws.document_path
+            FROM Citizen_welfare_Schema cws
+            JOIN Citizens c ON cws.citizen_id = c.citizen_id
+            JOIN schema_type st ON cws.schema_id = st.schema_id
+            ORDER BY cws.joining_date DESC
+        ''')
+    else:
+        cur.execute('''
+            SELECT cws.citizen_id, cws.schema_id, 
+                   c.first_name || ' ' || c.last_name as citizen_name,
+                   st.type as schema_type, cws.joining_date,
+                   st.description, cws.document_path
+            FROM Citizen_welfare_Schema cws
+            JOIN Citizens c ON cws.citizen_id = c.citizen_id
+            JOIN schema_type st ON cws.schema_id = st.schema_id
+            WHERE c.panchayat_id = %s
+            ORDER BY cws.joining_date DESC
+        ''', (employee['panchayat_id'],))
     
     welfare_requests = cur.fetchall()
     
@@ -1461,6 +1758,24 @@ def update_welfare_enrollment_status():
             ''', (enrollment_id,))
         
         conn.commit()
+        try:
+            cur.execute("SELECT citizen_id FROM Citizen_welfare_Schema WHERE enrollment_id = %s;", (enrollment_id,))
+            cws_r = cur.fetchone()
+            if cws_r:
+                cit_id = cws_r[0]
+                cur.execute("SELECT panchayat_id FROM Citizens WHERE citizen_id = %s;", (cit_id,))
+                cit_r = cur.fetchone()
+                p_id = cit_r[0] if cit_r else None
+                emit_realtime_event('status_updated', {
+                    'type': 'Welfare Scheme',
+                    'id': enrollment_id,
+                    'citizen_id': cit_id,
+                    'panchayat_id': p_id,
+                    'status': status
+                }, p_id)
+        except Exception as emit_err:
+            print("Error emitting welfare status update:", emit_err)
+
         flash(f'Welfare enrollment request marked as {status} successfully!', 'success')
     except Exception as e:
         conn.rollback()
@@ -1493,6 +1808,10 @@ def certificate(user_id, employee_id):
         ''', (employee_id,))
         employee = cur.fetchone()
         
+        cur.execute("SELECT user_type FROM Users WHERE user_id = %s;", (user_id,))
+        u_type = cur.fetchone()
+        employee_name = "Panchayat Admin" if (u_type and u_type['user_type'] == 'Admin') else employee['employee_name']
+        
         # Get panchayat details
         cur.execute('''
             SELECT * FROM Panchayats WHERE panchayat_id = %s
@@ -1500,14 +1819,25 @@ def certificate(user_id, employee_id):
         panchayat = cur.fetchone()
         
         # Get pending certificate applications
-        cur.execute('''
-            SELECT c.certificate_id, c.citizen_id, cit.first_name, ct.type, 
-                   c.application_date, c.description, c.status
-            FROM certificate c
-            JOIN Citizens cit ON c.citizen_id = cit.citizen_id
-            JOIN Certificate_Type ct ON c.type_id = ct.type_id
-            WHERE c.status = 'Pending'
-        ''')
+        is_admin_user = (u_type and u_type['user_type'] == 'Admin')
+        if is_admin_user:
+            cur.execute('''
+                SELECT c.certificate_id, c.citizen_id, cit.first_name, ct.type, 
+                       c.application_date, c.description, c.status, c.document_path
+                FROM certificate c
+                JOIN Citizens cit ON c.citizen_id = cit.citizen_id
+                JOIN Certificate_Type ct ON c.type_id = ct.type_id
+                WHERE c.status = 'Pending'
+            ''')
+        else:
+            cur.execute('''
+                SELECT c.certificate_id, c.citizen_id, cit.first_name, ct.type, 
+                       c.application_date, c.description, c.status, c.document_path
+                FROM certificate c
+                JOIN Citizens cit ON c.citizen_id = cit.citizen_id
+                JOIN Certificate_Type ct ON c.type_id = ct.type_id
+                WHERE c.status = 'Pending' AND cit.panchayat_id = %s
+            ''', (employee['panchayat_id'],))
         certificates = cur.fetchall()
         
         # Get certificate types
@@ -1671,7 +2001,26 @@ def update_certificate_status():
                     WHERE certificate_id = %s
                 """, (status, description, certificate_id))
                 
-                conn.commit()                
+                conn.commit()
+                
+                try:
+                    cur.execute("SELECT citizen_id, type FROM certificate WHERE certificate_id = %s;", (certificate_id,))
+                    cert_r = cur.fetchone()
+                    if cert_r:
+                        cur.execute("SELECT panchayat_id FROM Citizens WHERE citizen_id = %s;", (cert_r[0],))
+                        cit_r = cur.fetchone()
+                        p_id = cit_r[0] if cit_r else None
+                        emit_realtime_event('status_updated', {
+                            'type': 'Certificate',
+                            'id': certificate_id,
+                            'title': cert_r[1],
+                            'citizen_id': cert_r[0],
+                            'panchayat_id': p_id,
+                            'status': status
+                        }, p_id)
+                except Exception as emit_err:
+                    print("Error emitting status update:", emit_err)
+
                 return redirect(url_for('certificate', 
                                       user_id=user_id, 
                                       employee_id=employee_id))
@@ -1705,13 +2054,24 @@ def patwari(user_id, employee_id):
     
     try:
         with conn.cursor() as cur:
-            # Get employee details including name, department, and panchayat
-            cur.execute("""
-                SELECT e.employee_id, c.first_name, c.last_name, e.designation, e.department, e.panchayat_id, e.citizen_id
-                FROM Employees e
-                JOIN Citizens c ON e.citizen_id = c.citizen_id
-                WHERE e.employee_id = %s AND e.user_id = %s
-            """, (employee_id, user_id))
+            cur.execute("SELECT user_type FROM Users WHERE user_id = %s", (user_id,))
+            u_type = cur.fetchone()
+            is_admin = (u_type and u_type[0] == 'Admin')
+
+            if is_admin:
+                cur.execute("""
+                    SELECT e.employee_id, c.first_name, c.last_name, e.designation, e.department, e.panchayat_id, e.citizen_id
+                    FROM Employees e
+                    JOIN Citizens c ON e.citizen_id = c.citizen_id
+                    WHERE e.employee_id = %s
+                """, (employee_id,))
+            else:
+                cur.execute("""
+                    SELECT e.employee_id, c.first_name, c.last_name, e.designation, e.department, e.panchayat_id, e.citizen_id
+                    FROM Employees e
+                    JOIN Citizens c ON e.citizen_id = c.citizen_id
+                    WHERE e.employee_id = %s AND e.user_id = %s
+                """, (employee_id, user_id))
             
             employee_data = cur.fetchone()
             
@@ -1724,7 +2084,7 @@ def patwari(user_id, employee_id):
             
             employee_info = {
                 'id': employee_data[0],
-                'name': f"{employee_data[1]} {employee_data[2]}",
+                'name': "Panchayat Admin" if is_admin else f"{employee_data[1]} {employee_data[2]}",
                 'designation': employee_data[3] or 'Patwari Officer',
                 'department': employee_data[4] or 'Patwari',
                 'panchayat_id': panchayat_id,
@@ -2428,6 +2788,17 @@ def citizen_dashboard(user_id, citizen_id):
         recent_activities = []
         
         with conn.cursor() as cur:
+            # Check if user_id belongs to Admin
+            cur.execute("SELECT user_type FROM Users WHERE user_id = %s;", (user_id,))
+            u_type_res = cur.fetchone()
+            if u_type_res and u_type_res[0] == 'Admin':
+                # Verify if this citizen_id is Admin's own citizen record
+                cur.execute("SELECT citizen_id FROM Citizens WHERE user_id = %s;", (user_id,))
+                adm_cit_res = cur.fetchone()
+                if not adm_cit_res or adm_cit_res[0] != citizen_id:
+                    flash('Admin cannot access individual citizen portals directly to protect citizen privacy. Use Reset Password to log in as citizen, or use Citizen Portal Preview.', 'warning')
+                    return redirect(url_for('admin_dashboard', admin_id=user_id))
+
             # Get citizen basic info including panchayat_id
             cur.execute("""
                 SELECT first_name, last_name, panchayat_id
@@ -2677,6 +3048,20 @@ def view_certificate(certificate_id):
                 flash('Certificate not found or not yet approved.', 'danger')
                 return redirect(url_for('citizen_dashboard', user_id=user_id, citizen_id=citizen_id))
             
+            # Disk Cache Check for Pre-generated PDF
+            cert_dir = os.path.join(app.static_folder, 'generated_certificates')
+            os.makedirs(cert_dir, exist_ok=True)
+            cached_pdf_path = os.path.join(cert_dir, f'Certificate_{certificate_id}.pdf')
+
+            if os.path.exists(cached_pdf_path):
+                print(f"Serving cached PDF for Certificate #{certificate_id}")
+                with open(cached_pdf_path, 'rb') as f:
+                    pdf_data = f.read()
+                response = make_response(pdf_data)
+                response.headers['Content-Type'] = 'application/pdf'
+                response.headers['Content-Disposition'] = f'attachment; filename=Certificate_{certificate_id}.pdf'
+                return response
+
             from datetime import datetime
             
             # Setup wkhtmltopdf path based on operating system
@@ -2886,6 +3271,14 @@ def view_certificate(certificate_id):
                 print("Attempting to generate PDF...")
                 pdf = pdfkit.from_string(html_content, False, options=options, configuration=config)
                 print("PDF generated successfully")
+
+                # Cache generated PDF to disk
+                try:
+                    with open(cached_pdf_path, 'wb') as f:
+                        f.write(pdf)
+                    print(f"Saved generated PDF to disk cache: {cached_pdf_path}")
+                except Exception as cache_err:
+                    print(f"Warning: Failed to save PDF to cache: {cache_err}")
                 
                 # Create response with PDF content
                 response = make_response(pdf)
@@ -2919,6 +3312,8 @@ def apply_certificate(user_id, citizen_id):
     if request.method == 'POST':
         certificate_type = request.form.get('certificate-type')
         description = request.form.get('description')
+        doc_file = request.files.get('document')
+        doc_path = save_uploaded_document(doc_file)
         
         conn = get_db_connection()
         if not conn:
@@ -2939,14 +3334,25 @@ def apply_certificate(user_id, citizen_id):
                 
                 type_id = result[0]
                 
-                # Insert the certificate application - include both type and type_id
+                # Insert the certificate application - include both type, type_id, and document_path
                 cur.execute("""
                     INSERT INTO certificate 
-                    (citizen_id, application_date, status, type, type_id, description)
-                    VALUES (%s, CURRENT_DATE, 'Pending', %s, %s, %s)
-                """, (citizen_id, certificate_type, type_id, description))
+                    (citizen_id, application_date, status, type, type_id, description, document_path)
+                    VALUES (%s, CURRENT_DATE, 'Pending', %s, %s, %s, %s)
+                """, (citizen_id, certificate_type, type_id, description, doc_path))
                 
-                conn.commit()
+                cur.execute("SELECT panchayat_id FROM Citizens WHERE citizen_id = %s;", (citizen_id,))
+                cit_res = cur.fetchone()
+                p_id = cit_res[0] if cit_res else None
+
+                emit_realtime_event('new_application', {
+                    'type': 'Certificate',
+                    'title': certificate_type,
+                    'citizen_id': citizen_id,
+                    'panchayat_id': p_id,
+                    'status': 'Pending'
+                }, p_id)
+
                 flash(f"Your application for {certificate_type} Certificate has been submitted successfully.", "success")
         
         except Exception as e:
@@ -2973,6 +3379,8 @@ def apply_welfare(user_id, citizen_id):
         scheme_type = request.form.get('welfare-scheme')
         reason = request.form.get('welfare-reason', '')
         family_income = request.form.get('family-income', 0)
+        doc_file = request.files.get('document')
+        doc_path = save_uploaded_document(doc_file)
         
         with conn.cursor() as cur:
             # Get the schema_id from the scheme type
@@ -2990,11 +3398,24 @@ def apply_welfare(user_id, citizen_id):
             # Create the welfare application
             cur.execute("""
                 INSERT INTO Citizen_welfare_Schema 
-                (citizen_id, schema_id, joining_date, request_date, description, status)
-                VALUES (%s, %s, NOW(), NOW(), %s, 'Pending')
-            """, (citizen_id, schema_id, reason))
+                (citizen_id, schema_id, joining_date, request_date, description, status, document_path)
+                VALUES (%s, %s, NOW(), NOW(), %s, 'Pending', %s)
+            """, (citizen_id, schema_id, reason, doc_path))
             
             conn.commit()
+            
+            cur.execute("SELECT panchayat_id FROM Citizens WHERE citizen_id = %s;", (citizen_id,))
+            cit_res = cur.fetchone()
+            p_id = cit_res[0] if cit_res else None
+
+            emit_realtime_event('new_application', {
+                'type': 'Welfare Scheme',
+                'title': scheme_type,
+                'citizen_id': citizen_id,
+                'panchayat_id': p_id,
+                'status': 'Pending'
+            }, p_id)
+
             flash(f'Successfully applied for {scheme_type} welfare scheme!', 'success')
             
         return redirect(url_for('citizen_dashboard', user_id=user_id, citizen_id=citizen_id))
@@ -3134,46 +3555,34 @@ def monitor_dashboard(user_id):
     
     try:
         with conn.cursor() as cur:
-            # Get panchayat data
+            # Single aggregated query joining Panchayats and Citizens to eliminate N+1 queries
             cur.execute("""
-                SELECT panchayat_id, panchayat_name, establishment_date, area_sq_km, contact_email, contact_phone
-                FROM Panchayats;
+                SELECT p.panchayat_id, p.panchayat_name, p.establishment_date, 
+                       p.area_sq_km, p.contact_email, p.contact_phone, 
+                       COUNT(c.citizen_id) AS population
+                FROM Panchayats p
+                LEFT JOIN Citizens c ON p.panchayat_id = c.panchayat_id
+                GROUP BY p.panchayat_id, p.panchayat_name, p.establishment_date, 
+                         p.area_sq_km, p.contact_email, p.contact_phone
+                ORDER BY p.panchayat_name;
             """)
-            panchayats = cur.fetchall()
+            panchayats_data = cur.fetchall()
             
-            # Count total number of panchayats
-            total_panchayats = len(panchayats)
+            total_panchayats = len(panchayats_data)
+            total_population = sum(row[6] for row in panchayats_data)
             
-            # Count total population from citizens table
-            cur.execute("""
-                SELECT COUNT(*) 
-                FROM Citizens;
-            """)
-            total_population = cur.fetchone()[0]
-            
-            # Get population count for each panchayat
-            panchayat_data = []
-            for row in panchayats:
-                panchayat_id = row[0]
-                
-                # Count citizens for this panchayat
-                cur.execute("""
-                    SELECT COUNT(*) 
-                    FROM Citizens 
-                    WHERE panchayat_id = %s;
-                """, (panchayat_id,))
-                
-                panchayat_population = cur.fetchone()[0]
-                
-                panchayat_data.append({
-                    "panchayat_id": panchayat_id,
+            panchayat_data = [
+                {
+                    "panchayat_id": row[0],
                     "panchayat_name": row[1],
-                    "establishment_date": row[2].strftime("%Y-%m-%d"),
+                    "establishment_date": row[2].strftime("%Y-%m-%d") if row[2] else "",
                     "area_sq_km": row[3],
                     "contact_email": row[4],
                     "contact_phone": row[5],
-                    "population": panchayat_population
-                })
+                    "population": row[6]
+                }
+                for row in panchayats_data
+            ]
             
         return render_template('government_dashboard.html', 
                               user_id=user_id, 
@@ -3219,48 +3628,38 @@ def village_details():
             panchayat_data = {
                 "panchayat_id": panchayat[0],
                 "panchayat_name": panchayat[1],
-                "establishment_date": panchayat[2].strftime("%Y-%m-%d"),
+                "establishment_date": panchayat[2].strftime("%Y-%m-%d") if panchayat[2] else "",
                 "area_sq_km": panchayat[3],
                 "contact_email": panchayat[4],
                 "contact_phone": panchayat[5]
             }
             
-            # Get employees for this panchayat - Updated to match the new table structure
+            # Get employees for this panchayat with single JOIN to eliminate loop queries
             cur.execute("""
-                SELECT employee_id, user_id, citizen_id, designation, join_date, end_date, 
-                       department, employment_type, salary
-                FROM Employees
-                WHERE panchayat_id = %s;
+                SELECT e.employee_id, e.user_id, e.citizen_id, e.designation, e.join_date, e.end_date, 
+                       e.department, e.employment_type, e.salary,
+                       COALESCE(c.first_name || ' ' || c.last_name, 'N/A') AS name
+                FROM Employees e
+                LEFT JOIN Citizens c ON e.citizen_id = c.citizen_id
+                WHERE e.panchayat_id = %s;
             """, (panchayat_id,))
             employees = cur.fetchall()
             
-            # Format employees data - Updated to match the new table structure
-            employee_data = []
-            for row in employees:
-                # If the employee is also a citizen, get their name
-                if (row[2]):  # If citizen_id exists
-                    cur.execute("""
-                        SELECT first_name, last_name
-                        FROM Citizens
-                        WHERE citizen_id = %s;
-                    """, (row[2],))
-                    citizen_info = cur.fetchone()
-                    name = f"{citizen_info[0]} {citizen_info[1]}" if citizen_info else "N/A"
-                else:
-                    name = "N/A"
-                
-                employee_data.append({
+            employee_data = [
+                {
                     "employee_id": row[0],
                     "user_id": row[1],
                     "citizen_id": row[2],
-                    "name": name,
+                    "name": row[9],
                     "designation": row[3],
                     "join_date": row[4].strftime("%Y-%m-%d") if row[4] else "N/A",
                     "end_date": row[5].strftime("%Y-%m-%d") if row[5] else "N/A",
                     "department": row[6],
                     "employment_type": row[7],
                     "salary": row[8]
-                })
+                }
+                for row in employees
+            ]
             
             # Get citizens for this panchayat - Updated to match the new table structure
             cur.execute("""
@@ -3668,6 +4067,256 @@ def admin_dashboard(admin_id):
 
     return render_template('admin.html', admin_id=admin_id, employees=employees, citizens=citizens, panchayats=panchayats, total_employees=total_employees, total_citizens=total_citizens, total_panchayats=total_panchayats, announcements=announcements)
 
+@app.route('/admin/access_employee_portal/<int:admin_id>/<int:employee_id>')
+def access_employee_portal(admin_id, employee_id):
+    conn = get_db_connection()
+    if not conn:
+        flash('Database connection error.', 'danger')
+        return redirect(url_for('error_page'))
+    try:
+        with conn.cursor() as cur:
+            cur.execute("SELECT department FROM Employees WHERE employee_id = %s;", (employee_id,))
+            res = cur.fetchone()
+            if not res:
+                flash('Employee not found.', 'danger')
+                return redirect(url_for('admin_dashboard', admin_id=admin_id))
+            
+            dept = (res[0] or 'Certificate').strip()
+            dept_lower = dept.lower()
+            
+            if 'tax' in dept_lower:
+                return redirect(url_for('tax', user_id=admin_id, employee_id=employee_id))
+            elif 'budget' in dept_lower:
+                return redirect(url_for('budget', user_id=admin_id, employee_id=employee_id))
+            elif 'service' in dept_lower:
+                return redirect(url_for('service', user_id=admin_id, employee_id=employee_id))
+            elif 'welfare' in dept_lower:
+                return redirect(url_for('welfare', user_id=admin_id, employee_id=employee_id))
+            elif 'patwari' in dept_lower:
+                return redirect(url_for('patwari', user_id=admin_id, employee_id=employee_id))
+            else:
+                return redirect(url_for('certificate', user_id=admin_id, employee_id=employee_id))
+    except Exception as e:
+        print("Error accessing employee portal:", e)
+        flash('Error redirecting to employee portal.', 'danger')
+        return redirect(url_for('admin_dashboard', admin_id=admin_id))
+    finally:
+        conn.close()
+
+@app.route('/admin/preview_module/<int:admin_id>/<string:module_name>')
+def admin_preview_module(admin_id, module_name):
+    conn = get_db_connection()
+    if not conn:
+        flash('Database connection error.', 'danger')
+        return redirect(url_for('admin_dashboard', admin_id=admin_id))
+    try:
+        with conn.cursor() as cur:
+            # Query employee record created specifically for Admin under this department
+            cur.execute("""
+                SELECT employee_id FROM Employees 
+                WHERE user_id = %s AND LOWER(department) LIKE %s 
+                ORDER BY employee_id LIMIT 1;
+            """, (admin_id, f'%{module_name.lower()}%'))
+            emp_res = cur.fetchone()
+            
+            if not emp_res:
+                # Fallback to any employee record for Admin
+                cur.execute("SELECT employee_id FROM Employees WHERE user_id = %s ORDER BY employee_id LIMIT 1;", (admin_id,))
+                emp_res = cur.fetchone()
+
+            if not emp_res:
+                # General fallback to system employees
+                cur.execute("SELECT employee_id FROM Employees WHERE LOWER(department) LIKE %s ORDER BY employee_id LIMIT 1;", (f'%{module_name.lower()}%',))
+                emp_res = cur.fetchone()
+            
+            if not emp_res:
+                flash(f'No employee profile registered for {module_name} module.', 'warning')
+                return redirect(url_for('admin_dashboard', admin_id=admin_id))
+            
+            employee_id = emp_res[0]
+            
+            dept_route_map = {
+                'certificate': 'certificate',
+                'patwari': 'patwari',
+                'budget': 'budget',
+                'service': 'service',
+                'tax': 'tax',
+                'welfare': 'welfare'
+            }
+            target_route = dept_route_map.get(module_name.lower(), 'certificate')
+            return redirect(url_for(target_route, user_id=admin_id, employee_id=employee_id))
+    except Exception as e:
+        print("Error previewing module:", e)
+        flash('Error previewing module.', 'danger')
+        return redirect(url_for('admin_dashboard', admin_id=admin_id))
+    finally:
+        conn.close()
+
+@app.route('/admin/preview_citizen_portal/<int:admin_id>')
+def admin_preview_citizen_portal(admin_id):
+    conn = get_db_connection()
+    if not conn:
+        flash('Database connection error.', 'danger')
+        return redirect(url_for('admin_dashboard', admin_id=admin_id))
+    try:
+        with conn.cursor() as cur:
+            # Query citizen record created specifically for Admin
+            cur.execute("SELECT citizen_id FROM Citizens WHERE user_id = %s LIMIT 1;", (admin_id,))
+            c_res = cur.fetchone()
+            if not c_res:
+                cur.execute("SELECT citizen_id FROM Citizens ORDER BY citizen_id LIMIT 1;")
+                c_res = cur.fetchone()
+                
+            if not c_res:
+                flash('No citizen account found for Admin preview.', 'warning')
+                return redirect(url_for('admin_dashboard', admin_id=admin_id))
+            
+            sample_citizen_id = c_res[0]
+            
+            cur.execute("""
+                SELECT first_name, last_name, panchayat_id
+                FROM Citizens 
+                WHERE citizen_id = %s
+            """, (sample_citizen_id,))
+            c_info = cur.fetchone()
+            
+            village_info = {}
+            if c_info:
+                panchayat_id = c_info[2]
+                cur.execute("""
+                    SELECT p.panchayat_name, p.establishment_date, p.area_sq_km, 
+                           p.contact_email, p.contact_phone, a.block_name, a.district_name, 
+                           a.state_name, a.pin_code, a.country
+                    FROM Panchayats p
+                    JOIN Address a ON p.address_id = a.address_id
+                    WHERE p.panchayat_id = %s
+                """, (panchayat_id,))
+                p_info = cur.fetchone()
+                if p_info:
+                    village_info = {
+                        'panchayat_name': p_info[0],
+                        'establishment_date': p_info[1],
+                        'area_sq_km': p_info[2],
+                        'contact_email': p_info[3],
+                        'contact_phone': p_info[4],
+                        'block_name': p_info[5],
+                        'district_name': p_info[6],
+                        'state_name': p_info[7],
+                        'pin_code': p_info[8],
+                        'country': p_info[9],
+                        'address': f"{p_info[5]}, {p_info[6]}, {p_info[7]} - {p_info[8]}, {p_info[9]}"
+                    }
+
+            citizen_data = {
+                'name': 'Panchayat Admin (Citizen Portal Preview)',
+                'total_tax_due': 0,
+                'certificates': [],
+                'pending_certificates': 0,
+                'approved_certificates': 0,
+                'service_requests': [],
+                'welfare_schemes': [],
+                'announcements': [],
+                'recent_activities': [],
+                'certificate_types': [],
+                'tax_payments': [],
+                'available_welfare_schemes': [],
+                'panchayat_members': [],
+                'village_info': village_info
+            }
+            if c_info:
+                panchayat_id = c_info[2]
+                cur.execute("""
+                    SELECT p.panchayat_name, p.establishment_date, p.area_sq_km, 
+                           p.contact_email, p.contact_phone, a.block_name, a.district_name, 
+                           a.state_name, a.pin_code, a.country
+                    FROM Panchayats p
+                    JOIN Address a ON p.address_id = a.address_id
+                    WHERE p.panchayat_id = %s
+                """, (panchayat_id,))
+                p_info = cur.fetchone()
+                if p_info:
+                    village_info = {
+                        'panchayat_name': p_info[0],
+                        'establishment_date': p_info[1],
+                        'area_sq_km': p_info[2],
+                        'contact_email': p_info[3],
+                        'contact_phone': p_info[4],
+                        'block_name': p_info[5],
+                        'district_name': p_info[6],
+                        'state_name': p_info[7],
+                        'pin_code': p_info[8],
+                        'country': p_info[9],
+                        'address': f"{p_info[5]}, {p_info[6]}, {p_info[7]} - {p_info[8]}, {p_info[9]}"
+                    }
+                    citizen_data['village_info'] = village_info
+                    
+            cur.execute("SELECT announcement_id, heading, detail, date FROM Announcements ORDER BY date DESC LIMIT 5;")
+            announcements = cur.fetchall()
+
+            cur.execute("""
+                SELECT type_id, type, description 
+                FROM Certificate_Type
+                ORDER BY type
+            """)
+            certificate_types = cur.fetchall()
+            citizen_data['certificate_types'] = certificate_types
+            
+            return render_template('citizens.html', 
+                                   user_id=admin_id, 
+                                   citizen_id=sample_citizen_id, 
+                                   data=citizen_data, 
+                                   village_info=village_info,
+                                   announcements=announcements,
+                                   recent_activities=[],
+                                   is_admin_preview=True)
+    except Exception as e:
+        print("Error previewing citizen portal:", e)
+        flash('Error opening citizen portal preview.', 'danger')
+        return redirect(url_for('admin_dashboard', admin_id=admin_id))
+    finally:
+        conn.close()
+
+@app.route('/admin/reset_password', methods=['POST'])
+def admin_reset_password():
+    data = request.get_json() or request.form
+    target_type = data.get('type')
+    target_id = data.get('id')
+    new_password = data.get('new_password')
+
+    if not target_id or not new_password or not str(new_password).strip():
+        return jsonify({'success': False, 'message': 'Password cannot be empty.'})
+
+    conn = get_db_connection()
+    if not conn:
+        return jsonify({'success': False, 'message': 'Database connection error.'})
+
+    try:
+        with conn.cursor() as cur:
+            user_id = None
+            if target_type == 'employee':
+                cur.execute("SELECT user_id FROM Employees WHERE employee_id = %s;", (target_id,))
+                res = cur.fetchone()
+                if res: user_id = res[0]
+            elif target_type == 'citizen':
+                cur.execute("SELECT user_id FROM Citizens WHERE citizen_id = %s;", (target_id,))
+                res = cur.fetchone()
+                if res: user_id = res[0]
+            else:
+                user_id = target_id
+
+            if not user_id:
+                return jsonify({'success': False, 'message': 'Associated user account not found.'})
+
+            pwd_hash = hash_password(str(new_password).strip())
+            cur.execute("UPDATE Users SET password_hash = %s WHERE user_id = %s;", (pwd_hash, user_id))
+            conn.commit()
+            return jsonify({'success': True, 'message': 'Password updated successfully!'})
+    except Exception as e:
+        print("Reset password error:", e)
+        return jsonify({'success': False, 'message': str(e)})
+    finally:
+        conn.close()
+
 @app.route('/get_employee/<int:employee_id>', methods=['GET'])
 def get_employee(employee_id):
     conn = get_db_connection()
@@ -3747,7 +4396,37 @@ def update_employee(employee_id):
 
     try:
         with conn.cursor() as cur:
-            cur.execute(query, tuple(params))
+            if updates:
+                cur.execute(query, tuple(params))
+            if 'password' in data and data['password'] and data['password'].strip():
+                new_pwd = data['password'].strip()
+                new_pwd_hash = hash_password(new_pwd)
+                cur.execute("""
+                    SELECT e.user_id, c.email, e.designation 
+                    FROM Employees e 
+                    LEFT JOIN Citizens c ON e.citizen_id = c.citizen_id 
+                    WHERE e.employee_id = %s;
+                """, (employee_id,))
+                e_res = cur.fetchone()
+                if e_res:
+                    u_id, e_email, designation = e_res[0], e_res[1], e_res[2]
+                    if u_id:
+                        cur.execute("UPDATE Users SET password_hash = %s WHERE user_id = %s;", (new_pwd_hash, u_id))
+                    elif e_email:
+                        cur.execute("SELECT user_id FROM Users WHERE LOWER(email) = LOWER(%s);", (e_email,))
+                        u_match = cur.fetchone()
+                        if u_match:
+                            u_id = u_match[0]
+                            cur.execute("UPDATE Users SET password_hash = %s WHERE user_id = %s;", (new_pwd_hash, u_id))
+                            cur.execute("UPDATE Employees SET user_id = %s WHERE employee_id = %s;", (u_id, employee_id))
+                        else:
+                            cur.execute("""
+                                INSERT INTO Users (email, password_hash, user_type, status)
+                                VALUES (%s, %s, %s, 'Active')
+                                RETURNING user_id;
+                            """, (e_email, new_pwd_hash, designation or 'Employee'))
+                            new_u_id = cur.fetchone()[0]
+                            cur.execute("UPDATE Employees SET user_id = %s WHERE employee_id = %s;", (new_u_id, employee_id))
         return jsonify({'success': True})
     except Exception as e:
         print("Update error (Employees):", e)
@@ -3822,10 +4501,10 @@ def add_employee():
                         WHERE user_id = %s
                     """, (user_id,))
             else:
-                # Create a new user with default password hash
+                # Create a new user with default password hash for 'GramPanchayat'
                 cur.execute("""
                     INSERT INTO Users (email, password_hash, user_type, status)
-                    VALUES (%s, 'a79fd720a40343cbfa6c1c1a2a12564326127aebcd8f21c6490102054e388a5c', 'Employee', 'Active')
+                    VALUES (%s, '1b0ce6ad7d50c0352b9e0e825567faca9208ec3e00298eae502532c1cfeb6b74', 'Employee', 'Active')
                     RETURNING user_id;
                 """, (email_to_use,))
                 user_id = cur.fetchone()[0]
@@ -3962,7 +4641,33 @@ def update_citizen(citizen_id):
 
     try:
         with conn.cursor() as cur:
-            cur.execute(query, tuple(params))
+            if updates:
+                cur.execute(query, tuple(params))
+            
+            if 'password' in data and data['password'] and data['password'].strip():
+                new_pwd = data['password'].strip()
+                new_pwd_hash = hash_password(new_pwd)
+                cur.execute("SELECT user_id, email FROM Citizens WHERE citizen_id = %s;", (citizen_id,))
+                c_res = cur.fetchone()
+                if c_res:
+                    u_id, c_email = c_res[0], c_res[1]
+                    if u_id:
+                        cur.execute("UPDATE Users SET password_hash = %s WHERE user_id = %s;", (new_pwd_hash, u_id))
+                    elif c_email:
+                        cur.execute("SELECT user_id FROM Users WHERE LOWER(email) = LOWER(%s);", (c_email,))
+                        u_match = cur.fetchone()
+                        if u_match:
+                            u_id = u_match[0]
+                            cur.execute("UPDATE Users SET password_hash = %s WHERE user_id = %s;", (new_pwd_hash, u_id))
+                            cur.execute("UPDATE Citizens SET user_id = %s WHERE citizen_id = %s;", (u_id, citizen_id))
+                        else:
+                            cur.execute("""
+                                INSERT INTO Users (email, password_hash, user_type, status)
+                                VALUES (%s, %s, 'Citizen', 'Active')
+                                RETURNING user_id;
+                            """, (c_email, new_pwd_hash))
+                            new_u_id = cur.fetchone()[0]
+                            cur.execute("UPDATE Citizens SET user_id = %s WHERE citizen_id = %s;", (new_u_id, citizen_id))
             
             # Handle household_id separately
             if 'household_id' in data:
@@ -4238,6 +4943,8 @@ def request_service(user_id, citizen_id):
         # Get form data - important: match exact parameter names from the form
         service_id = request.form.get('service-id')
         description = request.form.get('description', '')
+        doc_file = request.files.get('document')
+        doc_path = save_uploaded_document(doc_file)
         
         # Debug output to help diagnose form submission issues
         print(f"Request form data: {request.form}")
@@ -4266,14 +4973,25 @@ def request_service(user_id, citizen_id):
                     flash('Selected service does not exist', 'danger')
                     return redirect(url_for('citizen_dashboard', user_id=user_id, citizen_id=citizen_id))
                 
-                # Fix: Remove the extra comma in the query
                 cur.execute("""
                     INSERT INTO Service_Request
-                    (citizen_id, service_id, request_date, description, status)
-                    VALUES (%s, %s, CURRENT_DATE, %s, %s)
-                """, (citizen_id, service_id, description, 'Pending'))
+                    (citizen_id, service_id, request_date, description, status, document_path)
+                    VALUES (%s, %s, CURRENT_DATE, %s, %s, %s)
+                """, (citizen_id, service_id, description, 'Pending', doc_path))
                 
                 conn.commit()
+                cur.execute("SELECT panchayat_id FROM Citizens WHERE citizen_id = %s;", (citizen_id,))
+                cit_res = cur.fetchone()
+                p_id = cit_res[0] if cit_res else None
+
+                emit_realtime_event('new_application', {
+                    'type': 'Service Request',
+                    'title': service[0],
+                    'citizen_id': citizen_id,
+                    'panchayat_id': p_id,
+                    'status': 'Pending'
+                }, p_id)
+
                 flash(f'Your request for {service[0]} service has been submitted successfully.', 'success')
                 
         except Exception as e:
@@ -4377,6 +5095,70 @@ def get_certificate_details(certificate_id):
     finally:
         conn.close()
 
+from datetime import timedelta
+
+def cleanup_old_documents(months=6):
+    """
+    Deletes physical files and sets document_path to NULL for applications
+    older than the specified number of months (default: 6 months).
+    """
+    conn = get_db_connection()
+    if not conn:
+        return 0
+
+    deleted_count = 0
+    cutoff_date = datetime.now() - timedelta(days=months * 30)
+
+    try:
+        cur = conn.cursor(cursor_factory=psycopg2.extras.DictCursor)
+        tables = [
+            ('certificate', 'application_date'),
+            ('Service_Request', 'request_date'),
+            ('Citizen_welfare_Schema', 'request_date')
+        ]
+
+        for table, date_col in tables:
+            cur.execute(f"SELECT document_path FROM {table} WHERE {date_col} < %s AND document_path IS NOT NULL;", (cutoff_date,))
+            rows = cur.fetchall()
+            for row in rows:
+                doc_path = row['document_path'] if row else None
+                if doc_path:
+                    clean_rel_path = doc_path.lstrip('/')
+                    full_path = os.path.join(app.root_path, clean_rel_path)
+                    if os.path.exists(full_path):
+                        try:
+                            os.remove(full_path)
+                            deleted_count += 1
+                        except Exception as file_err:
+                            print(f"Cleanup error removing {full_path}: {file_err}")
+            
+            cur.execute(f"UPDATE {table} SET document_path = NULL WHERE {date_col} < %s AND document_path IS NOT NULL;", (cutoff_date,))
+
+        conn.commit()
+        print(f"Document cleanup completed. Removed {deleted_count} files older than {months} months.")
+    except Exception as e:
+        print(f"Error during document cleanup: {e}")
+    finally:
+        conn.close()
+    return deleted_count
+
+@app.route('/admin/cleanup_documents', methods=['POST'])
+def admin_cleanup_documents():
+    count = cleanup_old_documents(months=6)
+    return jsonify({
+        "success": True,
+        "message": f"Successfully cleaned up documents older than 6 months. Removed {count} document file(s)."
+    })
+
 if __name__ == "__main__":
+    init_db_schema()
+    init_db_pool()
+    try:
+        cleanup_old_documents(months=6)
+    except Exception as e:
+        print(f"Startup cleanup notice: {e}")
     port = int(os.environ.get("PORT", 5000))
-    app.run(host="0.0.0.0", port=port)
+    if socketio:
+        socketio.run(app, host="0.0.0.0", port=port, allow_unsafe_werkzeug=True)
+    else:
+        app.run(host="0.0.0.0", port=port)

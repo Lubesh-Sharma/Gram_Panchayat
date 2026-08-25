@@ -1,0 +1,22 @@
+{
+  "short_name": "GPMS",
+  "name": "Gram Panchayat Management System",
+  "description": "Empowering Rural Governance with Real-Time Services and Transparent Administration",
+  "icons": [
+    {
+      "src": "/static/images/logo.jpeg",
+      "sizes": "192x192",
+      "type": "image/jpeg"
+    },
+    {
+      "src": "/static/images/logo.jpeg",
+      "sizes": "512x512",
+      "type": "image/jpeg"
+    }
+  ],
+  "start_url": "/",
+  "background_color": "#073763",
+  "theme_color": "#073763",
+  "display": "standalone",
+  "orientation": "portrait"
+}

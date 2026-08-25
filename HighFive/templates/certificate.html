@@ -40,15 +40,15 @@
                 <i class="fas fa-key"></i>
                 <span>Change Password</span>
             </div>
-            <div class="menu-item" data-section="citizen-portal"
-                onclick="window.location.href=&apos;{{ url_for('citizen_dashboard', user_id=user_id, citizen_id=employee.citizen_id) }}&apos;">
+            <a class="menu-item" data-section="citizen-portal"
+                href="{{ url_for('citizen_dashboard', user_id=user_id, citizen_id=employee.citizen_id) }}">
                 <i class="fas fa-user"></i>
                 <span>Your Citizen Portal</span>
-            </div>
-            <div class="menu-item" onclick="window.location.href='{{ url_for('landing') }}'">
+            </a>
+            <a class="menu-item" href="{{ url_for('landing') }}">
                 <i class="fas fa-sign-out-alt"></i>
                 <span>Logout</span>
-            </div>
+            </a>
         </div>
     </aside>
 
@@ -203,6 +203,7 @@
                                         <th>Type</th>
                                         <th>Application Date</th>
                                         <th>Details</th>
+                                        <th>Document</th>
                                         <th>Actions</th>
                                     </tr>
                                 </thead>
@@ -215,6 +216,15 @@
                                         <td>{{ cert.type }}</td>
                                         <td>{{ cert.application_date }}</td>
                                         <td>{{ cert.description }}</td>
+                                        <td>
+                                            {% if cert.document_path %}
+                                            <a href="{{ cert.document_path }}" target="_blank" class="btn btn-info btn-sm text-white">
+                                                <i class="fas fa-file-pdf"></i> View Doc
+                                            </a>
+                                            {% else %}
+                                            <span class="text-muted">None</span>
+                                            {% endif %}
+                                        </td>
                                         <td>
                                             <div class="action-btns">
                                                 <button class="btn btn-success btn-sm mr-2"
@@ -1103,6 +1113,11 @@
             });
         });
     </script>
+    <script>
+        window.CURRENT_PANCHAYAT_ID = "{{ employee.panchayat_id if employee else '' }}";
+    </script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/socket.io/4.7.2/socket.io.min.js"></script>
+    <script src="{{ url_for('static', filename='scripts/realtime_notifications.js') }}"></script>
 </body>
 
 </html>

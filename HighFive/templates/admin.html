@@ -45,6 +45,24 @@
         <div class="main-content">
             <!-- Dashboard Section -->
             <div class="content-section active" id="dashboard">
+                <!-- Direct System Module & Portal Access Preview Banner -->
+                <div class="card mb-4" style="background: linear-gradient(135deg, #073763 0%, #0056b3 100%); color: white; padding: 20px; border-radius: 10px; margin-bottom: 25px; box-shadow: 0 4px 15px rgba(0,0,0,0.15);">
+                    <h4 style="margin-bottom: 10px; font-size: 1.15rem; font-weight: 600; display: flex; align-items: center; color: #ffffff;">
+                        <i class="fas fa-th-large" style="margin-right: 10px; color: #ffc107;"></i> System Module & Portal Previews (Admin Context)
+                    </h4>
+                    <p style="margin-bottom: 15px; font-size: 0.88rem; opacity: 0.9; color: #e0e0e0;">
+                        Directly access and inspect all system module views under Panchayat Admin role. To debug a specific citizen's account, use Password Reset below.
+                    </p>
+                    <div style="display: flex; flex-wrap: wrap; gap: 10px;">
+                        <a href="{{ url_for('admin_preview_module', admin_id=admin_id, module_name='certificate') }}" class="btn" style="background: #ffffff; color: #073763; font-size: 13px; font-weight: 600; padding: 7px 12px; border-radius: 5px; text-decoration: none; display: inline-flex; align-items: center;"><i class="fas fa-certificate" style="margin-right: 6px; color: #007bff;"></i> Certificate Module</a>
+                        <a href="{{ url_for('admin_preview_module', admin_id=admin_id, module_name='patwari') }}" class="btn" style="background: #ffffff; color: #073763; font-size: 13px; font-weight: 600; padding: 7px 12px; border-radius: 5px; text-decoration: none; display: inline-flex; align-items: center;"><i class="fas fa-map-marked-alt" style="margin-right: 6px; color: #28a745;"></i> Patwari Land Records</a>
+                        <a href="{{ url_for('admin_preview_module', admin_id=admin_id, module_name='budget') }}" class="btn" style="background: #ffffff; color: #073763; font-size: 13px; font-weight: 600; padding: 7px 12px; border-radius: 5px; text-decoration: none; display: inline-flex; align-items: center;"><i class="fas fa-wallet" style="margin-right: 6px; color: #ffc107;"></i> Budget Portal</a>
+                        <a href="{{ url_for('admin_preview_module', admin_id=admin_id, module_name='tax') }}" class="btn" style="background: #ffffff; color: #073763; font-size: 13px; font-weight: 600; padding: 7px 12px; border-radius: 5px; text-decoration: none; display: inline-flex; align-items: center;"><i class="fas fa-receipt" style="margin-right: 6px; color: #17a2b8;"></i> Tax Portal</a>
+                        <a href="{{ url_for('admin_preview_module', admin_id=admin_id, module_name='service') }}" class="btn" style="background: #ffffff; color: #073763; font-size: 13px; font-weight: 600; padding: 7px 12px; border-radius: 5px; text-decoration: none; display: inline-flex; align-items: center;"><i class="fas fa-concierge-bell" style="margin-right: 6px; color: #6c757d;"></i> Services Portal</a>
+                        <a href="{{ url_for('admin_preview_citizen_portal', admin_id=admin_id) }}" class="btn" style="background: #ffc107; color: #000; font-size: 13px; font-weight: 700; padding: 7px 12px; border-radius: 5px; text-decoration: none; display: inline-flex; align-items: center;"><i class="fas fa-user-circle" style="margin-right: 6px;"></i> Citizen Portal Preview</a>
+                    </div>
+                </div>
+
                 <div class="dashboard-cards">
                     <div class="card">
                         <div class="card-icon employees-icon">
@@ -448,6 +466,11 @@
                         <option value="Contract">Contract</option>
                     </select>
                 </div>
+                <div class="form-group" style="margin-top: 15px; border-top: 1px solid #e0e0e0; padding-top: 15px;">
+                    <label for="editEmployeePassword" style="font-weight: 600; color: #073763;"><i class="fas fa-key" style="margin-right: 5px; color: #ffc107;"></i> Change Password (Optional)</label>
+                    <input type="password" id="editEmployeePassword" class="form-control" placeholder="Enter new password to update credentials">
+                    <small class="form-text text-muted" style="font-size: 12px; color: #6c757d;">Leave blank if you do not wish to change password.</small>
+                </div>
             </div>
             <div class="modal-footer">
                 <button class="btn btn-primary" id="updateEmployeeBtn">Update</button>
@@ -640,6 +663,11 @@
                     <label for="editCitizenHousehold">Household ID</label>
                     <input type="text" id="editCitizenHousehold" class="form-control">
                 </div>
+                <div class="form-group" style="margin-top: 15px; border-top: 1px solid #e0e0e0; padding-top: 15px;">
+                    <label for="editCitizenPassword" style="font-weight: 600; color: #073763;"><i class="fas fa-key" style="margin-right: 5px; color: #ffc107;"></i> Change Password (Optional)</label>
+                    <input type="password" id="editCitizenPassword" class="form-control" placeholder="Enter new password to update credentials">
+                    <small class="form-text text-muted" style="font-size: 12px; color: #6c757d;">Leave blank if you do not wish to change password.</small>
+                </div>
             </div>
             <div class="modal-footer">
 
@@ -830,6 +858,36 @@
     </div>
 
     <script src="{{ url_for('static', filename='scripts/admin.js') }}"></script>
+    <script>
+        window.CURRENT_PANCHAYAT_ID = "";
+    </script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/socket.io/4.7.2/socket.io.min.js"></script>
+    <script src="{{ url_for('static', filename='scripts/realtime_notifications.js') }}"></script>
+    <!-- Dedicated Admin Reset Password Modal -->
+    <div class="modal" id="adminResetPasswordModal">
+        <div class="modal-content" style="max-width: 450px;">
+            <div class="modal-header" style="background-color: #073763; color: white;">
+                <h2 class="modal-title" style="font-size: 1.15rem;"><i class="fas fa-key" style="color: #ffc107; margin-right: 8px;"></i> Reset Account Password</h2>
+                <button class="close-modal" id="closeResetPasswordModal" style="color: white;">&times;</button>
+            </div>
+            <div class="modal-body" style="padding: 20px;">
+                <p style="margin-bottom: 15px; font-weight: 500; font-size: 14px;">User Account: <span id="resetPasswordTargetName" style="color: #073763; font-weight: 700;"></span></p>
+                <input type="hidden" id="resetPasswordTargetType">
+                <input type="hidden" id="resetPasswordTargetId">
+                <div class="form-group">
+                    <label for="newResetPasswordInput" style="font-weight: 600;">Set New Password</label>
+                    <input type="password" id="newResetPasswordInput" class="form-control" placeholder="Enter new password (e.g., GramPanchayat)">
+                </div>
+                <small class="form-text text-muted" style="font-size: 12px; color: #6c757d; display: block; margin-top: 5px;">
+                    This will update the user's password in the database so you can log in directly under their account if debugging is required.
+                </small>
+            </div>
+            <div class="modal-footer">
+                <button class="btn btn-primary" id="confirmResetPasswordBtn" style="background-color: #073763; border: none;">Update Password</button>
+                <button class="btn btn-danger" id="cancelResetPasswordModal">Cancel</button>
+            </div>
+        </div>
+    </div>
 </body>
 
 </html>

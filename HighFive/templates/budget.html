@@ -34,14 +34,14 @@
         <i class="fas fa-key"></i>
         <span>Change Password</span>
       </div>
-      <div class="menu-item" onclick="window.location.href='/citizen/{{ user_id }}/{{ citizen_id }}'">
+      <a href="/citizen/{{ user_id }}/{{ citizen_id }}" class="menu-item">
         <i class="fas fa-user"></i>
         <span>Your Citizen Portal</span>
-      </div>
-      <div class="menu-item" onclick="window.location.href='{{ url_for('landing') }}'">
+      </a>
+      <a href="{{ url_for('landing') }}" class="menu-item">
         <i class="fas fa-sign-out-alt"></i>
         <span>Logout</span>
-      </div>
+      </a>
     </div>
   </aside>
 
@@ -55,9 +55,8 @@
         </div>
         <div class="nav-buttons">
           <button class="btn" id="changePasswordBtn">Change Password</button>
-          <button class="btn" onclick="window.location.href='/citizen/{{ user_id }}/{{ citizen_id }}'">Citizen
-            Dashboard</button>
-          <button class="btn" onclick="window.location.href='{{ url_for('landing') }}'">Logout</button>
+          <a href="/citizen/{{ user_id }}/{{ citizen_id }}" class="btn" style="text-decoration: none; color: #1a73e8; display: inline-block;">Citizen Dashboard</a>
+          <a href="{{ url_for('landing') }}" class="btn" style="text-decoration: none; color: #1a73e8; display: inline-block;">Logout</a>
         </div>
       </div>
 
@@ -203,7 +202,7 @@
                     <td>₹{{ "{:,.2f}".format(revenue.amount) }}</td>
                     <td>
                       <button class="delete-btn"
-                        onclick="confirmDeleteRevenue({{ revenue.revenue_id }})">Delete</button>
+                        onclick="confirmDeleteRevenue('{{ revenue.revenue_id }}')">Delete</button>
                     </td>
                   </tr>
                   {% endfor %}
@@ -258,7 +257,7 @@
                     <td>₹{{ "{:,.2f}".format(expense.amount) }}</td>
                     <td>
                       <button class="delete-btn"
-                        onclick="confirmDeleteExpense({{ expense.expense_id }})">Delete</button>
+                        onclick="confirmDeleteExpense('{{ expense.expense_id }}')">Delete</button>
                     </td>
                   </tr>
                   {% endfor %}
@@ -466,6 +465,11 @@
 
   <script src="https://cdnjs.cloudflare.com/ajax/libs/bootstrap/5.3.0/js/bootstrap.bundle.min.js"></script>
   <script src="{{ url_for('static', filename='scripts/budget.js') }}"></script>
+  <script>
+    window.CURRENT_PANCHAYAT_ID = "{{ panchayat.panchayat_id if panchayat else '' }}";
+  </script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/socket.io/4.7.2/socket.io.min.js"></script>
+  <script src="{{ url_for('static', filename='scripts/realtime_notifications.js') }}"></script>
 </body>
 
 </html>

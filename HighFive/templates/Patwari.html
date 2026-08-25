@@ -15,23 +15,12 @@
   <header>
     <div class="container header-container">
       <div class="logo">
-        
-      <div class="logo">
         <img src="{{ url_for('static', filename='images/logo.jpeg') }}" alt="GPMS Logo">
-      </div>
         <div class="logo-text">
           <h1>Gram Panchayat Management System</h1>
           <p>Land Records & Environment Management</p>
         </div>
       </div>
-
-      <nav>
-        <ul>
-          <li><a href="{{ url_for('landing') }}">Home</a></li>
-          <li><a href="#" class="active">Dashboard</a></li>
-          <li><a href="#" data-section="settings">Settings</a></li>
-        </ul>
-      </nav>
 
       <div class="user-panel">
         <div class="user-info">
@@ -243,8 +232,8 @@
                 <td>{{ land.type }}</td>
                 <td>{{ land.cropType }}</td>
                 <td>
-                  <button class="btn btn-sm btn-secondary" onclick="editLand({{ land.id }})">Edit</button>
-                  <button class="btn btn-sm btn-danger" onclick="deleteLand({{ land.id }})">Delete</button>
+                  <button class="btn btn-sm btn-secondary" onclick="editLand('{{ land.id }}')">Edit</button>
+                  <button class="btn btn-sm btn-danger" onclick="deleteLand('{{ land.id }}')">Delete</button>
                 </td>
               </tr>
               {% endfor %}
@@ -285,8 +274,8 @@
                 <td>{{ initiative.type }}</td>
                 <td>{{ initiative.status }}</td>
                 <td>
-                  <button class="btn btn-sm btn-secondary" onclick="editInitiative({{ initiative.id }})">Edit</button>
-                  <button class="btn btn-sm btn-danger" onclick="deleteInitiative({{ initiative.id }})">Delete</button>
+                  <button class="btn btn-sm btn-secondary" onclick="editInitiative('{{ initiative.id }}')">Edit</button>
+                  <button class="btn btn-sm btn-danger" onclick="deleteInitiative('{{ initiative.id }}')">Delete</button>
                 </td>
               </tr>
               {% endfor %}
@@ -327,8 +316,8 @@
                 <td>{{ system.source }}</td>
                 <td>{{ system.status }}</td>
                 <td>
-                  <button class="btn btn-sm btn-secondary" onclick="editSystem({{ system.id }})">Edit</button>
-                  <button class="btn btn-sm btn-danger" onclick="deleteSystem({{ system.id }})">Delete</button>
+                  <button class="btn btn-sm btn-secondary" onclick="editSystem('{{ system.id }}')">Edit</button>
+                  <button class="btn btn-sm btn-danger" onclick="deleteSystem('{{ system.id }}')">Delete</button>
                 </td>
               </tr>
               {% endfor %}
@@ -381,9 +370,9 @@
                 <td>{{ announcement.date }}</td>
                 <td>
                   <button class="btn btn-sm btn-secondary"
-                    onclick="editAnnouncement({{ announcement.id }})">Edit</button>
+                    onclick="editAnnouncement('{{ announcement.id }}')">Edit</button>
                   <button class="btn btn-sm btn-danger"
-                    onclick="deleteAnnouncement({{ announcement.id }})">Delete</button>
+                    onclick="deleteAnnouncement('{{ announcement.id }}')">Delete</button>
                 </td>
               </tr>
               {% endfor %}
@@ -648,39 +637,44 @@
   <script>
     // Store data from the backend for use in charts and JavaScript
     const statsData = {
-      agriculturalArea: {{ stats.agricultural_area|round(1) }},
-      residentialArea: {{ stats.residential_area|round(1) }},
-      commercialArea: {{ stats.commercial_area|round(1) }},
-      totalArea: {{ stats.total_area|round(1) }},
-      uniqueCitizens: {{ stats.unique_citizens }},
-      environmentalProjects: {{ stats.environmental_projects }},
-      irrigationCoverage: {{ stats.irrigation_coverage|round(1) }},
-      cultivationPercent: {{ stats.cultivation_percent|round(1) }}
+      agriculturalArea: Number("{{ (stats.agricultural_area|round(1)) if stats and stats.agricultural_area is not none else 0 }}"),
+      residentialArea: Number("{{ (stats.residential_area|round(1)) if stats and stats.residential_area is not none else 0 }}"),
+      commercialArea: Number("{{ (stats.commercial_area|round(1)) if stats and stats.commercial_area is not none else 0 }}"),
+      totalArea: Number("{{ (stats.total_area|round(1)) if stats and stats.total_area is not none else 0 }}"),
+      uniqueCitizens: Number("{{ stats.unique_citizens if stats and stats.unique_citizens is not none else 0 }}"),
+      environmentalProjects: Number("{{ stats.environmental_projects if stats and stats.environmental_projects is not none else 0 }}"),
+      irrigationCoverage: Number("{{ (stats.irrigation_coverage|round(1)) if stats and stats.irrigation_coverage is not none else 0 }}"),
+      cultivationPercent: Number("{{ (stats.cultivation_percent|round(1)) if stats and stats.cultivation_percent is not none else 0 }}")
     };
 
     const employeeData = {
-      id: "{{ employee_data.id }}",
-      name: "{{ employee_data.name }}",
-      designation: "{{ employee_data.designation }}",
-      department: "{{ employee_data.department }}",
-      panchayat_id: "{{ employee_data.panchayat_id }}",
-      citizen_id: "{{ employee_data.citizen_id }}"
+      id: "{{ employee_data.id if employee_data else '' }}",
+      name: "{{ employee_data.name if employee_data else '' }}",
+      designation: "{{ employee_data.designation if employee_data else '' }}",
+      department: "{{ employee_data.department if employee_data else '' }}",
+      panchayat_id: "{{ employee_data.panchayat_id if employee_data else '' }}",
+      citizen_id: "{{ employee_data.citizen_id if employee_data else '' }}"
     };
 
     // Census data for charts
     const censusData = {
-      total_citizens: {{ census.total_citizens|default(0) }},
-      male_citizens: {{ census.male_citizens|default(0) }},
-      female_citizens: {{ census.female_citizens|default(0) }},
-      households: {{ census.households|default(0) }}
+      total_citizens: Number("{{ census.total_citizens if census and census.total_citizens is not none else 0 }}"),
+      male_citizens: Number("{{ census.male_citizens if census and census.male_citizens is not none else 0 }}"),
+      female_citizens: Number("{{ census.female_citizens if census and census.female_citizens is not none else 0 }}"),
+      households: Number("{{ census.households if census and census.households is not none else 0 }}")
     };
 
     // User and employee IDs for API calls
-    const userId = {{ user_id }};
-    const employeeId = {{ employee_id }};
+    const userId = Number("{{ user_id if user_id is defined and user_id else 0 }}");
+    const employeeId = Number("{{ employee_id if employee_id is defined and employee_id else 0 }}");
   </script>
 
   <script src="{{ url_for('static', filename='scripts/Patwari.js') }}"></script>
+  <script>
+    window.CURRENT_PANCHAYAT_ID = "{{ employee_data.panchayat_id if employee_data else '' }}";
+  </script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/socket.io/4.7.2/socket.io.min.js"></script>
+  <script src="{{ url_for('static', filename='scripts/realtime_notifications.js') }}"></script>
 </body>
 
 </html>

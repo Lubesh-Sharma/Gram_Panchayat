@@ -47,15 +47,17 @@
                 <i class="fas fa-key"></i>
                 <span>Change Password</span>
             </div>
-            <div class="menu-item" data-section="citizen-portal"
-                onclick="window.location.href='{{ url_for('citizen_dashboard', user_id=user_id, citizen_id=employee.citizen_id) }}'">
+            {% if employee_name != 'Panchayat Admin' %}
+            <a class="menu-item" data-section="citizen-portal"
+                href="{{ url_for('citizen_dashboard', user_id=user_id, citizen_id=employee.citizen_id) }}">
                 <i class="fas fa-user"></i>
                 <span>Your Citizen Portal</span>
-            </div>
-            <div class="menu-item" onclick="window.location.href='{{ url_for('landing') }}'">
+            </a>
+            {% endif %}
+            <a class="menu-item" href="{{ url_for('landing') }}">
                 <i class="fas fa-sign-out-alt"></i>
                 <span>Logout</span>
-            </div>
+            </a>
         </div>
     </aside>
 
@@ -77,9 +79,11 @@
                             <li><a class="dropdown-item" href="#" data-bs-toggle="modal"
                                     data-bs-target="#changePasswordModal">Change password</a></li>
 
+                            {% if employee_name != 'Panchayat Admin' %}
                             <li><a class="dropdown-item"
-                                    href="{{ url_for('citizen_dashboard', user_id=user_id, citizen_id=employee.citizen_id) }}">Access
-                                    Citizen Portal</a></li>
+                                    href="{{ url_for('citizen_dashboard', user_id=user_id, citizen_id=employee.citizen_id) }}">Access Citizen Portal</a></li>
+                            {% endif %}
+                            <li><a class="dropdown-item" href="{{ url_for('landing') }}">Logout</a></li>
                             <li><a class="dropdown-item" href="{{ url_for('landing') }}">Logout</a></li>
                         </ul>
                     </li>
@@ -270,6 +274,7 @@
                                         <th>Service Type</th>
                                         <th>Request Date</th>
                                         <th>Description</th>
+                                        <th>Document</th>
                                         <th>Actions</th>
                                     </tr>
                                 </thead>
@@ -283,6 +288,15 @@
                                         <td>{{ req.request_date.strftime('%Y-%m-%d') if req.request_date else 'N/A' }}
                                         </td>
                                         <td>{{ req.description }}</td>
+                                        <td>
+                                            {% if req.document_path %}
+                                            <a href="{{ req.document_path }}" target="_blank" class="btn btn-info btn-sm text-white">
+                                                <i class="fas fa-file-pdf"></i> View Doc
+                                            </a>
+                                            {% else %}
+                                            <span class="text-muted">None</span>
+                                            {% endif %}
+                                        </td>
                                         <td>
                                             <button class="btn btn-success btn-sm"
                                                 onclick="showActionModal('{{ req.request_id }}', 'Resolved')">
@@ -750,6 +764,11 @@
         });
     </script>
     <script src="{{ url_for('static', filename='scripts/service.js') }}"></script>
+    <script>
+        window.CURRENT_PANCHAYAT_ID = "{{ employee.panchayat_id if employee else '' }}";
+    </script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/socket.io/4.7.2/socket.io.min.js"></script>
+    <script src="{{ url_for('static', filename='scripts/realtime_notifications.js') }}"></script>
 </body>
 
 </html>

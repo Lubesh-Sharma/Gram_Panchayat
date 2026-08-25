@@ -130,7 +130,6 @@ function getStatusClass(status) {
 }
 
 // Function to show a tax payment receipt
-// Function to show a tax payment receipt
 function showReceipt(paymentId, paymentDate, paymentMode, citizenName, panchayatName, amount) {
   // Get the receipt modal
   const modal = document.getElementById('receipt-modal');
@@ -188,6 +187,17 @@ function showReceipt(paymentId, paymentDate, paymentMode, citizenName, panchayat
   modal.style.display = 'flex';
 }
 
+function showTaxReceiptFromData(elem) {
+  showReceipt(
+    elem.getAttribute('data-id'),
+    elem.getAttribute('data-date'),
+    elem.getAttribute('data-mode'),
+    elem.getAttribute('data-name'),
+    elem.getAttribute('data-panchayat'),
+    elem.getAttribute('data-amount')
+  );
+}
+
 // Function to show the welfare application modal
 function showWelfareForm(scheme) {
   // Set the welfare scheme in the modal
@@ -219,17 +229,6 @@ function resetWelfareForm() {
   // Hide the modal
   document.getElementById('welfare-modal').style.display = 'none';
 }
-
-// Optional: Add document upload handling for welfare form
-document.addEventListener('DOMContentLoaded', function () {
-  const welfareDocArea = document.getElementById('welfare-doc-upload-area');
-  if (welfareDocArea) {
-    welfareDocArea.addEventListener('click', function () {
-      alert('Document upload functionality would be implemented here');
-      // In a real implementation, you would trigger a file input element
-    });
-  }
-});
 
 // Tab Switching Functionality
 document.addEventListener('DOMContentLoaded', function () {
@@ -361,115 +360,48 @@ function resetCertificateForm() {
   }
 }
 
-// Handle document uploads
+// Helper to setup drag and drop for real file inputs inside forms
+function setupFileUploadArea(areaId, inputId, listId) {
+  const area = document.getElementById(areaId);
+  const input = document.getElementById(inputId);
+  if (!area || !input) return;
+
+  area.addEventListener('dragover', function (e) {
+    e.preventDefault();
+    e.stopPropagation();
+    this.style.backgroundColor = '#e8f4fd';
+  });
+
+  area.addEventListener('dragleave', function (e) {
+    e.preventDefault();
+    e.stopPropagation();
+    this.style.backgroundColor = '';
+  });
+
+  area.addEventListener('drop', function (e) {
+    e.preventDefault();
+    e.stopPropagation();
+    this.style.backgroundColor = '';
+    if (e.dataTransfer.files && e.dataTransfer.files.length > 0) {
+      input.files = e.dataTransfer.files;
+      handleFileSelect(input, listId);
+    }
+  });
+}
+
+// Handle document uploads & drag/drop initialization
 document.addEventListener('DOMContentLoaded', function () {
-  const docUploadArea = document.getElementById('doc-upload-area');
-  if (docUploadArea) {
-    docUploadArea.addEventListener('click', function () {
-      // Create a file input element
-      const input = document.createElement('input');
-      input.type = 'file';
-      input.accept = '.pdf,.jpg,.jpeg,.png';
-      input.multiple = true;
-
-      // Handle file selection
-      input.onchange = function (e) {
-        const files = e.target.files;
-        const docList = document.getElementById('doc-list');
-
-        if (files && files.length > 0) {
-          for (let i = 0; i < files.length; i++) {
-            const file = files[i];
-
-            // Check file size (max 2MB)
-            if (file.size > 2 * 1024 * 1024) {
-              showNotification(`${file.name} is too large. Maximum file size is 2MB.`, 'warning');
-              continue;
-            }
-
-            // Add file to the list
-            const listItem = document.createElement('li');
-            listItem.innerHTML = `
-                <span>${file.name}</span>
-                <button type="button" class="remove-file">×</button>
-              `;
-
-            // Add remove button functionality
-            listItem.querySelector('.remove-file').addEventListener('click', function () {
-              listItem.remove();
-            });
-
-            docList.appendChild(listItem);
-          }
-        }
-      };
-
-      // Trigger file input click
-      input.click();
-    });
-
-    // Add drag and drop functionality
-    docUploadArea.addEventListener('dragover', function (e) {
-      e.preventDefault();
-      e.stopPropagation();
-      this.style.backgroundColor = '#f0f0f0';
-    });
-
-    docUploadArea.addEventListener('dragleave', function (e) {
-      e.preventDefault();
-      e.stopPropagation();
-      this.style.backgroundColor = '';
-    });
-
-    docUploadArea.addEventListener('drop', function (e) {
-      e.preventDefault();
-      e.stopPropagation();
-      this.style.backgroundColor = '';
-
-      const files = e.dataTransfer.files;
-      if (files && files.length > 0) {
-        const docList = document.getElementById('doc-list');
-
-        for (let i = 0; i < files.length; i++) {
-          const file = files[i];
-
-          // Check if it's an accepted file type
-          const fileType = file.name.split('.').pop().toLowerCase();
-          if (!['pdf', 'jpg', 'jpeg', 'png'].includes(fileType)) {
-            showNotification(`${file.name} is not an accepted file type.`, 'warning');
-            continue;
-          }
-
-          // Check file size (max 2MB)
-          if (file.size > 2 * 1024 * 1024) {
-            showNotification(`${file.name} is too large. Maximum file size is 2MB.`, 'warning');
-            continue;
-          }
-
-          // Add file to the list
-          const listItem = document.createElement('li');
-          listItem.innerHTML = `
-              <span>${file.name}</span>
-              <button type="button" class="remove-file">×</button>
-            `;
-
-          // Add remove button functionality
-          listItem.querySelector('.remove-file').addEventListener('click', function () {
-            listItem.remove();
-          });
-
-          docList.appendChild(listItem);
-        }
-      }
-    });
-  }
+  setupFileUploadArea('doc-upload-area', 'cert-doc-file', 'doc-list');
+  setupFileUploadArea('welfare-doc-upload-area', 'welfare-doc-file', 'welfare-doc-list');
+  setupFileUploadArea('service-doc-upload-area', 'service-doc-file', 'service-doc-list');
 
   // Form submission validation
   const certificateForm = document.getElementById('certificate-application-form');
   if (certificateForm) {
     certificateForm.addEventListener('submit', function (e) {
       const certificateType = document.getElementById('certificate-type-input').value;
-      const description = document.getElementById('description').value;
+      const descriptionEl = document.getElementById('cert-description') || document.getElementById('description');
+      const description = descriptionEl ? descriptionEl.value : '';
 
       // Basic validation
       if (!certificateType) {
@@ -569,109 +501,7 @@ function resetWelfareForm() {
   }
 }
 
-// Handle document uploads for welfare form
-document.addEventListener('DOMContentLoaded', function () {
-  const docUploadArea = document.getElementById('welfare-doc-upload-area');
-  if (docUploadArea) {
-    docUploadArea.addEventListener('click', function () {
-      // Create a file input element
-      const input = document.createElement('input');
-      input.type = 'file';
-      input.accept = '.pdf,.jpg,.jpeg,.png';
-      input.multiple = true;
 
-      // Handle file selection
-      input.onchange = function (e) {
-        const files = e.target.files;
-        const docList = document.getElementById('welfare-doc-list');
-
-        if (files && files.length > 0) {
-          for (let i = 0; i < files.length; i++) {
-            const file = files[i];
-
-            // Check file size (max 2MB)
-            if (file.size > 2 * 1024 * 1024) {
-              showNotification(`${file.name} is too large. Maximum file size is 2MB.`, 'warning');
-              continue;
-            }
-
-            // Add file to the list
-            const listItem = document.createElement('li');
-            listItem.innerHTML = `
-                            <span>${file.name}</span>
-                            <button type="button" class="remove-file">×</button>
-                        `;
-
-            // Add remove button functionality
-            listItem.querySelector('.remove-file').addEventListener('click', function () {
-              listItem.remove();
-            });
-
-            docList.appendChild(listItem);
-          }
-        }
-      };
-
-      // Trigger file input click
-      input.click();
-    });
-
-    // Add drag and drop functionality
-    docUploadArea.addEventListener('dragover', function (e) {
-      e.preventDefault();
-      e.stopPropagation();
-      this.style.backgroundColor = '#f0f0f0';
-    });
-
-    docUploadArea.addEventListener('dragleave', function (e) {
-      e.preventDefault();
-      e.stopPropagation();
-      this.style.backgroundColor = '';
-    });
-
-    docUploadArea.addEventListener('drop', function (e) {
-      e.preventDefault();
-      e.stopPropagation();
-      this.style.backgroundColor = '';
-
-      const files = e.dataTransfer.files;
-      if (files && files.length > 0) {
-        const docList = document.getElementById('welfare-doc-list');
-
-        for (let i = 0; i < files.length; i++) {
-          const file = files[i];
-
-          // Check if it's an accepted file type
-          const fileType = file.name.split('.').pop().toLowerCase();
-          if (!['pdf', 'jpg', 'jpeg', 'png'].includes(fileType)) {
-            showNotification(`${file.name} is not an accepted file type.`, 'warning');
-            continue;
-          }
-
-          // Check file size (max 2MB)
-          if (file.size > 2 * 1024 * 1024) {
-            showNotification(`${file.name} is too large. Maximum file size is 2MB.`, 'warning');
-            continue;
-          }
-
-          // Add file to the list
-          const listItem = document.createElement('li');
-          listItem.innerHTML = `
-                        <span>${file.name}</span>
-                        <button type="button" class="remove-file">×</button>
-                    `;
-
-          // Add remove button functionality
-          listItem.querySelector('.remove-file').addEventListener('click', function () {
-            listItem.remove();
-          });
-
-          docList.appendChild(listItem);
-        }
-      }
-    });
-  }
-});
 // Service Request Functions
 function showServiceForm(serviceType, serviceId) {
   console.log(`Opening service request form for: ${serviceType} (ID: ${serviceId})`);
@@ -993,72 +823,7 @@ function getStatusClass(status) {
   }
 }
 
-// Add this utility function to find elements by text content
-if (!document.querySelector(':contains')) {
-  // This is needed because we don't have jQuery's :contains selector
-  document.querySelectorAll = (function (originalQSA) {
-    return function (selector) {
-      // Extract the search text from the contains selector
-      if (selector.includes(':contains')) {
-        const containsText = selector.match(/:contains\("(.+?)"\)/)[1];
-        // Get all elements matching the basic selector
-        const basicSelector = selector.replace(/:contains\("(.+?)"\)/, '');
-        const elements = originalQSA.call(this, basicSelector || '*');
-        // Filter for elements containing the text
-        return Array.prototype.filter.call(elements, el =>
-          el.textContent.includes(containsText)
-        );
-      }
-      return originalQSA.call(this, selector);
-    };
-  })(document.querySelectorAll);
-}
 
-// Function to fetch and display services
-function fetchAndDisplayServices() {
-  console.log('Fetching services from server...');
-
-  // Display loading indicator
-  const servicesGrid = document.querySelector('#services .services-grid');
-  if (servicesGrid) {
-    servicesGrid.innerHTML = '<div class="loading-spinner" style="margin: 2rem auto; text-align: center;">Loading services...</div>';
-  }
-
-  // Fetch services from the server
-  fetch('/get_services')
-    .then(response => {
-      console.log('Response status:', response.status);
-      return response.json();
-    })
-    .then(data => {
-      console.log('Services data received:', data);
-
-      if (data.success && data.services) {
-        // Clear any existing content
-        servicesGrid.innerHTML = '';
-
-        if (data.services.length === 0) {
-          servicesGrid.innerHTML = '<div class="alert" style="width:100%; text-align:center;">No services are currently available.</div>';
-          return;
-        }
-
-        // Add service cards
-        console.log(`Creating ${data.services.length} service cards`);
-        data.services.forEach(service => {
-          console.log(`Creating card for ${service.type} (ID: ${service.id})`);
-          const serviceCard = createServiceCard(service);
-          servicesGrid.appendChild(serviceCard);
-        });
-      } else {
-        console.error('Failed to load services:', data.message);
-        servicesGrid.innerHTML = '<div class="alert" style="background-color: #f8d7da; color: #721c24; padding: 1rem; border: 1px solid #f5c6cb; border-radius: 4px; margin: 1rem auto; max-width: 600px;">Failed to load services. Please refresh the page.</div>';
-      }
-    })
-    .catch(error => {
-      console.error('Error fetching services:', error);
-      servicesGrid.innerHTML = '<div class="alert" style="background-color: #f8d7da; color: #721c24; padding: 1rem; border: 1px solid #f5c6cb; border-radius: 4px; margin: 1rem auto; max-width: 600px;">Server error. Please try again later.</div>';
-    });
-}
 
 // Make sure services are loaded when the page is first loaded and services tab is active
 document.addEventListener('DOMContentLoaded', function () {
@@ -1243,4 +1008,24 @@ function showCertificateDetails(certificateId) {
         </div>
       `;
     });
+}
+
+function handleFileSelect(input, listId) {
+  const list = document.getElementById(listId);
+  if (!list) return;
+  list.innerHTML = '';
+  if (input.files && input.files[0]) {
+    const file = input.files[0];
+    const li = document.createElement('li');
+    li.style.cssText = 'padding: 8px 12px; background: #e8f4fd; border-radius: 4px; display: flex; align-items: center; justify-content: space-between; margin-top: 8px; font-weight: 500; color: #073763;';
+    li.innerHTML = `<span>📄 ${file.name} (${(file.size / 1024 / 1024).toFixed(2)} MB)</span> <span style="cursor:pointer; color:#c00;" onclick="clearFileInput('${input.id}', '${listId}')">✖</span>`;
+    list.appendChild(li);
+  }
+}
+
+function clearFileInput(inputId, listId) {
+  const input = document.getElementById(inputId);
+  if (input) input.value = '';
+  const list = document.getElementById(listId);
+  if (list) list.innerHTML = '';
 }

@@ -4,7 +4,20 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Gram Panchayat Management System</title>
+    <link rel="manifest" href="{{ url_for('static', filename='manifest.json') }}">
+    <meta name="theme-color" content="#073763">
     <link rel="stylesheet" href="{{ url_for('static', filename='styles/landing.css') }}">
+    <link rel="prefetch" href="{{ url_for('static', filename='styles/login.css') }}">
+    <link rel="prefetch" href="{{ url_for('static', filename='styles/citizens.css') }}">
+    <script>
+      if ('serviceWorker' in navigator) {
+        window.addEventListener('load', () => {
+          navigator.serviceWorker.register("{{ url_for('static', filename='sw.js') }}")
+            .then(reg => console.log('ServiceWorker registered:', reg.scope))
+            .catch(err => console.log('ServiceWorker registration failed:', err));
+        });
+      }
+    </script>
 </head>
 <body>
     <!-- Header -->
