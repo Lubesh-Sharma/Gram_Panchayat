@@ -22,6 +22,7 @@ load_dotenv()
 
 app = Flask(__name__)
 app.secret_key = os.environ.get("SECRET_KEY", "default-secret-key")
+app.config['TEMPLATES_AUTO_RELOAD'] = True
 
 # Low Bandwidth Optimization: Enable Gzip/Brotli payload compression
 try:
@@ -159,9 +160,106 @@ def init_db_schema():
                 cur.execute(f"ALTER TABLE {table} ADD COLUMN IF NOT EXISTS generated_doc_path VARCHAR(255);")
                 cur.execute(f"ALTER TABLE {table} ADD COLUMN IF NOT EXISTS document_tracking_id VARCHAR(100);")
 
+            # Create Application_Action_History table for tracking approval/recline history
+            cur.execute("""
+                CREATE TABLE IF NOT EXISTS Application_Action_History (
+                    history_id SERIAL PRIMARY KEY,
+                    action_by_user_id INT NOT NULL,
+                    action_by_name VARCHAR(255) NOT NULL,
+                    action_by_role VARCHAR(50) NOT NULL,
+                    panchayat_id INT,
+                    module_type VARCHAR(50) NOT NULL,
+                    doc_type VARCHAR(50) NOT NULL,
+                    record_id INT NOT NULL,
+                    document_tracking_id VARCHAR(100),
+                    target_citizen_id INT,
+                    target_citizen_name VARCHAR(255),
+                    action_taken VARCHAR(50) NOT NULL,
+                    action_date TIMESTAMP NOT NULL DEFAULT NOW(),
+                    remarks_description TEXT,
+                    generated_doc_path VARCHAR(255)
+                );
+                CREATE INDEX IF NOT EXISTS idx_action_history_date ON Application_Action_History(action_date DESC);
+                CREATE INDEX IF NOT EXISTS idx_action_history_panchayat ON Application_Action_History(panchayat_id, action_by_user_id);
+            """)
+
         conn.close()
     except Exception as e:
         print("Database schema auto-initialization notice:", e)
+
+def log_application_action(action_by_user_id, module_type, doc_type, record_id, action_taken, remarks_description='', document_tracking_id=None, generated_doc_path=None):
+    """
+    Helper function to record approval or decline actions in Application_Action_History.
+    """
+    if not action_by_user_id:
+        return
+    conn = get_db_connection()
+    if not conn:
+        return
+    try:
+        with conn.cursor() as cur:
+            # Get actor (Employee or Admin) details
+            cur.execute("SELECT user_type, email FROM Users WHERE user_id = %s;", (int(action_by_user_id),))
+            u_row = cur.fetchone()
+            role = u_row[0] if u_row else 'Employee'
+            
+            action_by_name = "Panchayat Admin" if role == 'Admin' else (u_row[1] if u_row else "System Official")
+            panchayat_id = None
+            
+            # Check if actor is in Employees table
+            cur.execute("""
+                SELECT c.first_name || ' ' || c.last_name, e.panchayat_id 
+                FROM Employees e 
+                JOIN Citizens c ON e.citizen_id = c.citizen_id 
+                WHERE e.user_id = %s;
+            """, (int(action_by_user_id),))
+            emp_r = cur.fetchone()
+            if emp_r:
+                action_by_name = emp_r[0]
+                panchayat_id = emp_r[1]
+            elif role == 'Admin':
+                cur.execute("SELECT first_name || ' ' || last_name, panchayat_id FROM Citizens WHERE user_id = %s;", (int(action_by_user_id),))
+                cit_adm = cur.fetchone()
+                if cit_adm:
+                    action_by_name = cit_adm[0]
+                    panchayat_id = cit_adm[1]
+
+            # Determine target citizen info
+            target_citizen_id = None
+            target_citizen_name = "N/A"
+            
+            target_query_map = {
+                'certificate': "SELECT citizen_id FROM certificate WHERE certificate_id = %s",
+                'service': "SELECT citizen_id FROM Service_Request WHERE request_id = %s",
+                'welfare': "SELECT citizen_id FROM Citizen_welfare_Schema WHERE enrollment_id = %s",
+                'tax': "SELECT citizen_id FROM Tax_Payments WHERE payment_id = %s"
+            }
+            
+            q = target_query_map.get(module_type.lower())
+            if q:
+                cur.execute(q, (int(record_id),))
+                t_r = cur.fetchone()
+                if t_r:
+                    target_citizen_id = t_r[0]
+                    cur.execute("SELECT first_name || ' ' || last_name FROM Citizens WHERE citizen_id = %s;", (target_citizen_id,))
+                    c_n_r = cur.fetchone()
+                    if c_n_r:
+                        target_citizen_name = c_n_r[0]
+
+            cur.execute("""
+                INSERT INTO Application_Action_History 
+                (action_by_user_id, action_by_name, action_by_role, panchayat_id, module_type, doc_type, 
+                 record_id, document_tracking_id, target_citizen_id, target_citizen_name, action_taken, 
+                 remarks_description, generated_doc_path)
+                VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s);
+            """, (int(action_by_user_id), action_by_name, role, panchayat_id, module_type, doc_type,
+                  int(record_id), document_tracking_id, target_citizen_id, target_citizen_name, action_taken,
+                  remarks_description, generated_doc_path))
+            conn.commit()
+    except Exception as e:
+        print(f"Error logging action history ({module_type} #{record_id}):", e)
+    finally:
+        conn.close()
 
 # Threaded Database Connection Pool Initialization
 db_pool = None
@@ -274,7 +372,8 @@ def emit_realtime_event(event_name, data, panchayat_id=None):
         try:
             if panchayat_id:
                 socketio.emit(event_name, data, room=f"panchayat_{panchayat_id}")
-            socketio.emit(event_name, data)
+            else:
+                socketio.emit(event_name, data)
             print(f"Realtime event '{event_name}' emitted (panchayat: {panchayat_id}).", flush=True)
         except Exception as socket_err:
             print(f"Realtime socket emit warning ({event_name}): {socket_err}", flush=True)
@@ -298,11 +397,12 @@ def generate_pdf_certificate_sync(doc_type, record_id):
     Renders an official PDF document using Playwright and updates DB with tracking ID.
     doc_type can be: 'certificate', 'service', 'welfare', 'tax'
     """
-    print(f"Generating PDF for doc_type={doc_type}, record_id={record_id}", flush=True)
-    conn = get_db_connection()
-    if not conn:
-        print("Database connection error in generate_pdf_certificate_sync", flush=True)
-        return False
+    with app.app_context():
+        print(f"Generating PDF for doc_type={doc_type}, record_id={record_id}", flush=True)
+        conn = get_db_connection()
+        if not conn:
+            print("Database connection error in generate_pdf_certificate_sync", flush=True)
+            return False
 
     try:
         with conn.cursor() as cur:
@@ -426,20 +526,21 @@ def generate_pdf_certificate_sync(doc_type, record_id):
                     details_extra["Payment Mode"] = str(row[1])
 
             # Render HTML template using Jinja2
-            html_content = render_template('pdf_certificate_template.html',
-                doc_title=doc_title,
-                tracking_id=tracking_id,
-                citizen_name=citizen_name,
-                citizen_phone=citizen_phone,
-                citizen_email=citizen_email,
-                panchayat_name=panchayat_name,
-                district_name=district_name,
-                state_name=state_name,
-                issue_date=issue_date,
-                category=category,
-                status=status,
-                details_extra=details_extra
-            )
+            with app.app_context():
+                html_content = render_template('pdf_certificate_template.html',
+                    doc_title=doc_title,
+                    tracking_id=tracking_id,
+                    citizen_name=citizen_name,
+                    citizen_phone=citizen_phone,
+                    citizen_email=citizen_email,
+                    panchayat_name=panchayat_name,
+                    district_name=district_name,
+                    state_name=state_name,
+                    issue_date=issue_date,
+                    category=category,
+                    status=status,
+                    details_extra=details_extra
+                )
 
             # Define output directory and file path
             output_dir = os.path.join(app.root_path, 'static', 'uploads', 'generated_certificates')
@@ -504,12 +605,22 @@ def download_generated_pdf(doc_type, record_id):
     if not conn:
         return "Database connection error", 500
     try:
+        norm_type = doc_type.lower()
+        if 'cert' in norm_type:
+            norm_type = 'certificate'
+        elif 'serv' in norm_type:
+            norm_type = 'service'
+        elif 'welf' in norm_type:
+            norm_type = 'welfare'
+        elif 'tax' in norm_type:
+            norm_type = 'tax'
+
         table_info = {
             'certificate': ('certificate', 'certificate_id'),
             'service': ('Service_Request', 'request_id'),
             'welfare': ('Citizen_welfare_Schema', 'enrollment_id'),
             'tax': ('Tax_Payments', 'tax_payment_id')
-        }.get(doc_type)
+        }.get(norm_type)
 
         if not table_info:
             return "Invalid document type", 400
@@ -1398,6 +1509,27 @@ def service(user_id, employee_id):
     """)
     announcements = cur.fetchall()
     
+    if is_admin_user:
+        cur.execute('''
+            SELECT c.citizen_id, c.first_name, c.last_name, DATE_PART('year', AGE(c.dob)) as age,
+                   c.phone_number, c.email, c.gender, p.panchayat_name, COALESCE(u.status, 'Active') as status, c.user_id
+            FROM Citizens c
+            LEFT JOIN Panchayats p ON c.panchayat_id = p.panchayat_id
+            LEFT JOIN Users u ON c.user_id = u.user_id
+            ORDER BY c.citizen_id ASC;
+        ''')
+    else:
+        cur.execute('''
+            SELECT c.citizen_id, c.first_name, c.last_name, DATE_PART('year', AGE(c.dob)) as age,
+                   c.phone_number, c.email, c.gender, p.panchayat_name, COALESCE(u.status, 'Active') as status, c.user_id
+            FROM Citizens c
+            LEFT JOIN Panchayats p ON c.panchayat_id = p.panchayat_id
+            LEFT JOIN Users u ON c.user_id = u.user_id
+            WHERE c.panchayat_id = %s
+            ORDER BY c.citizen_id ASC;
+        ''', (employee['panchayat_id'],))
+    panchayat_citizens = cur.fetchall()
+
     cur.close()
     conn.close()
     
@@ -1406,6 +1538,8 @@ def service(user_id, employee_id):
                            service_requests=service_requests,
                            welfare_projects=welfare_projects,
                            welfare_requests=welfare_requests,
+                           panchayat_citizens=panchayat_citizens,
+                           citizens=panchayat_citizens,
                            user_id=user_id,
                            employee_id=employee_id,
                            employee=employee,
@@ -1436,6 +1570,17 @@ def update_service_request_status():
         
         if status in ('Resolved', 'Approved'):
             dispatch_pdf_generation('service', request_id)
+        
+        log_application_action(
+            action_by_user_id=user_id,
+            module_type='service',
+            doc_type='service_receipt',
+            record_id=request_id,
+            action_taken=status,
+            remarks_description=description,
+            document_tracking_id=f"DOC-SERV-{int(request_id):03d}",
+            generated_doc_path=f"static/uploads/generated_certificates/cert_service_receipt_{request_id}.pdf" if status in ('Resolved', 'Approved') else None
+        )
         
         try:
             cur.execute("SELECT citizen_id FROM Service_Request WHERE request_id = %s;", (request_id,))
@@ -1653,12 +1798,38 @@ def welfare(user_id, employee_id):
         """)
         announcements = cur.fetchall()
         
+        is_admin_user = (u_type and u_type['user_type'] == 'Admin')
+        emp_p_id = employee['panchayat_id'] if employee else None
+        
+        if is_admin_user or not emp_p_id:
+            cur.execute('''
+                SELECT c.citizen_id, c.first_name, c.last_name, DATE_PART('year', AGE(c.dob)) as age,
+                       c.phone_number, c.email, c.gender, p.panchayat_name, COALESCE(u.status, 'Active') as status, c.user_id
+                FROM Citizens c
+                LEFT JOIN Panchayats p ON c.panchayat_id = p.panchayat_id
+                LEFT JOIN Users u ON c.user_id = u.user_id
+                ORDER BY c.citizen_id ASC;
+            ''')
+        else:
+            cur.execute('''
+                SELECT c.citizen_id, c.first_name, c.last_name, DATE_PART('year', AGE(c.dob)) as age,
+                       c.phone_number, c.email, c.gender, p.panchayat_name, COALESCE(u.status, 'Active') as status, c.user_id
+                FROM Citizens c
+                LEFT JOIN Panchayats p ON c.panchayat_id = p.panchayat_id
+                LEFT JOIN Users u ON c.user_id = u.user_id
+                WHERE c.panchayat_id = %s
+                ORDER BY c.citizen_id ASC;
+            ''', (emp_p_id,))
+        panchayat_citizens = cur.fetchall()
+
         return render_template('welfare.html',
                                user_id=user_id,
                                employee_id=employee_id,
                                employee_name=employee_name,
                                welfare_projects=welfare_projects,
                                welfare_requests=welfare_requests,
+                               panchayat_citizens=panchayat_citizens,
+                               citizens=panchayat_citizens,
                                announcements=announcements)
     except Exception as e:
         print("Error loading welfare route:", e)
@@ -2061,6 +2232,17 @@ def update_welfare_enrollment_status():
         if status in ('Enrolled', 'Approved'):
             dispatch_pdf_generation('welfare', enrollment_id)
         
+        log_application_action(
+            action_by_user_id=user_id,
+            module_type='welfare',
+            doc_type='welfare_approval',
+            record_id=enrollment_id,
+            action_taken=status,
+            remarks_description=description,
+            document_tracking_id=f"DOC-WELF-{int(enrollment_id):03d}",
+            generated_doc_path=f"static/uploads/generated_certificates/cert_welfare_approval_{enrollment_id}.pdf" if status in ('Enrolled', 'Approved') else None
+        )
+        
         try:
             cur.execute("SELECT citizen_id FROM Citizen_welfare_Schema WHERE enrollment_id = %s;", (enrollment_id,))
             cws_r = cur.fetchone()
@@ -2143,6 +2325,28 @@ def certificate(user_id, employee_id):
             ''', (employee['panchayat_id'],))
         certificates = cur.fetchall()
         
+        # Get citizens for this panchayat
+        if is_admin_user:
+            cur.execute('''
+                SELECT c.citizen_id, c.first_name, c.last_name, DATE_PART('year', AGE(c.dob)) as age,
+                       c.phone_number, c.email, c.gender, p.panchayat_name, COALESCE(u.status, 'Active') as status, c.user_id
+                FROM Citizens c
+                LEFT JOIN Panchayats p ON c.panchayat_id = p.panchayat_id
+                LEFT JOIN Users u ON c.user_id = u.user_id
+                ORDER BY c.citizen_id ASC;
+            ''')
+        else:
+            cur.execute('''
+                SELECT c.citizen_id, c.first_name, c.last_name, DATE_PART('year', AGE(c.dob)) as age,
+                       c.phone_number, c.email, c.gender, p.panchayat_name, COALESCE(u.status, 'Active') as status, c.user_id
+                FROM Citizens c
+                LEFT JOIN Panchayats p ON c.panchayat_id = p.panchayat_id
+                LEFT JOIN Users u ON c.user_id = u.user_id
+                WHERE c.panchayat_id = %s
+                ORDER BY c.citizen_id ASC;
+            ''', (employee['panchayat_id'],))
+        panchayat_citizens = cur.fetchall()
+        
         # Get certificate types
         cur.execute('SELECT * FROM Certificate_Type')
         certificate_types = cur.fetchall()
@@ -2150,6 +2354,8 @@ def certificate(user_id, employee_id):
         return render_template('certificate.html',
                               certificates=certificates,
                               certificate_types=certificate_types,
+                              panchayat_citizens=panchayat_citizens,
+                              citizens=panchayat_citizens,
                               user_id=user_id,
                               employee_id=employee_id,
                               employee=employee,
@@ -2308,6 +2514,17 @@ def update_certificate_status():
                 
                 if status == 'Approved':
                     dispatch_pdf_generation('certificate', certificate_id)
+                
+                log_application_action(
+                    action_by_user_id=user_id,
+                    module_type='certificate',
+                    doc_type='certificate',
+                    record_id=certificate_id,
+                    action_taken=status,
+                    remarks_description=description,
+                    document_tracking_id=f"DOC-CERT-{int(certificate_id):03d}",
+                    generated_doc_path=f"static/uploads/generated_certificates/cert_certificate_{certificate_id}.pdf" if status == 'Approved' else None
+                )
                 
                 try:
                     cur.execute("SELECT citizen_id, type FROM certificate WHERE certificate_id = %s;", (certificate_id,))
@@ -2560,6 +2777,28 @@ def patwari(user_id, employee_id):
             else:
                 panchayat_stats['cultivation_percent'] = 0
 
+            # Get citizens for this panchayat
+            if is_admin:
+                cur.execute('''
+                    SELECT c.citizen_id, c.first_name, c.last_name, DATE_PART('year', AGE(c.dob)) as age,
+                           c.phone_number, c.email, c.gender, p.panchayat_name, COALESCE(u.status, 'Active') as status, c.user_id
+                    FROM Citizens c
+                    LEFT JOIN Panchayats p ON c.panchayat_id = p.panchayat_id
+                    LEFT JOIN Users u ON c.user_id = u.user_id
+                    ORDER BY c.citizen_id ASC;
+                ''')
+            else:
+                cur.execute('''
+                    SELECT c.citizen_id, c.first_name, c.last_name, DATE_PART('year', AGE(c.dob)) as age,
+                           c.phone_number, c.email, c.gender, p.panchayat_name, COALESCE(u.status, 'Active') as status, c.user_id
+                    FROM Citizens c
+                    LEFT JOIN Panchayats p ON c.panchayat_id = p.panchayat_id
+                    LEFT JOIN Users u ON c.user_id = u.user_id
+                    WHERE c.panchayat_id = %s
+                    ORDER BY c.citizen_id ASC;
+                ''', (panchayat_id,))
+            panchayat_citizens = cur.fetchall()
+
         return render_template('Patwari.html', 
                              employee_data=employee_info,
                              citizen_lands=citizen_lands,
@@ -2568,6 +2807,8 @@ def patwari(user_id, employee_id):
                              announcements=announcements,
                              stats=total_stats,
                              panchayat_stats=panchayat_stats,
+                             panchayat_citizens=panchayat_citizens,
+                             citizens=panchayat_citizens,
                              user_id=user_id,
                              employee_id=employee_id,
                              panchayat_id=panchayat_id,
@@ -4299,10 +4540,11 @@ def admin_dashboard(admin_id):
                     CASE 
                         WHEN c.user_id IS NOT NULL THEN 'Registered'
                         ELSE 'Not Registered'
-                    END AS status
+                    END AS status,
+                    COALESCE(p.panchayat_name, 'Not Specified') AS panchayat_name
                     FROM Citizens c
-                    JOIN Panchayats p ON c.panchayat_id = p.panchayat_id
-                    ORDER BY status DESC, c.first_name, c.last_name;
+                    LEFT JOIN Panchayats p ON c.panchayat_id = p.panchayat_id
+                    ORDER BY c.citizen_id ASC;
                 """)
                 citizens = cur.fetchall()
             except Exception as e:
@@ -4635,7 +4877,7 @@ def get_employee(employee_id):
             cur.execute("""
                 SELECT e.employee_id, e.citizen_id, c.first_name, c.last_name, e.designation, 
                        e.department, e.join_date, e.end_date, e.salary, e.employment_type, 
-                       e.user_id, p.panchayat_name, c.email
+                       e.user_id, p.panchayat_name, c.email, e.panchayat_id
                 FROM Employees e
                 JOIN Citizens c ON e.citizen_id = c.citizen_id
                 JOIN Panchayats p ON e.panchayat_id = p.panchayat_id
@@ -4658,7 +4900,8 @@ def get_employee(employee_id):
                     'employment_type': employee_data[9],
                     'user_id': employee_data[10],
                     'panchayat': employee_data[11],
-                    'email': employee_data[12]
+                    'email': employee_data[12],
+                    'panchayat_id': employee_data[13]
                 }})
             else:
                 return jsonify({'success': False, 'message': 'Employee not found'})
@@ -4857,8 +5100,9 @@ def get_citizen(citizen_id):
             cur.execute("""
                 SELECT c.first_name, c.last_name, c.panchayat_id, c.gender, c.dob, c.educational_qualification, 
                        c.occupation, c.annual_income, c.tax_due_amount, c.marital_status, c.phone_number, 
-                       c.email, cl.area, cl.type, cl.crop_type, h.household_id, c.user_id
+                       c.email, cl.area, cl.type, cl.crop_type, h.household_id, c.user_id, p.panchayat_name
                 FROM Citizens c
+                LEFT JOIN Panchayats p ON c.panchayat_id = p.panchayat_id
                 LEFT JOIN Citizen_Lands cl ON c.citizen_id = cl.citizen_id
                 LEFT JOIN Households h ON c.citizen_id = h.citizen_id
                 WHERE c.citizen_id = %s;
@@ -4882,13 +5126,172 @@ def get_citizen(citizen_id):
                     'land_type': citizen[13],
                     'crop_type': citizen[14],
                     'household_id': citizen[15],
-                    'user_id': citizen[16]  # Added user_id to the response
+                    'user_id': citizen[16],
+                    'panchayat_name': citizen[17] or 'Not Specified'
                 }})
             else:
                 return jsonify({'success': False, 'message': 'Citizen not found'})
     except Exception as e:
         print("Query error (Get Citizen):", e)
         return jsonify({'success': False, 'message': 'Failed to fetch citizen details'})
+    finally:
+        conn.close()
+
+@app.route('/api/action_history', methods=['GET'])
+def get_action_history():
+    page = request.args.get('page', 1, type=int)
+    per_page = request.args.get('per_page', 25, type=int)
+    search = request.args.get('search', '', type=str).strip()
+    user_id = request.args.get('user_id', None, type=int) or session.get('user_id')
+
+    conn = get_db_connection()
+    if not conn:
+        return jsonify({'success': False, 'message': 'Database connection error'})
+
+    try:
+        with conn.cursor() as cur:
+            user_role = session.get('role')
+            user_panchayat_id = None
+            if user_id:
+                if not user_role:
+                    cur.execute("SELECT user_type FROM Users WHERE user_id = %s;", (user_id,))
+                    u_row = cur.fetchone()
+                    if u_row:
+                        user_role = u_row[0]
+                cur.execute("SELECT panchayat_id FROM Employees WHERE user_id = %s;", (user_id,))
+                e_row = cur.fetchone()
+                if e_row:
+                    user_panchayat_id = e_row[0]
+
+            where_clauses = ["action_date >= NOW() - INTERVAL '6 months'"]
+            params = []
+
+            if user_role != 'Admin' and user_id:
+                if user_panchayat_id:
+                    where_clauses.append("(action_by_user_id = %s OR panchayat_id = %s)")
+                    params.extend([user_id, user_panchayat_id])
+                else:
+                    where_clauses.append("action_by_user_id = %s")
+                    params.append(user_id)
+
+            if search:
+                s_pattern = f"%{search}%"
+                where_clauses.append("""
+                    (document_tracking_id ILIKE %s OR 
+                     target_citizen_name ILIKE %s OR 
+                     action_by_name ILIKE %s OR 
+                     CAST(target_citizen_id AS TEXT) ILIKE %s OR 
+                     CAST(action_by_user_id AS TEXT) ILIKE %s OR 
+                     CAST(action_date AS TEXT) ILIKE %s OR
+                     module_type ILIKE %s OR
+                     action_taken ILIKE %s)
+                """)
+                params.extend([s_pattern, s_pattern, s_pattern, s_pattern, s_pattern, s_pattern, s_pattern, s_pattern])
+
+            where_sql = (" WHERE " + " AND ".join(where_clauses)) if where_clauses else ""
+
+            count_query = f"SELECT COUNT(*) FROM Application_Action_History{where_sql}"
+            cur.execute(count_query, params)
+            total_items = cur.fetchone()[0]
+
+            total_pages = max(1, (total_items + per_page - 1) // per_page)
+            if page < 1:
+                page = 1
+            elif page > total_pages and total_pages > 0:
+                page = total_pages
+
+            offset = (page - 1) * per_page
+
+            fetch_query = f"""
+                SELECT history_id, action_by_user_id, action_by_name, action_by_role, 
+                       panchayat_id, module_type, doc_type, record_id, document_tracking_id, 
+                       target_citizen_id, target_citizen_name, action_taken, action_date, 
+                       remarks_description, generated_doc_path
+                FROM Application_Action_History
+                {where_sql}
+                ORDER BY action_date DESC
+                LIMIT %s OFFSET %s
+            """
+            cur.execute(fetch_query, params + [per_page, offset])
+            rows = cur.fetchall()
+
+            history_list = []
+            for r in rows:
+                mod_type = (r[5] or '').lower()
+                doc_t = (r[6] or '').lower()
+                target_type = 'certificate' if 'cert' in mod_type or 'cert' in doc_t else ('service' if 'serv' in mod_type or 'serv' in doc_t else ('welfare' if 'welf' in mod_type or 'welf' in doc_t else ('tax' if 'tax' in mod_type or 'tax' in doc_t else mod_type)))
+                
+                raw_path = r[14]
+                if raw_path and not raw_path.startswith('/') and not raw_path.startswith('http'):
+                    raw_path = f"/{raw_path}"
+                
+                pdf_link = f"/download_generated_pdf/{target_type}/{r[7]}" if target_type in ('certificate', 'service', 'welfare', 'tax') else raw_path
+
+                citizen_notes = None
+                citizen_doc_path = None
+                try:
+                    rec_id = r[7]
+                    if target_type == 'certificate':
+                        cur.execute("SELECT description, document_path FROM certificate WHERE certificate_id = %s;", (rec_id,))
+                        c_res = cur.fetchone()
+                        if c_res:
+                            citizen_notes = c_res[0]
+                            citizen_doc_path = c_res[1]
+                    elif target_type == 'service':
+                        cur.execute("SELECT description, document_path FROM Service_Request WHERE request_id = %s;", (rec_id,))
+                        s_res = cur.fetchone()
+                        if s_res:
+                            citizen_notes = s_res[0]
+                            citizen_doc_path = s_res[1]
+                    elif target_type == 'welfare':
+                        cur.execute("SELECT description, document_path FROM Citizen_welfare_Schema WHERE enrollment_id = %s;", (rec_id,))
+                        w_res = cur.fetchone()
+                        if w_res:
+                            citizen_notes = w_res[0]
+                            citizen_doc_path = w_res[1]
+                    elif target_type == 'tax':
+                        cur.execute("SELECT amount, mode_of_payment FROM Tax_Payments WHERE tax_payment_id = %s;", (rec_id,))
+                        t_res = cur.fetchone()
+                        if t_res:
+                            citizen_notes = f"Tax Payment: ₹{t_res[0]:,.2f} ({t_res[1]})"
+                except Exception as detail_err:
+                    print("Detail fetch notice:", detail_err)
+
+                if citizen_doc_path and not citizen_doc_path.startswith('/') and not citizen_doc_path.startswith('http'):
+                    citizen_doc_path = f"/{citizen_doc_path}"
+
+                history_list.append({
+                    'history_id': r[0],
+                    'action_by_user_id': r[1],
+                    'action_by_name': r[2],
+                    'action_by_role': r[3],
+                    'panchayat_id': r[4],
+                    'module_type': r[5],
+                    'doc_type': r[6],
+                    'record_id': r[7],
+                    'document_tracking_id': r[8] or f"DOC-{r[5][:4].upper()}-{r[7]:03d}",
+                    'target_citizen_id': r[9],
+                    'target_citizen_name': r[10] or "N/A",
+                    'action_taken': r[11],
+                    'action_date': r[12].strftime('%Y-%m-%d %H:%M:%S') if r[12] else "N/A",
+                    'remarks_description': r[13] or "No remarks provided",
+                    'generated_doc_path': pdf_link,
+                    'citizen_notes': citizen_notes or "No request notes provided",
+                    'citizen_doc_path': citizen_doc_path
+                })
+
+            return jsonify({
+                'success': True,
+                'data': history_list,
+                'page': page,
+                'per_page': per_page,
+                'total_items': total_items,
+                'total_pages': total_pages
+            })
+    except Exception as e:
+        print("Error fetching action history:", e)
+        return jsonify({'success': False, 'message': str(e)})
+        return jsonify({'success': False, 'message': 'Failed to fetch action history'})
     finally:
         conn.close()
 

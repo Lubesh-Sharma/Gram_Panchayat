@@ -3,10 +3,16 @@
  * Automatically notifies employees and citizens when new applications arrive or statuses change.
  */
 (function () {
+    if (window.GPMS_REALTIME_NOTIFICATIONS_LOADED) return;
+    window.GPMS_REALTIME_NOTIFICATIONS_LOADED = true;
+
     if (typeof io === 'undefined') {
         console.warn('Socket.IO library not loaded.');
         return;
     }
+
+    // Cache to prevent duplicate toast rendering within 3 seconds
+    const recentNotifications = new Set();
 
     // Initialize Socket.IO connection
     const socket = io();
@@ -60,6 +66,14 @@
 
     // Show floating Real-time Notification Toast
     function showRealtimeToast(title, message, iconClass, onRefresh) {
+        const notifKey = `${title}|${message}`;
+        if (recentNotifications.has(notifKey)) {
+            console.log('⚡ [Realtime] Suppressed duplicate toast notification:', notifKey);
+            return;
+        }
+        recentNotifications.add(notifKey);
+        setTimeout(() => recentNotifications.delete(notifKey), 3000);
+
         playNotificationSound();
         const container = getToastContainer();
 

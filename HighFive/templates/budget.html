@@ -30,6 +30,10 @@
         <i class="fas fa-file-invoice-dollar"></i>
         <span>Expenses</span>
       </div>
+      <div class="menu-item" data-section="action_history" onclick="activateSection('action_history')">
+        <i class="fas fa-history"></i>
+        <span>Approval History</span>
+      </div>
       <div class="menu-item" data-section="change-password" id="changePasswordMenu">
         <i class="fas fa-key"></i>
         <span>Change Password</span>
@@ -261,13 +265,56 @@
                     </td>
                   </tr>
                   {% endfor %}
-                  {% else %}
+                  {% endif %}
+                  {% if not expenses %}
                   <tr>
                     <td colspan="5" class="no-data">No expense entries found</td>
                   </tr>
                   {% endif %}
                 </tbody>
               </table>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Action History Section -->
+      <div class="content-section" id="action_history">
+        <div class="card mb-4">
+          <div class="card-header bg-dark text-white d-flex justify-content-between align-items-center flex-wrap gap-2">
+            <h4 class="mb-0"><i class="fas fa-history text-warning me-2"></i> Application Action & Approval History Log</h4>
+            <div class="d-flex gap-2 align-items-center">
+              <input type="text" id="actionHistorySearchInput" class="form-control form-control-sm" placeholder="Search by Doc ID, Name, Date, User ID..." style="min-width: 250px;">
+              <button class="btn btn-primary btn-sm" id="refreshActionHistoryBtn"><i class="fas fa-sync-alt"></i> Refresh</button>
+            </div>
+          </div>
+          <div class="card-body">
+            <div class="table-responsive">
+              <table class="table table-striped table-hover align-middle">
+                <thead class="table-dark">
+                  <tr>
+                    <th>Date & Time</th>
+                    <th>Tracking ID</th>
+                    <th>Module / Type</th>
+                    <th>Citizen Name (ID)</th>
+                    <th>Action By</th>
+                    <th class="text-center">Status</th>
+                    <th class="text-center">Doc / Certificate</th>
+                  </tr>
+                </thead>
+                <tbody id="actionHistoryTableBody">
+                  <tr><td colspan="7" class="text-center py-4">Loading action history...</td></tr>
+                </tbody>
+              </table>
+            </div>
+            <!-- Pagination Controls -->
+            <div id="actionHistoryPagination" class="d-flex justify-content-between align-items-center mt-3 flex-wrap gap-2">
+              <div id="actionHistoryPageInfo" class="fw-bold text-secondary small">Showing 0 of 0 entries</div>
+              <div class="d-flex gap-1 align-items-center">
+                <button class="btn btn-outline-secondary btn-sm" id="actionHistoryPrevBtn" disabled>&laquo; Previous</button>
+                <span id="actionHistoryPageNumbers" class="d-flex gap-1"></span>
+                <button class="btn btn-outline-secondary btn-sm" id="actionHistoryNextBtn" disabled>Next &raquo;</button>
+              </div>
             </div>
           </div>
         </div>
@@ -470,6 +517,7 @@
   </script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/socket.io/4.7.2/socket.io.min.js"></script>
   <script src="{{ url_for('static', filename='scripts/realtime_notifications.js') }}"></script>
+  <script src="{{ url_for('static', filename='scripts/action_history.js') }}"></script>
 </body>
 
 </html>

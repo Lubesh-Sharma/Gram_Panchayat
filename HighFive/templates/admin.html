@@ -34,6 +34,10 @@
                     <i class="fas fa-building"></i>
                     <span>Panchayat Offices</span>
                 </div>
+                <div class="menu-item" data-section="action_history">
+                    <i class="fas fa-history"></i>
+                    <span>Approval History</span>
+                </div>
                 <div class="menu-item" onclick="confirmLogout()">
                     <i class="fas fa-sign-out-alt"></i>
                     <span>Logout</span>
@@ -224,6 +228,7 @@
                                 <th>Name</th>
                                 <th>Age</th>
                                 <th>Email</th>
+                                <th>Panchayat</th>
                                 <th>Status</th>
                                 <th>Actions</th>
                             </tr>
@@ -236,6 +241,7 @@
                                 <td>{{ citizen[1] }} {{ citizen[2] }}</td>
                                 <td>{{ citizen[3] }}</td>
                                 <td>{{ citizen[4] }}</td>
+                                <td><span class="badge badge-info" style="background-color: #17a2b8; color: white; padding: 4px 8px; border-radius: 4px;">{{ citizen[6] or 'Not Specified' }}</span></td>
                                 <td><span class="status {{ citizen[5]|lower }}">{{ citizen[5] }}</span></td>
                                 <td>
                                     <div class="action-btns">
@@ -251,7 +257,7 @@
                             {% endfor %}
                             {% else %}
                             <tr>
-                                <td colspan="6" style="text-align: center;">No citizens till now</td>
+                                <td colspan="7" style="text-align: center;">No citizens till now</td>
                             </tr>
                             {% endif %}
                         </tbody>
@@ -312,6 +318,48 @@
                             {% endif %}
                         </tbody>
                     </table>
+                </div>
+            </div>
+
+            <!-- Action History Section -->
+            <div class="content-section" id="action_history">
+                <div class="table-container" style="background: #ffffff; padding: 20px; border-radius: 8px; box-shadow: 0 4px 12px rgba(0,0,0,0.05);">
+                    <div class="table-header" style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px; flex-wrap: wrap; gap: 10px;">
+                        <div class="table-title" style="font-size: 1.25rem; font-weight: 700; color: #073763;">
+                            <i class="fas fa-history" style="color: #ffc107; margin-right: 8px;"></i> Application Action & Approval History
+                        </div>
+                        <div class="table-actions" style="display: flex; gap: 10px; align-items: center;">
+                            <input type="text" id="actionHistorySearchInput" class="form-control" placeholder="Search by Doc ID, Name, Date, User ID..." style="min-width: 280px; padding: 8px 12px; border: 1px solid #ced4da; border-radius: 4px;">
+                            <button class="btn btn-primary" id="refreshActionHistoryBtn" style="padding: 8px 15px;"><i class="fas fa-sync-alt"></i> Refresh</button>
+                        </div>
+                    </div>
+                    <div style="overflow-x: auto;">
+                        <table class="table" style="width: 100%; border-collapse: collapse; margin-top: 10px;">
+                            <thead style="background-color: #073763; color: #ffffff;">
+                                <tr>
+                                    <th style="padding: 12px; text-align: left;">Date & Time</th>
+                                    <th style="padding: 12px; text-align: left;">Doc Tracking ID</th>
+                                    <th style="padding: 12px; text-align: left;">Module / Type</th>
+                                    <th style="padding: 12px; text-align: left;">Citizen Name (ID)</th>
+                                    <th style="padding: 12px; text-align: left;">Action By</th>
+                                    <th style="padding: 12px; text-align: center;">Action Status</th>
+                                    <th style="padding: 12px; text-align: center;">Details / Certificate</th>
+                                </tr>
+                            </thead>
+                            <tbody id="actionHistoryTableBody">
+                                <tr><td colspan="7" style="text-align: center; padding: 20px;">Loading action history...</td></tr>
+                            </tbody>
+                        </table>
+                    </div>
+                    <!-- Pagination controls -->
+                    <div id="actionHistoryPagination" style="display: flex; justify-content: space-between; align-items: center; margin-top: 15px; flex-wrap: wrap; gap: 10px;">
+                        <div id="actionHistoryPageInfo" style="font-weight: 600; color: #495057; font-size: 14px;">Showing 0 of 0 entries</div>
+                        <div style="display: flex; gap: 5px;">
+                            <button class="btn btn-secondary btn-sm" id="actionHistoryPrevBtn" disabled>&laquo; Previous</button>
+                            <span id="actionHistoryPageNumbers" style="display: flex; gap: 4px;"></span>
+                            <button class="btn btn-secondary btn-sm" id="actionHistoryNextBtn" disabled>Next &raquo;</button>
+                        </div>
+                    </div>
                 </div>
             </div>
 
@@ -858,6 +906,7 @@
     </div>
 
     <script src="{{ url_for('static', filename='scripts/admin.js') }}"></script>
+    <script src="{{ url_for('static', filename='scripts/action_history.js') }}"></script>
     <script>
         window.CURRENT_PANCHAYAT_ID = "";
     </script>

@@ -936,6 +936,10 @@ document.addEventListener('DOMContentLoaded', () => {
                                     <span class="detail-value">${citizen.email}</span>
                                 </div>
                                 <div class="detail-item">
+                                    <span class="detail-label">Panchayat:</span>
+                                    <span class="detail-value">${citizen.panchayat_name || 'Not Specified'} (ID: ${citizen.panchayat_id || 'N/A'})</span>
+                                </div>
+                                <div class="detail-item">
                                     <span class="detail-label">Household ID:</span>
                                     <span class="detail-value">${citizen.household_id || 'Not Assigned'}</span>
                                 </div>
@@ -1044,7 +1048,7 @@ document.addEventListener('DOMContentLoaded', () => {
                                 </div>
                                 <div class="detail-item">
                                     <span class="detail-label">Panchayat:</span>
-                                    <span class="detail-value">${employee.panchayat || 'N/A'}</span>
+                                    <span class="detail-value">${employee.panchayat || 'N/A'} ${employee.panchayat_id ? '(ID: ' + employee.panchayat_id + ')' : ''}</span>
                                 </div>
                                 <div class="detail-item">
                                     <span class="detail-label">Email:</span>
@@ -1187,4 +1191,157 @@ document.addEventListener('DOMContentLoaded', () => {
             });
         });
     }
+
+    // Approval / Action History Logic
+    let currentActionHistoryPage = 1;
+    let actionHistorySearchTimeout = null;
+
+    function loadActionHistory(page = 1, search = '') {
+        const tbody = document.getElementById('actionHistoryTableBody');
+        if (!tbody) return;
+
+        tbody.innerHTML = `<tr><td colspan="7" style="text-align: center; padding: 20px;"><i class="fas fa-spinner fa-spin" style="margin-right: 8px;"></i> Loading action history...</td></tr>`;
+
+        const url = `/api/action_history?page=${page}&per_page=25&search=${encodeURIComponent(search)}`;
+        fetch(url)
+            .then(response => response.json())
+            .then(res => {
+                if (res.success) {
+                    currentActionHistoryPage = res.page;
+                    renderActionHistoryTable(res.data);
+                    renderActionHistoryPagination(res.page, res.total_pages, res.total_items, res.per_page);
+                } else {
+                    tbody.innerHTML = `<tr><td colspan="7" style="text-align: center; color: red; padding: 20px;">Failed to load history: ${res.message}</td></tr>`;
+                }
+            })
+            .catch(err => {
+                console.error("Action History Error:", err);
+                tbody.innerHTML = `<tr><td colspan="7" style="text-align: center; color: red; padding: 20px;">An error occurred while fetching history data.</td></tr>`;
+            });
+    }
+
+    function renderActionHistoryTable(records) {
+        const tbody = document.getElementById('actionHistoryTableBody');
+        if (!tbody) return;
+
+        if (!records || records.length === 0) {
+            tbody.innerHTML = `<tr><td colspan="7" style="text-align: center; padding: 20px; color: #6c757d;">No application actions or history records found.</td></tr>`;
+            return;
+        }
+
+        let html = '';
+        records.forEach(item => {
+            let statusBadge = '';
+            const statusUpper = (item.action_taken || '').toUpperCase();
+            if (statusUpper.includes('APPROVED') || statusUpper.includes('RESOLVED') || statusUpper.includes('ENROLLED') || statusUpper.includes('COMPLETED')) {
+                statusBadge = `<span class="badge" style="background-color: #28a745; color: white; padding: 4px 10px; border-radius: 4px; font-size: 12px; font-weight: 600;"><i class="fas fa-check-circle"></i> ${item.action_taken}</span>`;
+            } else if (statusUpper.includes('DECLINED') || statusUpper.includes('REJECTED')) {
+                statusBadge = `<span class="badge" style="background-color: #dc3545; color: white; padding: 4px 10px; border-radius: 4px; font-size: 12px; font-weight: 600;"><i class="fas fa-times-circle"></i> ${item.action_taken}</span>`;
+            } else {
+                statusBadge = `<span class="badge" style="background-color: #6c757d; color: white; padding: 4px 10px; border-radius: 4px; font-size: 12px; font-weight: 600;">${item.action_taken}</span>`;
+            }
+
+            let docButton = '';
+            if (item.generated_doc_path) {
+                docButton = `<a href="${item.generated_doc_path}" target="_blank" class="btn btn-sm btn-outline-primary" style="padding: 4px 8px; font-size: 12px; font-weight: 600; text-decoration: none; border: 1px solid #007bff; border-radius: 4px; color: #007bff;"><i class="fas fa-file-download"></i> View / PDF</a>`;
+            } else {
+                docButton = `<span style="color: #6c757d; font-size: 12px;">N/A</span>`;
+            }
+
+            html += `
+                <tr style="border-bottom: 1px solid #e9ecef;">
+                    <td style="padding: 10px; font-size: 13px;">${item.action_date}</td>
+                    <td style="padding: 10px; font-size: 13px; font-weight: 600; color: #073763;">${item.document_tracking_id}</td>
+                    <td style="padding: 10px; font-size: 13px;"><span style="text-transform: capitalize; font-weight: 600;">${item.module_type}</span> (${item.doc_type})</td>
+                    <td style="padding: 10px; font-size: 13px;">${item.target_citizen_name} <br><small style="color: #6c757d;">(ID: ${item.target_citizen_id || 'N/A'})</small></td>
+                    <td style="padding: 10px; font-size: 13px;">${item.action_by_name} <br><small style="color: #6c757d;">(ID: ${item.action_by_user_id} - ${item.action_by_role})</small></td>
+                    <td style="padding: 10px; text-align: center;">${statusBadge}</td>
+                    <td style="padding: 10px; text-align: center;">${docButton}</td>
+                </tr>
+            `;
+        });
+
+        tbody.innerHTML = html;
+    }
+
+    function renderActionHistoryPagination(currentPage, totalPages, totalItems, perPage) {
+        const pageInfo = document.getElementById('actionHistoryPageInfo');
+        const prevBtn = document.getElementById('actionHistoryPrevBtn');
+        const nextBtn = document.getElementById('actionHistoryNextBtn');
+        const pageNumbers = document.getElementById('actionHistoryPageNumbers');
+
+        if (pageInfo) {
+            const start = totalItems === 0 ? 0 : (currentPage - 1) * perPage + 1;
+            const end = Math.min(currentPage * perPage, totalItems);
+            pageInfo.textContent = `Showing ${start} to ${end} of ${totalItems} entries`;
+        }
+
+        if (prevBtn) {
+            prevBtn.disabled = (currentPage <= 1);
+            prevBtn.onclick = () => {
+                if (currentPage > 1) {
+                    const searchVal = document.getElementById('actionHistorySearchInput')?.value || '';
+                    loadActionHistory(currentPage - 1, searchVal);
+                }
+            };
+        }
+
+        if (nextBtn) {
+            nextBtn.disabled = (currentPage >= totalPages);
+            nextBtn.onclick = () => {
+                if (currentPage < totalPages) {
+                    const searchVal = document.getElementById('actionHistorySearchInput')?.value || '';
+                    loadActionHistory(currentPage + 1, searchVal);
+                }
+            };
+        }
+
+        if (pageNumbers) {
+            let numHtml = '';
+            for (let i = 1; i <= totalPages; i++) {
+                if (i === currentPage) {
+                    numHtml += `<button class="btn btn-primary btn-sm" style="font-weight: bold; padding: 4px 10px;">${i}</button>`;
+                } else if (i === 1 || i === totalPages || (i >= currentPage - 2 && i <= currentPage + 2)) {
+                    numHtml += `<button class="btn btn-outline-secondary btn-sm action-history-page-btn" data-page="${i}" style="padding: 4px 10px;">${i}</button>`;
+                } else if (i === currentPage - 3 || i === currentPage + 3) {
+                    numHtml += `<span style="padding: 4px 6px;">...</span>`;
+                }
+            }
+            pageNumbers.innerHTML = numHtml;
+
+            pageNumbers.querySelectorAll('.action-history-page-btn').forEach(btn => {
+                btn.addEventListener('click', (e) => {
+                    const p = parseInt(e.target.getAttribute('data-page'));
+                    const searchVal = document.getElementById('actionHistorySearchInput')?.value || '';
+                    loadActionHistory(p, searchVal);
+                });
+            });
+        }
+    }
+
+    // Attach listeners for action history controls
+    const searchInput = document.getElementById('actionHistorySearchInput');
+    if (searchInput) {
+        searchInput.addEventListener('input', (e) => {
+            clearTimeout(actionHistorySearchTimeout);
+            actionHistorySearchTimeout = setTimeout(() => {
+                loadActionHistory(1, e.target.value);
+            }, 300);
+        });
+    }
+
+    const refreshBtn = document.getElementById('refreshActionHistoryBtn');
+    if (refreshBtn) {
+        refreshBtn.addEventListener('click', () => {
+            const searchVal = searchInput?.value || '';
+            loadActionHistory(currentActionHistoryPage, searchVal);
+        });
+    }
+
+    // Load initial action history when tab is clicked
+    document.querySelectorAll('.menu-item[data-section="action_history"]').forEach(item => {
+        item.addEventListener('click', () => {
+            loadActionHistory(1);
+        });
+    });
 });

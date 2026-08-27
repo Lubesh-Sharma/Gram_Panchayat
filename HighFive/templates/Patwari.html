@@ -53,6 +53,7 @@
 
         <div class="sidebar-menu-title">Administration</div>
         <li><a href="#" data-section="announcements"><i>📢</i> Announcements</a></li>
+        <li><a href="#" data-section="action-history"><i>📜</i> Approval History</a></li>
         <li><a href="#" data-section="settings"><i>⚙️</i> Settings</a></li>
       </ul>
     </div>
@@ -380,6 +381,46 @@
           </table>
         </div>
       </div>
+
+      <!-- Action History Section -->
+      <div class="data-section" id="action-history-section">
+        <div class="content-card">
+          <div class="content-header" style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 10px; background-color: #212529; color: white; padding: 15px; border-radius: 8px;">
+            <h2 class="content-title" style="margin: 0; color: #ffc107;"><i>📜</i> Application Action & Approval History Log</h2>
+            <div class="content-actions" style="display: flex; gap: 10px; align-items: center;">
+              <input type="text" id="actionHistorySearchInput" class="form-input" placeholder="Search by Doc ID, Name, Date, User ID..." style="min-width: 250px; padding: 6px 12px;">
+              <button class="btn btn-primary" id="refreshActionHistoryBtn">Refresh</button>
+            </div>
+          </div>
+          <div style="overflow-x: auto; margin-top: 15px;">
+            <table class="data-table">
+              <thead>
+                <tr>
+                  <th>Date & Time</th>
+                  <th>Tracking ID</th>
+                  <th>Module / Type</th>
+                  <th>Citizen Name (ID)</th>
+                  <th>Action By</th>
+                  <th style="text-align: center;">Status</th>
+                  <th style="text-align: center;">Doc / Certificate</th>
+                </tr>
+              </thead>
+              <tbody id="actionHistoryTableBody">
+                <tr><td colspan="7" style="text-align: center; padding: 20px;">Loading action history...</td></tr>
+              </tbody>
+            </table>
+          </div>
+          <!-- Pagination Controls -->
+          <div id="actionHistoryPagination" style="display: flex; justify-content: space-between; align-items: center; margin-top: 15px; flex-wrap: wrap; gap: 10px;">
+            <div id="actionHistoryPageInfo" style="font-weight: bold; color: #6c757d; font-size: 13px;">Showing 0 of 0 entries</div>
+            <div style="display: flex; gap: 5px; align-items: center;">
+              <button class="btn btn-secondary" id="actionHistoryPrevBtn" disabled>&laquo; Previous</button>
+              <span id="actionHistoryPageNumbers" style="display: flex; gap: 4px;"></span>
+              <button class="btn btn-secondary" id="actionHistoryNextBtn" disabled>Next &raquo;</button>
+            </div>
+          </div>
+        </div>
+      </div>
     </div>
   </div>
 
@@ -675,6 +716,7 @@
   </script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/socket.io/4.7.2/socket.io.min.js"></script>
   <script src="{{ url_for('static', filename='scripts/realtime_notifications.js') }}"></script>
+  <script src="{{ url_for('static', filename='scripts/action_history.js') }}"></script>
 </body>
 
 </html>
