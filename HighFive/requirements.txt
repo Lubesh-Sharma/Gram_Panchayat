@@ -6,3 +6,6 @@ flask-compress
 flask-socketio
 gunicorn
 eventlet
+redis
+rq
+playwright

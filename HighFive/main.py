@@ -1,11 +1,16 @@
 import os
-from flask import Flask, render_template, request, redirect, url_for, flash, jsonify, session, make_response
+from flask import Flask, render_template, request, redirect, url_for, flash, jsonify, session, make_response, send_from_directory
 import psycopg2
 from psycopg2 import extras
 from psycopg2.pool import ThreadedConnectionPool, PoolError
 import hashlib
-from datetime import date, datetime
+import datetime
+from datetime import date
 from dotenv import load_dotenv
+import threading
+import redis
+from rq import Queue
+from playwright.sync_api import sync_playwright
 
 import platform
 import pdfkit
@@ -148,6 +153,12 @@ def init_db_schema():
             # Ensure Admin citizen & employee records exist in database tables
             sync_admin_records(conn)
 
+            # Ensure generated_doc_path and document_tracking_id columns exist in request tables
+            tables_to_update = ['certificate', 'Citizen_welfare_Schema', 'Service_Request', 'Tax_Payments']
+            for table in tables_to_update:
+                cur.execute(f"ALTER TABLE {table} ADD COLUMN IF NOT EXISTS generated_doc_path VARCHAR(255);")
+                cur.execute(f"ALTER TABLE {table} ADD COLUMN IF NOT EXISTS document_tracking_id VARCHAR(100);")
+
         conn.close()
     except Exception as e:
         print("Database schema auto-initialization notice:", e)
@@ -267,6 +278,261 @@ def emit_realtime_event(event_name, data, panchayat_id=None):
             print(f"Realtime event '{event_name}' emitted (panchayat: {panchayat_id}).", flush=True)
         except Exception as socket_err:
             print(f"Realtime socket emit warning ({event_name}): {socket_err}", flush=True)
+
+# Redis / RQ Setup with Graceful Fallback
+REDIS_URL = os.environ.get('REDIS_URL')
+redis_conn = None
+job_queue = None
+if REDIS_URL:
+    try:
+        redis_conn = redis.from_url(REDIS_URL)
+        job_queue = Queue('gram_panchayat_queue', connection=redis_conn)
+        print("Redis queue initialized successfully.", flush=True)
+    except Exception as redis_err:
+        print("Redis connection notice:", redis_err, flush=True)
+        redis_conn = None
+        job_queue = None
+
+def generate_pdf_certificate_sync(doc_type, record_id):
+    """
+    Renders an official PDF document using Playwright and updates DB with tracking ID.
+    doc_type can be: 'certificate', 'service', 'welfare', 'tax'
+    """
+    print(f"Generating PDF for doc_type={doc_type}, record_id={record_id}", flush=True)
+    conn = get_db_connection()
+    if not conn:
+        print("Database connection error in generate_pdf_certificate_sync", flush=True)
+        return False
+
+    try:
+        with conn.cursor() as cur:
+            citizen_name = "Valued Citizen"
+            citizen_phone = "N/A"
+            citizen_email = "N/A"
+            panchayat_name = "Gram Panchayat"
+            district_name = "District"
+            state_name = "State"
+            doc_title = "OFFICIAL DOCUMENT CERTIFICATE"
+            category = doc_type.capitalize()
+            issue_date = datetime.date.today().strftime('%d-%m-%Y')
+            status = "APPROVED"
+            details_extra = {}
+            tracking_id = f"DOC-{doc_type[:4].upper()}-{record_id}"
+
+            if doc_type == 'certificate':
+                cur.execute("""
+                    SELECT c.type, c.description, c.status, c.application_date,
+                           cit.first_name, cit.last_name, cit.phone_number, cit.email,
+                           p.panchayat_name, a.district_name, a.state_name
+                    FROM certificate c
+                    JOIN Citizens cit ON c.citizen_id = cit.citizen_id
+                    LEFT JOIN Panchayats p ON cit.panchayat_id = p.panchayat_id
+                    LEFT JOIN Address a ON p.address_id = a.address_id
+                    WHERE c.certificate_id = %s;
+                """, (record_id,))
+                row = cur.fetchone()
+                if row:
+                    doc_title = f"OFFICIAL {row[0].upper()} CERTIFICATE"
+                    category = f"{row[0]} Certificate"
+                    status = row[2].upper()
+                    issue_date = row[3].strftime('%d-%m-%Y') if row[3] else issue_date
+                    citizen_name = f"{row[4]} {row[5]}"
+                    citizen_phone = row[6] or "N/A"
+                    citizen_email = row[7] or "N/A"
+                    panchayat_name = row[8] or "Gram Panchayat"
+                    district_name = row[9] or "District"
+                    state_name = row[10] or "State"
+                    if row[1]:
+                        details_extra["Description / Purpose"] = row[1]
+
+            elif doc_type == 'service':
+                cur.execute("""
+                    SELECT s.type, sr.description, sr.status, sr.request_date,
+                           cit.first_name, cit.last_name, cit.phone_number, cit.email,
+                           p.panchayat_name, a.district_name, a.state_name
+                    FROM Service_Request sr
+                    JOIN Service s ON sr.service_id = s.service_id
+                    JOIN Citizens cit ON sr.citizen_id = cit.citizen_id
+                    LEFT JOIN Panchayats p ON cit.panchayat_id = p.panchayat_id
+                    LEFT JOIN Address a ON p.address_id = a.address_id
+                    WHERE sr.request_id = %s;
+                """, (record_id,))
+                row = cur.fetchone()
+                if row:
+                    doc_title = f"SERVICE RESOLUTION RECEIPT - {row[0].upper()}"
+                    category = f"Service: {row[0]}"
+                    status = row[2].upper()
+                    issue_date = row[3].strftime('%d-%m-%Y') if row[3] else issue_date
+                    citizen_name = f"{row[4]} {row[5]}"
+                    citizen_phone = row[6] or "N/A"
+                    citizen_email = row[7] or "N/A"
+                    panchayat_name = row[8] or "Gram Panchayat"
+                    district_name = row[9] or "District"
+                    state_name = row[10] or "State"
+                    if row[1]:
+                        details_extra["Resolution Details"] = row[1]
+
+            elif doc_type == 'welfare':
+                cur.execute("""
+                    SELECT st.type, cws.description, cws.status, cws.request_date,
+                           cit.first_name, cit.last_name, cit.phone_number, cit.email,
+                           p.panchayat_name, a.district_name, a.state_name
+                    FROM Citizen_welfare_Schema cws
+                    JOIN schema_type st ON cws.schema_id = st.schema_id
+                    JOIN Citizens cit ON cws.citizen_id = cit.citizen_id
+                    LEFT JOIN Panchayats p ON cit.panchayat_id = p.panchayat_id
+                    LEFT JOIN Address a ON p.address_id = a.address_id
+                    WHERE cws.enrollment_id = %s;
+                """, (record_id,))
+                row = cur.fetchone()
+                if row:
+                    doc_title = f"WELFARE SCHEME ENROLLMENT CERTIFICATE"
+                    category = f"Scheme: {row[0]}"
+                    status = row[2].upper()
+                    issue_date = row[3].strftime('%d-%m-%Y') if row[3] else issue_date
+                    citizen_name = f"{row[4]} {row[5]}"
+                    citizen_phone = row[6] or "N/A"
+                    citizen_email = row[7] or "N/A"
+                    panchayat_name = row[8] or "Gram Panchayat"
+                    district_name = row[9] or "District"
+                    state_name = row[10] or "State"
+                    if row[1]:
+                        details_extra["Enrollment Notes"] = row[1]
+
+            elif doc_type == 'tax':
+                cur.execute("""
+                    SELECT tp.amount, tp.mode_of_payment, tp.date_of_payment,
+                           cit.first_name, cit.last_name, cit.phone_number, cit.email,
+                           p.panchayat_name, a.district_name, a.state_name
+                    FROM Tax_Payments tp
+                    JOIN Citizens cit ON tp.citizen_id = cit.citizen_id
+                    LEFT JOIN Panchayats p ON cit.panchayat_id = p.panchayat_id
+                    LEFT JOIN Address a ON p.address_id = a.address_id
+                    WHERE tp.tax_payment_id = %s;
+                """, (record_id,))
+                row = cur.fetchone()
+                if row:
+                    doc_title = f"OFFICIAL TAX PAYMENT RECEIPT"
+                    category = "Tax Payment Assessment"
+                    status = "PAID & VERIFIED"
+                    issue_date = row[2].strftime('%d-%m-%Y') if row[2] else issue_date
+                    citizen_name = f"{row[3]} {row[4]}"
+                    citizen_phone = row[5] or "N/A"
+                    citizen_email = row[6] or "N/A"
+                    panchayat_name = row[8] or "Gram Panchayat"
+                    district_name = row[9] or "District"
+                    state_name = row[10] or "State"
+                    details_extra["Amount Paid"] = f"₹{row[0]:,.2f}"
+                    details_extra["Payment Mode"] = str(row[1])
+
+            # Render HTML template using Jinja2
+            html_content = render_template('pdf_certificate_template.html',
+                doc_title=doc_title,
+                tracking_id=tracking_id,
+                citizen_name=citizen_name,
+                citizen_phone=citizen_phone,
+                citizen_email=citizen_email,
+                panchayat_name=panchayat_name,
+                district_name=district_name,
+                state_name=state_name,
+                issue_date=issue_date,
+                category=category,
+                status=status,
+                details_extra=details_extra
+            )
+
+            # Define output directory and file path
+            output_dir = os.path.join(app.root_path, 'static', 'uploads', 'generated_certificates')
+            os.makedirs(output_dir, exist_ok=True)
+            filename = f"cert_{doc_type}_{record_id}.pdf"
+            pdf_path = os.path.join(output_dir, filename)
+            rel_pdf_path = f"static/uploads/generated_certificates/{filename}"
+
+            # Playwright PDF rendering
+            with sync_playwright() as p:
+                browser = p.chromium.launch(headless=True)
+                page = browser.new_page()
+                page.set_content(html_content, wait_until='networkidle')
+                page.pdf(path=pdf_path, format='A4', print_background=True)
+                browser.close()
+
+            # Update DB with tracking ID and file path
+            table_name = {
+                'certificate': ('certificate', 'certificate_id'),
+                'service': ('Service_Request', 'request_id'),
+                'welfare': ('Citizen_welfare_Schema', 'enrollment_id'),
+                'tax': ('Tax_Payments', 'tax_payment_id')
+            }.get(doc_type)
+
+            if table_name:
+                t_table, t_id_col = table_name
+                cur.execute(f"UPDATE {t_table} SET generated_doc_path = %s, document_tracking_id = %s WHERE {t_id_col} = %s;", (rel_pdf_path, tracking_id, record_id))
+
+            print(f"Successfully generated PDF for {doc_type} #{record_id} at {rel_pdf_path}", flush=True)
+            return True
+    except Exception as pdf_err:
+        print(f"Error generating PDF certificate ({doc_type} #{record_id}): {pdf_err}", flush=True)
+        return False
+    finally:
+        conn.close()
+
+def dispatch_pdf_generation(doc_type, record_id):
+    """Dispatches PDF generation via RQ Queue if available, or background Thread fallback."""
+    if job_queue:
+        try:
+            job_queue.enqueue(generate_pdf_certificate_sync, doc_type, record_id)
+            print(f"Enqueued PDF generation job to RQ: {doc_type} #{record_id}", flush=True)
+            return
+        except Exception as enqueue_err:
+            print(f"RQ enqueue notice: {enqueue_err}, running in thread", flush=True)
+
+    # Fallback to threading if RQ is not available
+    t = threading.Thread(target=generate_pdf_certificate_sync, args=(doc_type, record_id), daemon=True)
+    t.start()
+
+@app.route('/download_generated_pdf/<doc_type>/<int:record_id>')
+def download_generated_pdf(doc_type, record_id):
+    conn = get_db_connection()
+    if not conn:
+        return "Database connection error", 500
+    try:
+        table_info = {
+            'certificate': ('certificate', 'certificate_id'),
+            'service': ('Service_Request', 'request_id'),
+            'welfare': ('Citizen_welfare_Schema', 'enrollment_id'),
+            'tax': ('Tax_Payments', 'tax_payment_id')
+        }.get(doc_type)
+
+        if not table_info:
+            return "Invalid document type", 400
+
+        t_table, t_id_col = table_info
+        with conn.cursor() as cur:
+            cur.execute(f"SELECT generated_doc_path FROM {t_table} WHERE {t_id_col} = %s;", (record_id,))
+            res = cur.fetchone()
+            rel_path = res[0] if res else None
+
+        if not rel_path or not os.path.exists(os.path.join(app.root_path, rel_path)):
+            # If not yet generated, trigger sync generation
+            success = generate_pdf_certificate_sync(doc_type, record_id)
+            if success:
+                with conn.cursor() as cur:
+                    cur.execute(f"SELECT generated_doc_path FROM {t_table} WHERE {t_id_col} = %s;", (record_id,))
+                    res = cur.fetchone()
+                    rel_path = res[0] if res else None
+
+        if rel_path and os.path.exists(os.path.join(app.root_path, rel_path)):
+            full_path = os.path.join(app.root_path, rel_path)
+            directory = os.path.dirname(full_path)
+            filename = os.path.basename(full_path)
+            return send_from_directory(directory, filename, mimetype='application/pdf', as_attachment=False)
+        else:
+            return "Generated PDF certificate not found", 404
+    except Exception as e:
+        print(f"Error serving PDF: {e}", flush=True)
+        return f"Error downloading PDF: {e}", 500
+    finally:
+        conn.close()
 
 # Utility: Hash password for comparison (SHA-256 for better security)
 def hash_password(password):
@@ -1159,6 +1425,10 @@ def update_service_request_status():
         ''', (status, description, request_id))
         
         conn.commit()
+        
+        if status in ('Resolved', 'Approved'):
+            dispatch_pdf_generation('service', request_id)
+        
         try:
             cur.execute("SELECT citizen_id FROM Service_Request WHERE request_id = %s;", (request_id,))
             sr_r = cur.fetchone()
@@ -1779,6 +2049,10 @@ def update_welfare_enrollment_status():
             ''', (enrollment_id,))
         
         conn.commit()
+        
+        if status in ('Enrolled', 'Approved'):
+            dispatch_pdf_generation('welfare', enrollment_id)
+        
         try:
             cur.execute("SELECT citizen_id FROM Citizen_welfare_Schema WHERE enrollment_id = %s;", (enrollment_id,))
             cws_r = cur.fetchone()
@@ -2023,6 +2297,9 @@ def update_certificate_status():
                 """, (status, description, certificate_id))
                 
                 conn.commit()
+                
+                if status == 'Approved':
+                    dispatch_pdf_generation('certificate', certificate_id)
                 
                 try:
                     cur.execute("SELECT citizen_id, type FROM certificate WHERE certificate_id = %s;", (certificate_id,))

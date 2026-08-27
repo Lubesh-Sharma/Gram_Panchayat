@@ -1,0 +1,206 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>{{ doc_title }}</title>
+  <style>
+    @page {
+      size: A4;
+      margin: 20mm 15mm 20mm 15mm;
+    }
+    body {
+      font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif;
+      color: #2c3e50;
+      background-color: #ffffff;
+      margin: 0;
+      padding: 0;
+      -webkit-print-color-adjust: exact;
+    }
+    .certificate-container {
+      border: 6px double #1a73e8;
+      padding: 30px 40px;
+      position: relative;
+      background: #ffffff;
+      box-shadow: 0 0 10px rgba(0,0,0,0.05);
+    }
+    .header-table {
+      width: 100%;
+      border-bottom: 2px solid #1a73e8;
+      padding-bottom: 15px;
+      margin-bottom: 25px;
+    }
+    .header-title {
+      font-size: 24px;
+      font-weight: bold;
+      color: #0d47a1;
+      text-transform: uppercase;
+      letter-spacing: 1px;
+    }
+    .header-subtitle {
+      font-size: 14px;
+      color: #555555;
+      margin-top: 4px;
+    }
+    .tracking-badge {
+      background-color: #e8f0fe;
+      border: 1px solid #1a73e8;
+      color: #1a73e8;
+      padding: 8px 12px;
+      border-radius: 6px;
+      font-family: monospace;
+      font-size: 14px;
+      font-weight: bold;
+      text-align: right;
+    }
+    .doc-type-banner {
+      text-align: center;
+      margin: 20px 0;
+      padding: 10px;
+      background: linear-gradient(135deg, #1a73e8, #0d47a1);
+      color: #ffffff;
+      font-size: 20px;
+      font-weight: bold;
+      text-transform: uppercase;
+      letter-spacing: 2px;
+      border-radius: 4px;
+    }
+    .details-table {
+      width: 100%;
+      border-collapse: collapse;
+      margin: 25px 0;
+    }
+    .details-table td {
+      padding: 12px 10px;
+      border-bottom: 1px dashed #e0e0e0;
+      font-size: 14px;
+    }
+    .details-label {
+      font-weight: bold;
+      color: #455a64;
+      width: 35%;
+    }
+    .details-value {
+      color: #111111;
+      font-weight: 500;
+    }
+    .status-stamp {
+      display: inline-block;
+      padding: 6px 16px;
+      border-radius: 20px;
+      font-weight: bold;
+      font-size: 14px;
+      text-transform: uppercase;
+      background-color: #e6f4ea;
+      color: #137333;
+      border: 1px solid #ceebe1;
+    }
+    .authorization-block {
+      margin-top: 50px;
+      padding-top: 20px;
+      border-top: 2px solid #1a73e8;
+      width: 100%;
+    }
+    .seal-badge {
+      border: 2px solid #28a745;
+      background: #f8fff9;
+      color: #155724;
+      padding: 12px 20px;
+      border-radius: 8px;
+      font-size: 14px;
+      font-weight: bold;
+      display: inline-block;
+    }
+    .footer-note {
+      margin-top: 30px;
+      text-align: center;
+      font-size: 11px;
+      color: #888888;
+    }
+  </style>
+</head>
+<body>
+  <div class="certificate-container">
+    <table class="header-table">
+      <tr>
+        <td style="width: 65%;">
+          <div class="header-title">Gram Panchayat Administrative Portal</div>
+          <div class="header-subtitle">Government of India • Panchayat Raj Infrastructure</div>
+          <div class="header-subtitle">Panchayat: <strong>{{ panchayat_name }}</strong> | District: <strong>{{ district_name }}</strong>, {{ state_name }}</div>
+        </td>
+        <td style="width: 35%; text-align: right;">
+          <div class="tracking-badge">
+            Tracking ID:<br>{{ tracking_id }}
+          </div>
+        </td>
+      </tr>
+    </table>
+
+    <div class="doc-type-banner">
+      {{ doc_title }}
+    </div>
+
+    <table class="details-table">
+      <tr>
+        <td class="details-label">Document Tracking ID</td>
+        <td class="details-value"><strong>{{ tracking_id }}</strong></td>
+      </tr>
+      <tr>
+        <td class="details-label">Citizen Name</td>
+        <td class="details-value">{{ citizen_name }}</td>
+      </tr>
+      <tr>
+        <td class="details-label">Contact Details</td>
+        <td class="details-value">Phone: {{ citizen_phone }} | Email: {{ citizen_email }}</td>
+      </tr>
+      <tr>
+        <td class="details-label">Application / Request Date</td>
+        <td class="details-value">{{ issue_date }}</td>
+      </tr>
+      <tr>
+        <td class="details-label">Category / Purpose</td>
+        <td class="details-value">{{ category }}</td>
+      </tr>
+      {% if details_extra %}
+      {% for key, val in details_extra.items() %}
+      <tr>
+        <td class="details-label">{{ key }}</td>
+        <td class="details-value">{{ val }}</td>
+      </tr>
+      {% endfor %}
+      {% endif %}
+      <tr>
+        <td class="details-label">Official Status</td>
+        <td class="details-value">
+          <span class="status-stamp">{{ status }}</span>
+        </td>
+      </tr>
+    </table>
+
+    <table class="authorization-block">
+      <tr>
+        <td style="width: 50%; vertical-align: middle;">
+          <div class="seal-badge">
+            ✓ Digital Verification Verified<br>
+            <span style="font-size: 11px; font-weight: normal;">Gram Panchayat Official Record</span>
+          </div>
+        </td>
+        <td style="width: 50%; text-align: right; vertical-align: middle;">
+          <div style="font-size: 15px; font-weight: bold; color: #0d47a1;">
+            Generated & Approved by Lubesh
+          </div>
+          <div style="font-size: 12px; color: #555555; margin-top: 4px;">
+            Gram Panchayat Competent Authority
+          </div>
+          <div style="font-size: 11px; color: #777777; margin-top: 2px;">
+            Date of Verification: {{ issue_date }}
+          </div>
+        </td>
+      </tr>
+    </table>
+
+    <div class="footer-note">
+      This is a digitally generated official certificate/receipt by Gram Panchayat Portal. Reference Tracking ID: <strong>{{ tracking_id }}</strong> for official verification.
+    </div>
+  </div>
+</body>
+</html>

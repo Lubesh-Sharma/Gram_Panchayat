@@ -249,26 +249,30 @@
               <td>
                 {% if activity.action_type == 'certificate' %}
                   {% if activity.status == 'Approved' %}
-                    <a href="{{ url_for('view_certificate', certificate_id=activity.id) }}" target="_blank"
-                      class="service-btn btn-outline">Download</a>
+                    <a href="{{ url_for('download_generated_pdf', doc_type='certificate', record_id=activity.id) }}" target="_blank"
+                      class="service-btn btn-outline" style="background-color: #1a73e8; color: #fff;">PDF Certificate</a>
                   {% else %}
                     <a href="#" class="service-btn btn-outline"
                       onclick="showCertificateDetails('{{ activity.id }}'); return false;">Details</a>
                   {% endif %}
                 {% elif activity.action_type == 'welfare' %}
-                  <a href="#" class="service-btn btn-outline"
-                    onclick="showWelfareDetails('{{ activity.id }}'); return false;">Details</a>
+                  {% if activity.status in ('Enrolled', 'Approved') %}
+                    <a href="{{ url_for('download_generated_pdf', doc_type='welfare', record_id=activity.id) }}" target="_blank"
+                      class="service-btn btn-outline" style="background-color: #1a73e8; color: #fff;">PDF Certificate</a>
+                  {% else %}
+                    <a href="#" class="service-btn btn-outline"
+                      onclick="showWelfareDetails('{{ activity.id }}'); return false;">Details</a>
+                  {% endif %}
                 {% elif activity.action_type == 'tax' %}
-                  <a href="#" class="service-btn btn-outline"
-                    data-id="{{ activity.id }}"
-                    data-date="{{ activity.date.strftime('%d %b %Y') if activity.date else '' }}"
-                    data-mode="Online"
-                    data-name="{{ data.name if data and data.name else 'Citizen' }}"
-                    data-panchayat="{{ data.village_info.panchayat_name if data and data.village_info else 'Gram Panchayat' }}"
-                    data-amount="{{ activity.amount }}"
-                    onclick="showTaxReceiptFromData(this); return false;">Receipt</a>
+                  <a href="{{ url_for('download_generated_pdf', doc_type='tax', record_id=activity.id) }}" target="_blank"
+                    class="service-btn btn-outline" style="background-color: #137333; color: #fff;">PDF Receipt</a>
                 {% elif activity.action_type == 'service' %}
-                  <button class="service-btn" onclick="showServiceDetails('{{ activity.id }}')">View</button>
+                  {% if activity.status in ('Resolved', 'Approved') %}
+                    <a href="{{ url_for('download_generated_pdf', doc_type='service', record_id=activity.id) }}" target="_blank"
+                      class="service-btn btn-outline" style="background-color: #1a73e8; color: #fff;">PDF Receipt</a>
+                  {% else %}
+                    <button class="service-btn" onclick="showServiceDetails('{{ activity.id }}')">View</button>
+                  {% endif %}
                 {% else %}
                   <a href="#" class="service-btn btn-outline">View</a>
                 {% endif %}
@@ -471,8 +475,8 @@
               <td>{{ cert[3] }}</td>
               <td>
                 {% if cert[3] == 'Approved' %}
-                <a href="{{ url_for('view_certificate', certificate_id=cert[0]) }}" target="_blank"
-                  class="service-btn btn-outline">View</a>
+                <a href="{{ url_for('download_generated_pdf', doc_type='certificate', record_id=cert[0]) }}" target="_blank"
+                  class="service-btn btn-outline" style="background-color: #1a73e8; color: #fff;">Download Certificate</a>
                 {% else %}
                 <button class="btn-outline" onclick="showCertificateDetails('{{ cert[0] }}')">Details</button>
                 {% endif %}
