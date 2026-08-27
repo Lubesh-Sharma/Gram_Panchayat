@@ -2,7 +2,7 @@ services:
   - type: web
     name: gram-panchayat
     env: python
-    buildCommand: pip install -r requirements.txt
+    buildCommand: pip install -r requirements.txt && playwright install chromium
     startCommand: gunicorn --worker-class eventlet -w 1 main:app
     envVars:
       - key: PYTHONUNBUFFERED
