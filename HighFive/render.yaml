@@ -2,8 +2,10 @@ services:
   - type: web
     name: gram-panchayat
     env: python
-    buildCommand: pip install -r requirements.txt && playwright install
+    buildCommand: pip install -r requirements.txt && PLAYWRIGHT_BROWSERS_PATH=0 playwright install
     startCommand: gunicorn -w 1 --threads 10 main:app
     envVars:
       - key: PYTHONUNBUFFERED
         value: "1"
+      - key: PLAYWRIGHT_BROWSERS_PATH
+        value: "0"

@@ -448,9 +448,17 @@ def generate_pdf_certificate_sync(doc_type, record_id):
             pdf_path = os.path.join(output_dir, filename)
             rel_pdf_path = f"static/uploads/generated_certificates/{filename}"
 
-            # Playwright PDF rendering
+            # Playwright PDF rendering with auto-installation fallback
+            os.environ['PLAYWRIGHT_BROWSERS_PATH'] = '0'
             with sync_playwright() as p:
-                browser = p.chromium.launch(headless=True, args=['--no-sandbox', '--disable-setuid-sandbox', '--disable-dev-shm-usage'])
+                try:
+                    browser = p.chromium.launch(headless=True, args=['--no-sandbox', '--disable-setuid-sandbox', '--disable-dev-shm-usage'])
+                except Exception as launch_err:
+                    print(f"Playwright browser missing at runtime ({launch_err}). Auto-installing Chromium binaries...", flush=True)
+                    import subprocess
+                    subprocess.run(["python3", "-m", "playwright", "install", "chromium"], check=True)
+                    browser = p.chromium.launch(headless=True, args=['--no-sandbox', '--disable-setuid-sandbox', '--disable-dev-shm-usage'])
+
                 page = browser.new_page()
                 page.set_content(html_content, wait_until='networkidle')
                 page.pdf(path=pdf_path, format='A4', print_background=True)
