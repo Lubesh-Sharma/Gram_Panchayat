@@ -450,7 +450,7 @@ def generate_pdf_certificate_sync(doc_type, record_id):
 
             # Playwright PDF rendering
             with sync_playwright() as p:
-                browser = p.chromium.launch(headless=True)
+                browser = p.chromium.launch(headless=True, args=['--no-sandbox', '--disable-setuid-sandbox', '--disable-dev-shm-usage'])
                 page = browser.new_page()
                 page.set_content(html_content, wait_until='networkidle')
                 page.pdf(path=pdf_path, format='A4', print_background=True)
